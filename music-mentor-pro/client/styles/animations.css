@@ -1,0 +1,32 @@
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 rgba(124, 77, 255, 0.2); }
+  50% { box-shadow: 0 0 24px rgba(124, 77, 255, 0.45); }
+}
+
+@keyframes explicitBg {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes glitch {
+  0%, 100% { transform: translate(0); }
+  20% { transform: translate(-1px, 1px); }
+  40% { transform: translate(1px, -1px); }
+  60% { transform: translate(-1px, -1px); }
+  80% { transform: translate(1px, 1px); }
+}
+
+.animate-glow {
+  animation: pulseGlow 2.4s ease-in-out infinite;
+}
+
+.explicit-mode-bg {
+  background: linear-gradient(-45deg, #170227, #32064a, #20022f, #4f0b73);
+  background-size: 300% 300%;
+  animation: explicitBg 8s ease infinite;
+}
+
+.glitch-text {
+  animation: glitch 500ms steps(2, jump-none) infinite;
+}
