@@ -232,6 +232,7 @@ extern long g_frame;
 void game_set_mode(int m);
 void fade_to(int mode_after, void (*cb)(void));
 extern int g_fade;
+extern int g_autofade;
 
 /* ------------------------------------------------------------------ world */
 typedef struct { int tx, ty, px, py, dir, moving, prog, speed, anim, step; } Mover;
@@ -245,7 +246,8 @@ typedef struct {
   Ent ents[MAX_ENTS]; int n;
   Mover hero;
   int camx, camy, bannerT, time, grace;
-  int eventTile; /* ostatni kafelek, na którym odpalił event (anty-powtórka) */
+  int trans, tMap, tX, tY, tDir; /* przejście przez drzwi (ściemnienie) */
+  int battleMob;
 } World;
 extern World W;
 
@@ -253,6 +255,7 @@ void world_load_map(int map, int tx, int ty, int dir);
 void world_update(void);
 void world_draw(void);
 void world_refresh_visibility(void);
+void world_battle_done(int result);
 Ent *world_find_ent(const char *id);
 int world_blocked(int tx, int ty, const Ent *self);
 void mover_step(Mover *m, int dir);

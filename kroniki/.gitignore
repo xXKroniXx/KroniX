@@ -1,0 +1,5 @@
+build/kronix_test
+build/story_data.c
+build/*.o
+*.bmp
+kronix_prohibicja_zapis.txt
