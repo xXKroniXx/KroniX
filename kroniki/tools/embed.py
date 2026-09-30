@@ -1,7 +1,9 @@
 """Zamienia story.txt na plik C z tablicą znaków (fabuła wbudowana w .exe)."""
 import sys
-data = open(sys.argv[1], 'rb').read()
-with open(sys.argv[2], 'w') as f:
+out = sys.argv[1]
+data = b''.join(open(p, 'rb').read() + b'\n' for p in sys.argv[2:])
+open(out.replace('.c', '.txt'), 'wb').write(data)
+with open(out, 'w') as f:
     f.write('/* Wygenerowane automatycznie z data/story.txt — nie edytować. */\n')
     f.write('const char STORY_TXT[] = {\n')
     for i in range(0, len(data), 24):

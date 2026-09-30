@@ -4,6 +4,7 @@
 enum { VS_IDLE, VS_RUN, VS_SAY, VS_MENU, VS_BATTLE, VS_FADE, VS_WAIT, VS_WALK, VS_SHOP };
 
 int g_forceChoice = -1;
+int g_forceQ[64], g_forceN, g_forceI;
 
 static struct {
   int state, pc, sp, stack[8];
@@ -207,6 +208,13 @@ static void exec(void) {
         if (V.sp < 8) { V.stack[V.sp++] = V.pc; V.pc = S.scripts[c->i[0]].start; }
         break;
       case OP_TOAST: ui_toast(c->s[0]); break;
+      case OP_XP: {
+        char lv[6][160];
+        toast_fmt("+%s%d doświadczenia", "", c->i[0]);
+        int n = hero_gain_xp(c->i[0], lv, 6);
+        for (int k = 0; k < n; k++) ui_toast(lv[k]);
+        break;
+      }
       case OP_CHANCE: if (rand() % 100 < c->i[0]) V.pc = c->i[1]; break;
       case OP_END:
         if (V.sp > 0) V.pc = V.stack[--V.sp];
@@ -263,6 +271,11 @@ void script_update(void) {
     case VS_MENU: {
       int chosen = -1;
       if (g_autoplay) {
+        if (g_forceI < g_forceN) {
+          g_forceChoice = g_forceQ[g_forceI++];
+          if (g_forceChoice >= V.mCount || !opt_enabled(g_forceChoice))
+            printf("[test] UWAGA: wybór %d niedostępny w menu (linia %d)\n", g_forceChoice, S.cmds[V.pc - 1].line);
+        }
         if (g_forceChoice >= 0 && g_forceChoice < V.mCount && opt_enabled(g_forceChoice)) chosen = g_forceChoice;
         else {
           int en[16], ne = 0;

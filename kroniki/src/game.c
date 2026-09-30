@@ -14,6 +14,7 @@ int g_autoplay;
 int g_testdrv;
 int g_autofade;
 extern int g_forceChoice;
+extern int g_forceQ[64], g_forceN, g_forceI;
 extern const char STORY_TXT[];
 
 const SkillDef SKILLS[SK_COUNT] = {
@@ -57,7 +58,7 @@ int hero_gain_xp(int xp, char msgs[][160], int maxMsgs) {
   while (H.xp >= xp_next(H.lvl)) {
     H.xp -= xp_next(H.lvl);
     H.lvl++;
-    H.mhp += 8; H.mmp += 2; H.atk += 2; H.def += 1; H.spd += H.lvl % 2;
+    H.mhp += 10; H.mmp += 2; H.atk += 2; H.def += 1; H.spd += H.lvl % 2;
     H.hp = H.hp + 12 > H.mhp ? H.mhp : H.hp + 12;
     H.mp = H.mmp;
     if (n < maxMsgs) snprintf(msgs[n++], 160, "Awans! Tomek osiąga poziom %d.", H.lvl);
@@ -264,7 +265,11 @@ void testdrv_frame(void) {
     if (!strcmp(cmd, "shot")) { save_bmp(arg); continue; }
     if (!strcmp(cmd, "debug")) { game_debug(arg); continue; }
     if (!strcmp(cmd, "autoplay")) { g_autoplay = atoi(arg); continue; }
-    if (!strcmp(cmd, "choose")) { g_forceChoice = atoi(arg); continue; }
+    if (!strcmp(cmd, "choose")) {
+      g_forceN = g_forceI = 0;
+      for (char *t = strtok(arg, " "); t && g_forceN < 64; t = strtok(NULL, " ")) g_forceQ[g_forceN++] = atoi(t);
+      continue;
+    }
     if (!strcmp(cmd, "log")) { printf("[test] %s\n", arg); continue; }
     if (!strcmp(cmd, "expect")) {
       char vn[64]; int want = 0;
@@ -336,6 +341,7 @@ void game_init(int argc, char **argv) {
   for (int i = 1; i < argc; i++) {
     if (!strcmp(argv[i], "--story") && i + 1 < argc) storyPath = argv[++i];
     else if (!strcmp(argv[i], "--validate")) validate = 1;
+    else if (!strcmp(argv[i], "--seed") && i + 1 < argc) srand((unsigned)atoi(argv[++i]));
   }
   char *ext = storyPath ? read_file(storyPath) : NULL;
   int errs = story_load(ext ? ext : STORY_TXT);
@@ -383,6 +389,7 @@ void game_frame(void) {
   }
   if (g_autoplay && g_mode == MODE_MENU) game_set_mode(MODE_WORLD);
 
+  if (g_autoplay && g_testdrv) { g_frame++; return; } /* szybkie testy: bez rysowania */
   switch (g_mode) {
     case MODE_TITLE: ui_title_draw(); break;
     case MODE_WORLD: world_draw(); gfx_darken(g_fade); script_draw(); break;

@@ -1,0 +1,755 @@
+# =====================================================================
+#  AKT I — POLONIA
+#  Tomek Kroniewski szuka młodszego brata, Janka.
+# =====================================================================
+
+# ------------------------------------------------------------ prolog
+@script s_intro
+music tytul
+wait 30
+as -
+"{s}Chicago, październik 1931.{-}"
+"Miasto żyje z przemytu whiskey, krwi i obietnic. Prohibicja zrobiła z gangsterów królów, a z gliniarzy — ich lokajów."
+"W polskiej dzielnicy przy Milwaukee Avenue deszcz pada od tygodnia."
+fade in
+as mama
+"Tomek! Tomek, wstawaj!"
+as tomek
+"Mamo? Co się stało? Jest szósta rano..."
+as mama
+"{y}Janek nie wrócił na noc.{-} Nigdy tak nie robił. Chodź tu, synku, proszę."
+quest glowne "Porozmawiaj z mamą (na dole, na dywanie)."
+
+@script s_mama
+as mama
+ifnot MAMA_1 pierwsza
+if JANEK_ZNIKNAL_2 policja
+ifnot NOTATKA szukaj
+"Uważaj na siebie, synku. Twój ojciec też myślał, że da radę całemu Chicago."
+"Siadaj. Zjedz chociaż parę pierogów, zanim znowu wyjdziesz."
+as -
+"Mama stawia przed tobą talerz gorących pierogów. Od razu lepiej."
+heal
+end
+:pierwsza
+set MAMA_1
+"Wyszedł wczoraj wieczorem. Powiedział, że idzie do Zośki i zaraz wraca."
+"A w nocy... ktoś stał pod oknem. Dwóch. W kaszkietach, jak ci Irlandczycy z doków."
+menu
+ opt "Spokojnie, mamo. Znajdę go." spok
+ opt "Znowu wpakował się w jakieś kłopoty?" klopoty
+endmenu
+:spok
+add HONOR 1
+"Wiem, że znajdziesz. Zawsze go pilnowałeś."
+goto dalej
+:klopoty
+"Nie mów tak. On chce tylko pomóc. Odkąd zamknęli fabrykę, nie ma pracy dla nikogo."
+:dalej
+"Zajrzyj do jego pokoju. Tam, za ścianą po prawej. Może coś zostawił."
+quest glowne "Przeszukaj pokój Janka (po prawej stronie mieszkania)."
+end
+:szukaj
+"Sprawdź jego pokój, Tomek. Proszę."
+end
+:policja
+"Byłam w kościele. Ojciec Stanisław mówi, żeby się modlić."
+"Ale ja wiem, że ty zrobisz więcej niż modlitwa. Przynieś go do domu."
+as -
+"Mama przytula cię mocno i wciska do kieszeni ciepły pieróg."
+heal
+end
+
+@script s_notatka
+as -
+"Na podłodze, pod łóżkiem Janka, leży złożona kartka."
+as janek
+"„Tomek, jeśli to czytasz — wpakowałem się. Widziałem coś w dokach. Coś, czego nie powinienem.”"
+"„Nie idź na policję. Nikomu nie ufaj. Zośka wie, gdzie szukać. — J.”"
+give notatka
+set NOTATKA
+as tomek
+"Niech to szlag, Janek..."
+quest glowne "Janek zostawił notatkę: „Zośka wie”. Idź do baru „Pod Białym Orłem” (drzwi obok domu)."
+
+@script s_radio
+as -
+"Radio trzeszczy: „...Al Capone uznany winnym uchylania się od podatków! Wielki Al trafi za kraty...”"
+"„...a na nabrzeżu rzeki Chicago wciąż trwają poszukiwania zaginionego przywódcy dokerów, Stanisława Kowalika...”"
+
+@script s_nie_wychodz
+as tomek
+"Najpierw zajrzę do pokoju Janka. Może coś zostawił."
+walk hero up 1
+
+@script s_wyjscie
+fade out
+warp polonia 3 4 down
+set ZBIRY_CZEKAJA
+music doki
+fade in
+as zbir
+"No proszę. Starszy braciszek Kroniewski."
+"Twój brat wziął coś, co należy do pana {g}O'Malleya{-}. Film. Zdjęcia. Gdzie on jest?"
+menu
+ opt "Nie wiem. Sam go szukam." niewiem
+ opt "Zjeżdżajcie spod mojego domu." twardo
+endmenu
+:niewiem
+"To poszukaj szybciej. A na razie — przypomnienie."
+goto bij
+:twardo
+add SZACUNEK 1
+"Ho, ho. Twardziel. Zobaczmy, jak twardy."
+:bij
+battle zbir lose=przegrana
+as zbir
+"Dobra, dobra! Wystarczy!"
+"Pan O'Malley się o tym dowie, Polaczku. Doki mają długą pamięć!"
+goto koniec
+:przegrana
+as -
+"Zbir wbija ci pięść w żebra. Padasz na mokry bruk."
+as zbir
+"To było pierwsze ostrzeżenie. Następne będzie w rzece."
+:koniec
+clear ZBIRY_CZEKAJA
+set ZBIRY_POD_DOMEM
+music polonia
+as tomek
+"Film? Zdjęcia? Janek, w co ty się wplątałeś?"
+as -
+"{s}Wskazówka: Esc otwiera menu (ekwipunek, dziennik, zapis gry). Enter — rozmowa. Shift — bieg.{-}"
+quest glowne "Ludzie O'Malleya szukają filmu, który miał Janek. Idź do baru Zośki (drzwi na prawo od domu)."
+
+@script s_zbir_dom
+as zbir
+"Na co się gapisz?"
+
+# ------------------------------------------------------------ bar Zośki
+@script s_zoska
+as zoska
+ifnot ZOSKA_1 pierwsza
+"Czego ci trzeba, Tomek?"
+menu
+ opt "Co słychać w dzielnicy?" plotki
+ opt "Coś do picia? (sklep)" sklep
+ opt "Na razie." pa
+endmenu
+:plotki
+if AKT3 plotka3
+if PADDY_POKONANY plotka2b
+if VITO_1 plotka2
+if STEFEK_INFO plotka1b
+"Ludzie gadają, że O'Malley chce przejąć całą Polonię. Najpierw piekarnię, potem mój bar."
+"Nie dam mu. Prędzej sama podpalę ten lokal."
+end
+:plotka1b
+"Stefek mówi, że gliny zabrały Janka? Doyle... ten kapitan to pies O'Malleya. Wszyscy to wiedzą, nikt nie powie głośno."
+end
+:plotka2
+"Byłeś u Włochów? Uważaj na {y}Vita Russo{-}. Ma uśmiech anioła i sumienie grabarza."
+end
+:plotka2b
+"Słyszałam, że ktoś położył Wielkiego Paddy'ego! Cała dzielnica pije twoje zdrowie. Po cichu, oczywiście."
+end
+:plotka3
+"Idź po niego, Tomek. I wróć. Obaj wróćcie."
+end
+:sklep
+"Prohibicja, kochaniutki. Niczego tu nie widziałeś."
+shop kawa whiskey cygaro bandaz
+end
+:pa
+"Uważaj na siebie."
+end
+:pierwsza
+set ZOSKA_1
+"Tomek... Siadaj. Wyglądasz jakbyś zobaczył ducha."
+as tomek
+"Janek nie wrócił na noc. Zostawił kartkę, że ty wiesz, gdzie szukać."
+as zoska
+"Był tu wczoraj wieczorem. Blady jak ściana. Trzęsły mu się ręce."
+"Powiedział, że w dokach {r}widział, jak glina zabija człowieka{-}. A potem wybiegł."
+"Od paru tygodni biegał z karteczkami dla {y}Bronka{-} — wiesz, numerki, zakłady. Bronek siedzi na zapleczu."
+menu
+ opt "Jak dostać się na zaplecze?" haslo
+ opt "Glina zabił człowieka? Kogo?" kto
+endmenu
+:kto
+"Nie powiedział. Ale od tygodnia nikt nie widział {y}Kowalika{-}, tego od związku dokerów."
+:haslo
+set HASLO
+"Olek pilnuje drzwi. Powiedz mu: {y}„Biały orzeł nie śpi”{-}. I nie mów, że to ode mnie."
+quest glowne "Porozmawiaj z Bronkiem na zapleczu baru. Hasło dla Olka: „Biały orzeł nie śpi”."
+end
+
+@script s_olek
+as olek
+"Zaplecze zamknięte. Remont."
+menu
+ opt "Biały orzeł nie śpi." haslo if HASLO
+ opt "Masz tu 20$ na remont." kasa ifgold 20
+ opt "Zejdź mi z drogi, Olek. [Szacunek 2]" zastrasz ifge SZACUNEK 2
+ opt "Nieważne." nic
+endmenu
+:haslo
+"...ale czuwa. Właź."
+goto wpusc
+:kasa
+cash -20
+"Remont właśnie się skończył. Właź."
+goto wpusc
+:zastrasz
+"Dobra, dobra, Kroniewski. Nie ma co się denerwować."
+:wpusc
+set WPUSZCZONY
+end
+:nic
+"No to nieważne."
+
+@script s_olek_ok
+as olek
+"Bronek siedzi przy stoliku. Nie przeszkadzaj mu, jak liczy pieniądze."
+
+@script s_bronek
+as bronek
+if BRONEK_2 potem
+if PIEKARNIA_ZALATWIONA raport
+if BRONEK_1 czekam
+set BRONEK_1
+"Tomek Kroniewski! Brat małego Janka. Siadaj, siadaj."
+as tomek
+"Gdzie jest Janek, Bronek?"
+as bronek
+"Gdybym wiedział, sam bym go ściągnął za ucho. Dobry chłopak, szybki. Roznosił mi karteczki."
+"Ale ostatnio kombinował. Pożyczył {y}aparat{-} od fotografa {y}Rubina{-} z tylnej ulicy. Mówił, że zrobi zdjęcia, które są warte fortunę."
+"A potem gadał o ochronie. Że {y}Vito Russo{-}, człowiek Dona Moretti, obiecał mu opiekę."
+"Janek igrał z ogniem, Tomek. Irlandczycy z jednej strony, Włosi z drugiej, a gliny pośrodku."
+menu
+ opt "Jak dotrzeć do tego Vita?" vito
+ opt "Kim jest O'Malley?" omalley
+endmenu
+:omalley
+"Sean O'Malley. Trzęsie dokami, piwem i połową policji. Jego ludzie to bydło, a on to rzeźnik."
+:vito
+"Włosi nie gadają z byle kim. Musisz się pokazać."
+"Ludzie O'Malleya duszą {y}piekarza Wiśniewskiego{-}. Codziennie przychodzą po haracz. Przegoń ich, a Moretti o tobie usłyszy."
+"Wtedy dam ci list do Vita. Słowo Bronka."
+set PIEKARNIA_ZADANIE
+quest glowne "Pomóż piekarzowi Wiśniewskiemu (piekarnia z markizą) pozbyć się ludzi O'Malleya."
+quest rubin "Janek pożyczył aparat od fotografa Rubina. Atelier jest na tylnej ulicy (przejście między budynkami)."
+end
+:czekam
+"Piekarnia, Tomek. Pokaż, że masz jaja, to pogadamy o Włochach."
+goto numerki
+:raport
+set BRONEK_2
+if PIEKARNIA_ZDRADA zdrada
+"Słyszałem! Irlandczycy uciekli z piekarni jak zmokłe koty. Cała ulica gada."
+add SZACUNEK 1
+goto list
+:zdrada
+"Słyszałem, że dogadałeś się z Irlandczykami za plecami Wiśniewskiego. Brzydko, Tomek."
+"Ale... zaradny jesteś. Włosi lubią zaradnych."
+:list
+give list
+xp 40
+"Masz tu {y}list do Vita Russo{-}. Idź do {y}Trattorii Moretti{-} w Małej Italii — prosto Avenue na wschód."
+"I Tomek... tam nie ma przyjaciół. Są tylko interesy."
+quest glowne "Idź do Trattorii Moretti w Małej Italii (Avenue na wschód) i pokaż list Vitowi Russo."
+done piekarnia
+end
+:potem
+"Jak tam u Włochów? Pamiętaj: uśmiechaj się, kłaniaj i nigdy nie odwracaj plecami."
+:numerki
+menu
+ opt "Zagram w numerki. [10$]" graj ifgold 10
+ opt "Innym razem." pa
+endmenu
+:graj
+cash -10
+as -
+"Bronek losuje numer z kapelusza..."
+chance 30 wygrana
+as bronek
+"Pudło! Ale następnym razem na pewno."
+end
+:wygrana
+as bronek
+"No proszę, szczęściarz!"
+cash 40
+end
+:pa
+"Zawsze tu jestem."
+
+@script s_karciarz
+as robotnik
+"Pokerek? Tu się gra na serio. Wczoraj jeden przegrał taksówkę."
+"Twój brat? Siedział tu w czwartek. Pytał, ile płacą gazety za zdjęcia. Dziwny pomysł."
+
+@script s_pianista
+as -
+"Pianista gra coś smutnego i nie przestaje nawet na chwilę."
+as przechodzien
+"Graj, bracie, graj. Dopóki gram, nikt tu się nie strzela."
+
+@script s_bywalec
+as robotnik
+"Pracowałem w stoczni. Potem w rzeźni. Teraz... piję. Kryzys, bracie."
+"Mówią, że prezydent Hoover obiecał kurczaka w każdym garnku. W moim garnku jest tylko woda."
+
+@script s_dama
+as kobieta
+"Czekam na kogoś, kto postawi mi drinka i nie zada żadnych pytań."
+menu
+ opt "Postawię. [5$]" drink ifgold 5
+ opt "Nie dziś." nie
+endmenu
+:drink
+cash -5
+"Dżentelmen. Jedno za darmo, Kroniewski: widziałam twojego brata z {y}Vitem Russo{-}. W niedzielę, w aucie Vita."
+add SZACUNEK 1
+end
+:nie
+"Szkoda."
+
+@script s_gosc_bar
+as przechodzien
+"Nie widzę, nie słyszę, nie pamiętam. Najzdrowiej w tej dzielnicy."
+
+# ------------------------------------------------------------ piekarnia
+@script s_zbir_piekarnia
+as zbir
+"Czego? To sprawa między panem O'Malleyem a piekarzem."
+menu
+ opt "Zostawcie go w spokoju. Już." walka
+ opt "Ile jest winny? Zapłacę za niego. [30$]" placi ifgold 30
+ opt "Dajcie mi działkę, to wam pomogę go docisnąć." zdrada
+ opt "Nic. Już idę." nic
+endmenu
+:walka
+add SZACUNEK 1
+add HONOR 1
+"Ty? Nas? Chłopaki, bierzemy go!"
+battle zbir,zbir
+as zbir
+"Dobra! Już! Idziemy! Ale to nie koniec!"
+goto zalatwione
+:placi
+cash -30
+add HONOR 1
+"Pieniądz to pieniądz. Wiśniewski ma spokój... na razie."
+goto zalatwione
+:zdrada
+add HONOR -2
+cash 15
+set PIEKARNIA_ZDRADA
+"Ha! Polaczek z głową. Masz, twoja działka. Piekarz zapłaci podwójnie."
+:zalatwione
+set PIEKARNIA_ZALATWIONA
+xp 30
+quest glowne "Sprawa z piekarnią załatwiona. Wróć do Bronka na zaplecze baru."
+end
+:nic
+"Mądry chłopiec."
+
+@script s_piekarz
+as piekarz
+if PIEKARNIA_ZDRADA zly
+if PIEKARNIA_ZALATWIONA dzieki
+if PIEKARNIA_ZADANIE boi
+"Dzień dobry, Tomek. Chleb świeży, bułki świeże. Tylko klientów coraz mniej."
+goto sklep
+:boi
+"Tomek... Oni stoją przed drzwiami. Codziennie. Pięć dolarów dziennie, bo inaczej... wiesz."
+"Ja nie mam pięciu dolarów dziennie. Mam dzieci."
+end
+:dzieki
+ifnot PIEKARZ_NAGRODA nagroda
+"Dla ciebie zawsze świeży chleb, Tomek. Po kosztach!"
+goto sklep
+:nagroda
+set PIEKARZ_NAGRODA
+"Tomek! Bóg ci zapłać! Poszli sobie, pierwszy raz od miesiąca!"
+"Weź, weź. Nie odmawiaj."
+give chleb 3
+give bandaz 2
+goto sklep
+:zly
+"Ty... Z nimi trzymasz? Wynoś się z mojej piekarni. Myślałem, że jesteś jak twój ojciec."
+end
+:sklep
+shop chleb bandaz
+
+@script s_klientka
+as helena
+if PIEKARNIA_ZALATWIONA po
+"Pst... Nie wchodź, jak ci Irlandczycy stoją. Wczoraj pobili pana Zająca z kamienicy."
+end
+:po
+"Podobno to ty przegoniłeś Irlandczyków? Niech cię Pan Bóg ma w opiece, chłopcze."
+
+# ------------------------------------------------------------ lombard
+@script s_feliks
+as feliks
+"Lombard Feliksa. Kupuję wszystko, sprzedaję wszystko, nie pytam o nic."
+menu
+ opt "Pokaż towar." towar
+ opt "A pod ladą? [Szacunek 2]" podlada ifge SZACUNEK 2
+ opt "Do widzenia." pa
+endmenu
+:towar
+shop bandaz apteczka kawa kastet marynarka plaszcz
+end
+:podlada
+"Ćśś... Tylko dla ludzi z szacunkiem. Nikomu ani słowa."
+shop palka noz rewolwer kamizelka cygaro
+end
+:pa
+"Wracaj, jak będziesz miał gotówkę."
+
+@script s_sejf_feliks
+as -
+"Pancerny sejf Mosler. Pan Feliks bardzo uważnie patrzy, czy go dotykasz."
+
+# ------------------------------------------------------------ kościół
+@script s_ksiadz
+as ksiadz
+if KIELICH_ODDANY po_kielichu
+ifhas kielich oddaj
+if KIELICH_Q szukaj
+set KIELICH_Q
+"Tomasz Kroniewski. Dawno cię nie widziałem na mszy."
+"Mamy dziś smutne czasy, synu. Najpierw zaginął {y}Stanisław Kowalik{-}, nasz parafianin. A w nocy ktoś ukradł {y}srebrny kielich{-} z zakrystii."
+"Jeśli usłyszysz coś na ulicy... Wiem, że ty słyszysz więcej niż ja."
+quest kielich "Ktoś ukradł kielich mszalny z kościoła św. Stanisława. Rozpytaj na ulicy."
+goto menu
+:szukaj
+"Słyszałeś coś o kielichu, synu?"
+goto menu
+:oddaj
+take kielich
+set KIELICH_ODDANY
+add HONOR 1
+xp 40
+"Mój Boże... Kielich! Tomaszu, jesteś dobrym człowiekiem, cokolwiek o sobie myślisz."
+"Weź ten {y}medalik św. Krzysztofa{-}. Patron podróżnych. Ty jesteś w podróży, choć nie wiesz dokąd."
+give medalik
+equip medalik
+done kielich
+goto menu
+:po_kielichu
+"Pokój z tobą, Tomaszu."
+:menu
+menu
+ opt "Pobłogosław mnie, ojcze." blog
+ opt "Chcę się wyspowiadać." spowiedz ifnot SPOWIEDZ
+ opt "Co wiesz o Kowaliku?" kowalik
+ opt "Muszę iść." pa
+endmenu
+:blog
+"Niech cię Bóg prowadzi i strzeże."
+heal
+end
+:spowiedz
+set SPOWIEDZ
+"Mów, synu. Bóg słucha."
+as -
+"Opowiadasz o wszystkim. O Janku, o pięściach, o gniewie, który w tobie rośnie."
+as ksiadz
+"Ego te absolvo. Idź i staraj się być lepszym. Łatwiej być złym w tym mieście, ale to nie jedyna droga."
+ifge HONOR 0 czysty
+set HONOR 0
+toast "Honor przywrócony"
+end
+:czysty
+add HONOR 1
+end
+:kowalik
+"Staszek Kowalik walczył o ludzi w dokach. O godne płace, o to, żeby nie ginęli pod skrzyniami."
+"Tacy ludzie mają wrogów. Nie tylko wśród gangsterów, Tomaszu. Także wśród tych, co noszą odznaki."
+end
+:pa
+"Idź z Bogiem."
+
+@script s_modlaca
+as helena
+"Zdrowaś Maryjo, łaski pełna... Chroń mojego syna na tej wojnie w dokach..."
+
+@script s_mama_kosciol
+as mama
+"Tomek... Modlę się za was obu. Tylko wróćcie."
+heal
+
+# ------------------------------------------------------------ ulica: mieszkańcy
+@script s_helena
+as helena
+if AKT3 akt3
+if NOTATKA po
+"Tomek, synku, gdzie twój brat? Twoja matka całą noc siedziała w oknie."
+end
+:po
+"Widziałam w nocy auto policyjne pod posterunkiem. A potem ciężarówkę z beczkami piwa. W prohibicję! Piwa!"
+end
+:akt3
+"Idź, chłopcze. Cała kamienica trzyma kciuki."
+
+@script s_stefek
+as stefek
+if STEFEK_INFO po
+if ZOSKA_1 info
+"Extra! Extra! Al Capone skazany! Tylko centa za Tribune!"
+goto gazeta
+:info
+set STEFEK_INFO
+set JANEK_ZNIKNAL_2
+"Tomek! Szukasz Janka? Ja... ja widziałem go w nocy!"
+"Pod posterunkiem na tylnej ulicy. Dwóch gliniarzy wsadziło go do auta. A jeden miał złote galony na czapce — {y}kapitan Doyle{-}."
+"Ale nie zawieźli go do celi! Wyprowadzili go tylnymi drzwiami... do ciężarówki z beczkami."
+as tomek
+"Dzięki, Stefek. Jestem ci winien."
+xp 20
+quest janek "Stefek widział, jak kapitan Doyle zabrał Janka spod posterunku. Posterunek jest na tylnej ulicy (zachodnia strona)."
+end
+:po
+"Znajdź go, Tomek! Janek obiecał, że nauczy mnie grać w karty."
+:gazeta
+menu
+ opt "Kupię gazetę. [1$]" kup ifgold 1
+ opt "Nie teraz." nie
+endmenu
+:kup
+cash -1
+give gazeta
+as -
+"Na pierwszej stronie: {y}„Związkowiec Kowalik zaginął. Policja bezradna.”{-} Obok zdjęcie uśmiechniętego kapitana Doyle'a."
+end
+:nie
+"Extra! Extra!"
+
+@script s_posterunkowy
+as gliniarz
+"Rozejść się, nie ma zbiegowisk. Prohibicja, godzina policyjna, cokolwiek."
+menu
+ opt "Może pan sobie coś przypomni? [10$]" lapowka ifgold 10
+ opt "Już idę, panie władzo." pa
+endmenu
+:lapowka
+cash -10
+"Hmm. Coś sobie przypominam. Kapitan Doyle ostatnio częściej bywa w dokach niż na komisariacie."
+"I to nie po to, żeby łapać przemytników. Nie słyszałeś tego ode mnie."
+end
+:pa
+"Grzeczny chłopiec."
+
+@script s_przechodzien
+as przechodzien
+"Kryzys, bracie. Dwa lata temu miałem sklep, dziś sprzedaję jabłka na rogu."
+"Mówią, że Włosi i Irlandczycy wojują o doki. Przegra, jak zwykle, ktoś taki jak ja."
+
+@script s_kobieta
+as kobieta
+"Mój mąż pracuje w dokach. Wraca coraz później i coraz bardziej przerażony."
+"Od kiedy zniknął Kowalik, nikt nie śmie mówić o związku."
+
+@script s_robotnik
+as robotnik
+"Tylną ulicą lepiej nie chodzić po zmroku. Ludzie O'Malleya pilnują drogi do doków."
+"Na zachód jest zaułek. Mówią, że tam chowają kradzione rzeczy."
+
+@script s_hydrant
+as -
+"Czerwony hydrant. Ktoś napisał na nim kredą: „O'MALLEY = SZCZUR”."
+
+@script s_kosz
+as -
+ifnot KOSZ_KASA kasa
+"Śmierdzący kosz na śmieci. Nic ciekawego."
+end
+:kasa
+set KOSZ_KASA
+"W koszu, między gazetami, leży zgnieciony banknot!"
+cash 3
+
+# ------------------------------------------------------------ zaułek
+@script s_menel
+as menel
+if MENEL_KIELICH po
+"Pieniążek dla kaleki? Kulawy Józek wszystko widzi, wszystko słyszy..."
+menu
+ opt "Co wiesz o dokach? [5$]" doki ifgold 5
+ opt "Masz kielich z kościoła?" kielich if KIELICH_Q
+ opt "Spadaj." pa
+endmenu
+:doki
+cash -5
+"Magazyn numer siedem. Tam trzymają najcenniejsze rzeczy. Pilnuje go {y}Wielki Paddy{-} — łapami łamie ludziom kręgosłupy."
+"A w nocy, przy browarze O'Malleya, zawsze pali się światło. Coś tam się dzieje."
+end
+:kielich
+"K-kielich? Jaki kielich? Ja nic..."
+menu
+ opt "Odkupię go. [20$]" kup ifgold 20
+ opt "Oddawaj albo połamię ci drugą nogę. [Szacunek 2]" grozi ifge SZACUNEK 2
+ opt "Zostaw, nieważne." pa
+endmenu
+:kup
+cash -20
+goto daj
+:grozi
+add HONOR -1
+"Dobrze już, dobrze! Nie bij kaleki!"
+:daj
+set MENEL_KIELICH
+give kielich
+"Masz, masz. Ja tylko... zimno było, chciałem sprzedać Feliksowi."
+quest kielich "Odzyskałeś kielich mszalny. Odnieś go ojcu Stanisławowi do kościoła."
+end
+:po
+"Józek nic nie widział, Józek nic nie wie."
+end
+:pa
+"Niech cię szczury zjedzą..."
+
+@script s_skrzynia_aparat
+as -
+"W skrzynce, pod stertą szmat, leży rozbity trochę, ale cały {y}aparat fotograficzny{-}. Na obudowie wygrawerowano: „Foto-Rubin”."
+give aparat
+set APARAT_ZNALEZIONY
+quest rubin "Znalazłeś aparat Rubina. Odnieś go do atelier na tylnej ulicy."
+
+@script s_skrzynia_z1
+as -
+"W skrzyni: kilka bandaży i trochę gotówki."
+set SKRZYNIA_Z1
+give bandaz 2
+cash 12
+
+@script s_skrzynia_z2
+as -
+"Skrzynia z butelkami. Whiskey z Kanady!"
+set SKRZYNIA_Z2
+give whiskey 2
+
+# ------------------------------------------------------------ fotograf
+@script s_rubin
+as rubin
+if ZDJECIA_DANE po
+ifhas aparat oddaj
+if RUBIN_1 czeka
+set RUBIN_1
+"Zamknięte! Nie... ty jesteś Kroniewski? Brat Janka?"
+"Wejdź. Szybko. Zamknij drzwi."
+"Janek przyniósł mi {y}film{-} do wywołania. Zrobił zdjęcia nocą w dokach. To, co na nich jest... Boże."
+"Wczoraj przyszli ludzie O'Malleya. Rozbili mi pracownię i zabrali mój {y}aparat{-}. Szukali filmu."
+"Zdjęcia schowałem. Ale bez aparatu nie mam z czego żyć. Odzyskaj go — ponoć trzymają łupy w {y}zaułku{-} na zachód od tylnej ulicy — a oddam ci odbitki."
+quest rubin "Ludzie O'Malleya ukradli aparat Rubina. Szukaj go w zaułku (tylna ulica, na zachód)."
+end
+:czeka
+"Masz mój aparat? Zaułek, na zachodzie. Uważaj na siebie."
+end
+:oddaj
+take aparat
+set ZDJECIA_DANE
+add HONOR 1
+xp 50
+"Mój Graflex! Jesteś aniołem, Kroniewski."
+"Masz. Obiecałem. {y}Zdjęcia z doków{-}."
+give zdjecia
+as -
+"Rozmazane, nocne zdjęcia. Nabrzeże. Człowiek leży twarzą w wodzie. Nad nim stoi mężczyzna w mundurze z galonami kapitana."
+as tomek
+"{r}Doyle.{-} To kapitan Doyle. A ten na ziemi..."
+as rubin
+"...to Staszek Kowalik. Ten ze związku. Janek to widział. I sfotografował."
+"Z tym możesz iść tylko do kogoś uczciwego. Jeśli w tym mieście jeszcze ktoś taki jest."
+done rubin
+quest dowody "Masz zdjęcia: kapitan Doyle nad ciałem Kowalika. Uczciwy glina mógłby coś z tym zrobić."
+end
+:po
+"Uważaj na te zdjęcia. Dla nich warto zabić."
+
+# ------------------------------------------------------------ sala bokserska
+@script s_mickey
+as mickey
+if BOKS_DONE po
+"Tomek Kroniewski! Pamiętam cię z ringu, zanim zamknęli halę na Division. Miałeś lewy prosty jak młot."
+"Mam walkę w sobotę. Mój zawodnik złamał rękę. Przeciwnik: {y}Irlandzki Byk{-}, pupilek O'Malleya."
+"Wygrana: {y}150 dolców{-}. Wchodzisz?"
+menu
+ opt "Wchodzę. Walczę uczciwie." walcz
+ opt "(Położę się w trzeciej rundzie — umowa z Vitem.)" rzuc if BOKS_USTAWKA
+ opt "Jeszcze nie teraz." nie
+endmenu
+:walcz
+"Tak trzymaj! Do narożnika!"
+fade out
+fade in
+as bokser
+"Polaczek? Zjem cię na śniadanie!"
+battle bokser bg=ring lose=przegral
+set BOKS_DONE
+set BOKS_WYGRANA
+as mickey
+"Na deski! BYK LEŻY! Kroniewski wygrywa!"
+cash 150
+add SZACUNEK 2
+add HONOR 1
+if BOKS_USTAWKA vito_zly
+end
+:vito_zly
+add MORETTI -1
+toast "Vito Russo nie będzie zadowolony..."
+end
+:przegral
+set BOKS_DONE
+as mickey
+"Leżysz, synku. Ale walczyłeś jak lew. Masz, 20 dolców za odwagę."
+cash 20
+add SZACUNEK 1
+end
+:rzuc
+fade out
+as -
+"Trzecia runda. Byk trafia cię w szczękę, choć mógłbyś zrobić unik. Padasz. Sędzia liczy do dziesięciu."
+"Z trybun słychać gwizdy. W pierwszym rzędzie Vito Russo uśmiecha się i liczy pieniądze."
+fade in
+set BOKS_DONE
+set BOKS_RZUCONA
+cash 250
+add HONOR -2
+add MORETTI 1
+as mickey
+"Coś ty zrobił, Tomek? Widziałem ten cios. Mogłeś go uniknąć."
+"Wynoś się z mojej sali."
+end
+:nie
+"Namyśl się. Taka szansa nie trafia się dwa razy."
+end
+:po
+if BOKS_RZUCONA wstyd
+"Mistrzu! Pamiętam twój lewy prosty w tej walce. Byk dalej nosi śliwę pod okiem!"
+end
+:wstyd
+"Nie mam ci nic do powiedzenia, Kroniewski."
+
+@script s_bokser
+as bokser
+"Na co się gapisz, Polaczku? Walki ustala Mickey. Chcesz oberwać, gadaj z nim."
+
+@script s_sparing
+as robotnik
+"Potrenujesz ze mną? Worek nie oddaje, ja owszem. Pięć dolców za rundę."
+menu
+ opt "Dawaj rundę. [5$]" tren ifgold 5
+ opt "Innym razem." nie
+endmenu
+:tren
+cash -5
+as -
+"Trzy minuty w rękawicach. Pot, oddech, praca nóg. Czujesz, że jesteś szybszy."
+xp 12
+end
+:nie
+"Wracaj, jak zardzewiejesz."

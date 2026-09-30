@@ -1,0 +1,447 @@
+# Mapy świata gry (wygenerowane pomocniczo, można edytować ręcznie)
+
+# ------------------------------------------------------------ Dom
+@map mieszkanie
+name "Mieszkanie Kroniewskich"
+music tytul
+bg bar
+tiles
+iiiiiiiiiiiiii
+iSSf__uuiB__ti
+i_______i____i
+i_htth______pi
+i_______i____i
+irrr____iiiiii
+irrr_________i
+i___________pi
+iiiiiiDiiiiiii
+endtiles
+npc mama 2 6 mama right s_mama
+obj notatka 11 2 note down s_notatka ifnot NOTATKA
+obj radio 7 1 radio down s_radio
+event 6 7 s_nie_wychodz ifnot NOTATKA
+event 6 7 s_wyjscie once if NOTATKA
+warp 6 8 polonia 3 4 down if ZBIRY_POD_DOMEM
+
+# ------------------------------------------------------------ Polska dzielnica
+@map polonia
+name "Milwaukee Avenue"
+music polonia
+night 110
+rain 1
+tiles
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+WwwDwwWwGGDGGwWWaaDaaWWGDGwW#g##D##g#WwwwDwwwW
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,L,,,,,,,,,,,L,,,,,,,L,,,,,,L,,,,,,,L,,,,,,,L,
+....................cC........................
+----------------------------------------------
+......cC.........................cC...........
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,L,,,,,,,,,,,,,L,,,,,,,,,,,,,L,,,,,,,,,,,,L,,
+RRRRRRRRRR:::RRRRRRRRRRRRR:::RRRRRRRRR:::RRRRR
+RRRRRRRRRR:::RRRRRRRRRRRRR:::RRRRRRRRR:::RRRRR
+RRRRRRRRRR:::RRRRRRRRRRRRR:::RRRRRRRRR:::RRRRR
+#w##D##w##:::WwwwwwWwwwwwW:::WwwDwwwwW:::WwwwW
+,,,,,,,,L,,,,,,,,,,,,,,,L,,,,,,,,,,,,,,,,,,,L,
+::::::::::::::::::::::::::::::::::::::::::::::
+::::::::::::::::::::::::::::::::::::::::::::::
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+endtiles
+warp 3 3 mieszkanie 6 7 up
+warp 10 3 bar 7 10 up
+warp 18 3 piekarnia 4 6 up
+warp 24 3 lombard 5 6 up
+warp 32 3 kosciol 6 12 up
+warp 41 3 sala 7 10 up
+warp 4 14 posterunek 9 9 up
+warp 32 14 atelier 4 6 up
+warp 45 6 italia 1 7 right
+warp 45 7 italia 1 7 right
+warp 45 8 italia 1 7 right
+warp 0 16 zaulek 22 8 left
+warp 0 17 zaulek 22 8 left
+warp 45 16 doki 1 6 right
+warp 45 17 doki 1 6 right
+npc zbir_a 2 5 zbir2 up s_zbir_dom if ZBIRY_CZEKAJA
+npc zbir_b 4 5 zbir2 up s_zbir_dom if ZBIRY_CZEKAJA
+npc helena 6 4 helena down s_helena
+npc stefek 27 4 stefek down s_stefek
+npc posterunkowy 30 9 gliniarz down s_posterunkowy wander
+npc przechodzien 14 9 pan down s_przechodzien wander
+npc kobieta 38 4 pani down s_kobieta wander
+npc robotnik 20 15 robotnik down s_robotnik wander
+npc zbir_p1 17 4 zbir2 up s_zbir_piekarnia if PIEKARNIA_ZADANIE ifnot PIEKARNIA_ZALATWIONA
+npc zbir_p2 19 4 zbir2 up s_zbir_piekarnia if PIEKARNIA_ZADANIE ifnot PIEKARNIA_ZALATWIONA
+obj hydrant 26 9 hydrant down s_hydrant
+obj kosz 12 15 trash down s_kosz
+mob 20 16 zbir2 zbir if ZBIRY_POD_DOMEM
+mob 37 17 zbir2 zbir,zbir if ZBIRY_POD_DOMEM
+
+# ------------------------------------------------------------ Bar Zośki
+@map bar
+name "Pod Białym Orłem"
+music bar
+bg bar
+tiles
+iiiiiiiiiiiiiiii
+iSSSSSSSSiP___ui
+i________i_____i
+ibbbbbbb_i_tt__i
+i_________htth_i
+i_ht_ht__i_____i
+i_tt_tt__iiiiiii
+i______________i
+i_ht_ht_____p__i
+i_tt_tt________i
+i______________i
+iiiiiiiDiiiiiiii
+endtiles
+warp 7 11 polonia 10 4 down
+npc zoska 4 2 zoska down s_zoska ifnot BAR_SPALONY
+npc zoska_ranna 4 2 zoska down s_zoska_ranna if BAR_SPALONY
+npc olek 9 4 robotnik left s_olek ifnot WPUSZCZONY
+npc olek_bok 8 5 robotnik right s_olek_ok if WPUSZCZONY
+npc bronek 12 2 bronek down s_bronek
+npc karciarz 14 4 pan left s_karciarz
+npc pianista 11 1 robotnik up s_pianista
+npc stali_bywalec 2 7 robotnik down s_bywalec
+npc dama 8 9 pani left s_dama
+npc gosc 11 8 pan down s_gosc_bar wander
+
+# ------------------------------------------------------------ Piekarnia
+@map piekarnia
+name "Piekarnia Wiśniewskiego"
+music polonia
+bg bar
+tiles
+iiiiiiiiiiii
+iSSSkkSSSkpi
+i__________i
+ibbbbbbbb__i
+i__________i
+i_p______h_i
+i__________i
+iiiiDiiiiiii
+endtiles
+warp 4 7 polonia 18 4 down
+npc piekarz 4 2 piekarz down s_piekarz
+npc klientka 8 5 helena up s_klientka
+
+# ------------------------------------------------------------ Lombard
+@map lombard
+name "Lombard pana Feliksa"
+music bar
+bg bar
+tiles
+iiiiiiiiiiii
+iuuSuuSuu_pi
+i__________i
+ibbbbbbbb__i
+i__________i
+ik________ki
+i__________i
+iiiiiDiiiiii
+endtiles
+warp 5 7 polonia 24 4 down
+npc feliks 4 2 feliks down s_feliks
+obj sejf 9 1 safe down s_sejf_feliks
+
+# ------------------------------------------------------------ Kościół
+@map kosciol
+name "Kościół św. Stanisława"
+music kosciol
+bg bar
+tiles
+##############
+#g##g#AA#g##g#
+#_____rr_____#
+#_____rr_____#
+#_eeeerreeee_#
+#_____rr_____#
+#_eeeerreeee_#
+#_____rr_____#
+#_eeeerreeee_#
+#_____rr_____#
+#_eeeerreeee_#
+#_____rr_____#
+#_____rr_____#
+######D#######
+endtiles
+warp 6 13 polonia 32 4 down
+npc ksiadz 7 2 ksiadz down s_ksiadz
+npc modlaca 1 7 helena up s_modlaca
+npc mama_kosciol 12 9 mama up s_mama_kosciol if JANEK_ZNIKNAL_2
+
+# ------------------------------------------------------------ Sala bokserska
+@map sala
+name "Sala bokserska Mickeya"
+music bar
+bg ring
+tiles
+WWWWWWWWWWWWWWWW
+W_k__k____kk___W
+W______________W
+W__YyyyyyyyyY__W
+W__yyyyyyyyyy__W
+W__yyyyyyyyyy__W
+W__yyyyyyyyyy__W
+W__YyyyyyyyyY__W
+W______________W
+W_h_h________p_W
+W______________W
+WWWWWWWDWWWWWWWW
+endtiles
+warp 7 11 polonia 41 4 down
+npc mickey 5 8 mickey down s_mickey
+npc bokser 8 5 bokser down s_bokser ifnot BOKS_DONE
+npc sparing 13 2 robotnik left s_sparing
+
+# ------------------------------------------------------------ Zaułek
+@map zaulek
+name "Zaułek Szczurów"
+music doki
+night 160
+rain 1
+tiles
+RRRRRRRRRRRRRRRRRRRRRRRR
+WWwWWWWwWWWWWWWWwWWWWwWW
+:k:::::X::::::k::::::X::
+::::::::::::::::::::::::
+:::XX::::::::::::::k::::
+RRRRRR::::RRRRRRRR::::::
+WwwwWW::::WWwwwwWW::::::
+::::::::::::::::::::::::
+::X:::::::::::X:::::::::
+::::::::::::::::::::::::
+RRRRRRRRRRRRRRRRRRRR::::
+WWWwWWWWWwWWWWWwWWWW::::
+RRRRRRRRRRRRRRRRRRRRRRRR
+endtiles
+warp 23 7 polonia 1 16 right
+warp 23 8 polonia 1 16 right
+warp 23 9 polonia 1 16 right
+npc menel 10 8 menel down s_menel
+obj skrzynia_aparat 1 3 crate down s_skrzynia_aparat ifnot APARAT_ZNALEZIONY
+obj skrzynia_z1 12 2 crate down s_skrzynia_z1 ifnot SKRZYNIA_Z1
+obj skrzynia_z2 21 11 crate up s_skrzynia_z2 ifnot SKRZYNIA_Z2
+mob 5 3 zbir2 zbir
+mob 15 7 zbir2 zbir,zbir
+mob 19 3 dokowiec zbir,dokowiec
+
+# ------------------------------------------------------------ Fotograf
+@map atelier
+name "Atelier Foto-Rubin"
+music bar
+bg bar
+tiles
+iiiiiiiiii
+iuud__dSSi
+i________i
+i__rrrr__i
+i__rrrr__i
+i________i
+ip______pi
+iiiiDiiiii
+endtiles
+warp 4 7 polonia 32 15 down
+npc rubin 4 2 pan down s_rubin
+
+# ------------------------------------------------------------ Mała Italia
+@map italia
+name "Mała Italia"
+music italia
+night 90
+tiles
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+WwwwwwWWaaaGDGaaaWWwGGGwWWwwwwwwwwwW
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,L,,,,,,,,,,,,,,,L,,,,,,,,,,,L,,,,,
+..............cC....................
+------------------------------------
+...........................cC.......
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,L,,,,,,,,,,,,,L,,,,,,,,,,,L,
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+endtiles
+warp 0 6 polonia 44 7 left
+warp 0 7 polonia 44 7 left
+warp 0 8 polonia 44 7 left
+warp 12 3 trattoria 9 10 up
+npc goryl1 11 4 mafioso down s_goryl
+npc goryl2 13 4 mafioso down s_goryl
+npc nonna 5 9 helena down s_nonna
+npc lucky 26 9 lucky down s_lucky
+npc gosc_it 30 4 pan down s_przechodzien_it wander
+npc kelner_ulica 17 4 kelner down s_kelner_ulica
+
+# ------------------------------------------------------------ Restauracja Moretti
+@map trattoria
+name "Trattoria Moretti"
+music italia
+bg office
+tiles
+iiiiiiiiiiiiiiiiiiii
+iSSSS_P___iuuuufuuui
+i_________i________i
+ibbbb_____i__ddd___i
+i__________________i
+i_tt_tt_tt_iiiiiiiii
+i__________________i
+i_tt_tt_tt____rrrr_i
+i_____________rrrr_i
+i_tt_tt_tt_______p_i
+i__________________i
+iiiiiiiiiDiiiiiiiiii
+endtiles
+warp 9 11 italia 12 4 down
+npc don 14 2 don down s_don
+npc vito 11 7 vito down s_vito ifnot VITO_UCIEKL
+npc goryl_biuro 10 4 mafioso left s_goryl_biuro ifnot WSTEP_DON
+npc goryl_ok 9 3 mafioso down s_goryl_ok if WSTEP_DON
+npc lucia 15 8 lucia down s_lucia
+npc kelner 3 6 kelner right s_kelner
+npc gosc1 2 8 pan right s_gosc_tr1
+npc gosc2 7 10 pani up s_gosc_tr2
+
+# ------------------------------------------------------------ Doki
+@map doki
+name "Doki nad rzeką Chicago"
+music doki
+bg docks
+night 150
+rain 1
+tiles
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+WwWWWWWwWW####D#####WWwWWWWwWW#####D####
+oooooooooooooooooooooooooooooooooooooooo
+ooXXoooooooooooooooooooooXXXooooooookooo
+ooXXooooookooooooooooooooooooooooooooooo
+oooooooooooooooooooooooooooooooooooooooo
+ooooooooXXooooooooooooookkoooooooooooooo
+ooooooooXXoooooooooooooooooooooooooooooo
+ooooooooooooooooooooooooooooooXXXooooooo
+oooooooooooooooooooooooooooooooooooooooo
+========================================
+~~~~~~~~~~~~~~~~~===~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~===~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~===~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+endtiles
+warp 0 5 polonia 44 16 left
+warp 0 6 polonia 44 16 left
+warp 0 7 polonia 44 16 left
+warp 14 3 magazyn7 11 10 up
+warp 35 3 browar 15 17 up if AKT3
+npc straz1 14 4 zbir2 down s_straz_mag ifnot STRAZ_MAG
+npc straz2 13 4 zbir2 down s_straz_mag ifnot STRAZ_MAG
+npc brama 35 4 zbir down s_brama ifnot AKT3
+npc mateusz 30 11 robotnik left s_mateusz
+npc doker_wolny 18 14 dokowiec down s_doker_molo
+obj skrzynia_d1 38 5 crate down s_skrzynia_d1 ifnot SKRZYNIA_D1
+mob 6 7 dokowiec dokowiec,zbir
+mob 22 7 zbir2 zbir,zbir
+mob 33 8 zbir cyngiel,zbir
+mob 11 11 dokowiec dokowiec,dokowiec
+
+# ------------------------------------------------------------ Magazyn 7
+@map magazyn7
+name "Magazyn nr 7"
+music boss
+bg warehouse
+night 60
+tiles
+########################
+#XXXoooookkoooooo#uu_d_#
+#Xooooooooooooooo#_____#
+#oooXXooooooooooo#__d__#
+#ooooooooooooooooo_____#
+#oooooooooooooooo#######
+#ooXXXooooooookkooooooo#
+#oooooooooooooooooooooo#
+#ooooooooXXooooooooXXoo#
+#oooooooooooooooooooooo#
+#kkooooooooooooooooookk#
+###########D############
+endtiles
+warp 11 11 doki 14 4 down
+npc paddy 17 4 paddy left s_paddy ifnot PADDY_POKONANY
+obj ksiega 19 2 ledger down s_ksiega ifnot KSIEGA_WZIETA
+obj karta 5 9 note down s_karta ifnot KARTA_WZIETA
+obj skrzynia_m7 21 9 crate down s_skrzynia_m7 ifnot SKRZYNIA_M7
+mob 6 7 zbir cyngiel
+
+# ------------------------------------------------------------ Posterunek
+@map posterunek
+name "Posterunek 14. dzielnicy"
+music doki
+bg police
+tiles
+####################
+#u_d_u#u_dd_u#_B__B#
+#_____#______#_____#
+##_####__#####I_III#
+#oooooooooooooooooo#
+#oooooooooooooooooo#
+#bbbbbboooooooooooo#
+#oooooooooooooooooo#
+#eeeooooooooooooeee#
+#oooooooooooooooooo#
+#########D##########
+endtiles
+warp 9 10 polonia 4 15 down
+npc sierzant 3 5 gliniarz down s_sierzant
+npc walsh 4 1 walsh down s_walsh
+npc doyle 11 1 doyle down s_doyle ifnot AKT3
+npc straz_cela 15 3 gliniarz down s_straz_cela
+npc pijak 16 2 robotnik down s_pijak
+npc petent 5 8 helena up s_petent
+npc glina2 12 8 gliniarz down s_glina2 wander
+
+# ------------------------------------------------------------ Browar (finał)
+@map browar
+name "Browar O'Malleya"
+music boss
+bg warehouse
+night 80
+tiles
+################################
+#VVooVVoo#rrrrrrrrrr#ooVVooVVoo#
+#oooooooo#rrdddrrrrr#oooooooooo#
+#ooXXoooo#rrrrrrrrrr#ooooXXoooo#
+#oooooooo#rrrrrrrrrr#oooooooooo#
+#oooooooo#####rr#####oooooooooo#
+#oooooooooooooooooooooooooooooo#
+#ookkoooooooXXooooooXXooooookko#
+#oooooooooooooooooooooooooooooo#
+#oVVooooooooooooooooooooooooVVo#
+#oVVooooooooooooooooooooooooVVo#
+#oooooooooooooooooooooooooooooo#
+#############oo#################
+#oooooooooooooooooooooooooooooo#
+#oXXoooooooookkoooooooooooooXXo#
+#oooooooooooooooooooooooooooooo#
+#okkooooooooooooooooooooooookko#
+#oooooooooooooooooooooooooooooo#
+###############D################
+endtiles
+warp 15 18 doki 35 4 down
+event 13 12 s_doyle_browar ifnot DOYLE_SPOTKANY
+event 14 12 s_doyle_browar ifnot DOYLE_SPOTKANY
+event 14 5 s_sean ifnot SEAN_SPOTKANY
+event 15 5 s_sean ifnot SEAN_SPOTKANY
+npc sean_npc 15 2 sean down s_sean_gada ifnot SEAN_POKONANY
+npc janek_zwiazany 12 3 janek down s_janek_browar if AKT3
+obj thompson_skrz 28 15 crate down s_skrzynia_thompson ifnot THOMPSON_ZNALEZIONY
+obj apteczka_b 2 13 crate down s_skrzynia_b1 ifnot SKRZYNIA_B1
+mob 6 15 zbir2 zbir,zbir,dokowiec ifnot OMALLEY_KSIEGA
+mob 24 15 zbir cyngiel,cyngiel ifnot OMALLEY_KSIEGA
+mob 5 8 dokowiec dokowiec,cyngiel ifnot OMALLEY_KSIEGA
+mob 26 8 zbir cyngiel,zbir,zbir ifnot OMALLEY_KSIEGA

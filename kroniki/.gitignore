@@ -1,5 +1,3 @@
-build/kronix_test
-build/story_data.c
-build/*.o
+build/
 *.bmp
 kronix_prohibicja_zapis.txt

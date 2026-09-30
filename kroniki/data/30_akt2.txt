@@ -1,0 +1,611 @@
+# =====================================================================
+#  AKT II — MAŁA ITALIA, DOKI, POSTERUNEK
+#  Rodzina Moretti, Wielki Paddy i czarna księga O'Malleya.
+# =====================================================================
+
+# ------------------------------------------------------------ Mała Italia
+@script s_goryl
+as straznik
+ifhas list bronek
+if VITO_1 znany
+"Trattoria jest otwarta dla przyjaciół rodziny. Ty nie wyglądasz na przyjaciela."
+end
+:bronek
+"List od Bronka? Wchodź. {y}Vito{-} siedzi przy stoliku pod sceną."
+end
+:znany
+"Polak. Vito mówi, że jesteś w porządku. Na razie."
+
+@script s_nonna
+as nonna
+"Madonna! Jaki chudy chłopak! Siadaj, mangia, mangia!"
+as -
+"Nonna Rosa wciska ci talerz makaronu z sosem pomidorowym. Nie da się odmówić."
+heal
+as nonna
+"Mój Luigi też był taki uparty. Teraz leży na cmentarzu Mount Carmel. Uważaj na siebie, ragazzo."
+
+@script s_lucky
+as lucky
+"Lucky Castellano. Szczęście to moje drugie imię. Pierwsze to Lucky."
+"Rzucimy kośćmi? Dwadzieścia dolców, wygrywasz — podwajam."
+menu
+ opt "Rzucamy. [20$]" rzut ifgold 20
+ opt "Nie gram z kimś, kto ma na imię Szczęściarz." nie
+endmenu
+:rzut
+cash -20
+as -
+"Kości toczą się po chodniku..."
+chance 45 wygrana
+as lucky
+"Siedem! Dom wygrywa. Następnym razem, amico."
+end
+:wygrana
+as lucky
+"Dwie szóstki?! Mamma mia. Masz, zasłużyłeś."
+cash 40
+end
+:nie
+"Mądry człowiek. Dlatego jesteś biedny, ale żywy."
+
+@script s_przechodzien_it
+as przechodzien
+"W Małej Italii jest spokojnie. Don Moretti pilnuje porządku. Irlandczycy tu nie przychodzą."
+"A kto przychodzi... ten wychodzi w worku."
+
+@script s_kelner_ulica
+as kelner
+"Papieros na zapleczu. Nie mów szefowi."
+"Wiesz, że Vito Russo ostatnio jeździ nowym Cadillakiem? Ciekawe, skąd ma na to kasę."
+
+# ------------------------------------------------------------ Trattoria Moretti
+@script s_vito
+as vito
+if VITO_SOJUSZ sojusz_po
+if VITO_POKONANY po
+ifhas ksiega ksiega
+if VITO_1 zlecenie
+ifhas list pierwsza
+"Nie znam cię, amico. Zjedz coś, zapłać i idź."
+end
+:pierwsza
+set VITO_1
+add MORETTI 1
+"Bronek przysyła? Siadaj. Vito Russo. Ty musisz być bratem Janka."
+as tomek
+"Gdzie on jest?"
+as vito
+"Prosto z mostu. Lubię to."
+"Twój brat przyszedł do mnie tydzień temu. Miał {y}zdjęcia{-}, które mogły posłać do krzesła elektrycznego pewnego kapitana policji. Sprytny chłopak."
+"Obiecałem mu ochronę. A potem zniknął. Założę się, że ma go {g}O'Malley{-}."
+"Don Moretti chce czegoś od O'Malleya. {y}Czarnej księgi rachunkowej{-}. Wszystkie łapówki, wszyscy przekupieni gliniarze, sędziowie, radni."
+"Trzymają ją w {y}Magazynie nr 7{-} w dokach. Pilnuje jej {y}Wielki Paddy{-}."
+"Przynieś księgę, a rodzina pomoże ci odzyskać brata. Tak się robi interesy."
+quest glowne "Zdobądź księgę rachunkową O'Malleya z Magazynu nr 7 w dokach (tylna ulica, na wschód)."
+ifnot BOKS_DONE boks
+end
+:boks
+"A, i jeszcze jedno. Słyszałem, że Mickey szuka boksera na sobotę. Jeśli wejdziesz na ring..."
+"...połóż się w trzeciej rundzie. Postawiłem sporo na Irlandczyka. Zarobisz 250 dolców. Łatwe pieniądze."
+set BOKS_USTAWKA
+quest boks "Vito chce, żebyś przegrał walkę z Irlandzkim Bykiem w sali Mickeya. Uczciwa wygrana to 150$."
+end
+:zlecenie
+"Magazyn siódmy, amico. Księga. Czas ucieka — twojemu bratu najbardziej."
+end
+:ksiega
+if DON_KSIEGA po
+if WALSH_KSIEGA glina
+"Masz ją! Wiedziałem, że się nie zawiedziesz. Daj mi księgę, zaniosę ją Donowi."
+menu
+ opt "Paddy mówił, że jesteś na liście płac O'Malleya." zdrajca if PADDY_POKONANY
+ opt "Oddam ją tylko Donowi, osobiście." don
+ opt "Jeszcze się zastanowię." nie
+endmenu
+:zdrajca
+"..."
+"Paddy za dużo gada. Szkoda, że nie zdążył się zamknąć na zawsze."
+"Dobrze. Karty na stół. Tak, brałem od O'Malleya. Bo Don jest stary, ślepy i sentymentalny. Rodzina gnije."
+"Posłuchaj, Polak. Oddaj mi księgę. Spalę strony z moim nazwiskiem, a resztą zniszczę O'Malleya i połowę ratusza."
+"Kiedy zostanę Donem — a zostanę — ty dostaniesz {y}doki{-}. Całe. I twój brat wróci do domu przed świtem. Moi ludzie otworzą bramę browaru."
+menu
+ opt "Wchodzę w to, Vito. Księga jest twoja." sojusz
+ opt "Nigdy. Jesteś zdrajcą." bij
+endmenu
+:sojusz
+take ksiega
+set VITO_SOJUSZ
+set AKT3
+add HONOR -2
+add SZACUNEK 2
+add MORETTI -2
+xp 60
+"Wiedziałem, że jesteś mądrzejszy, niż wyglądasz. Witaj w nowej rodzinie, capo."
+"Masz. Rewolwer i płaszcz. Mój prezent."
+give rewolwer
+equip rewolwer
+give plaszcz
+equip plaszcz
+"Brama browaru będzie otwarta. Idź po brata. A Seana O'Malleya... przyprowadź mi żywego."
+quest glowne "Zawarłeś sojusz z Vitem Russo. Brama browaru (wschodnie doki) jest otwarta. Uratuj Janka i przyprowadź O'Malleya Vitowi."
+end
+:bij
+"Lubiłem cię, Kroniewski. Naprawdę. Ale interes to interes."
+battle vito bg=office
+set VITO_POKONANY
+set VITO_UCIEKL
+add MORETTI 1
+add SZACUNEK 1
+as vito
+"Ty... polski... psie..."
+as -
+"Ranny Vito wybiega tylnym wyjściem. Goście przy stolikach udają, że niczego nie widzieli."
+as tomek
+"Don powinien o tym usłyszeć."
+end
+:don
+set VITO_PODEJRZANY
+"Osobiście. Oczywiście."
+"Rób, jak uważasz, Polak. Tylko nie mów potem, że nie ostrzegałem."
+end
+:nie
+"Nie myśl za długo."
+end
+:glina
+"Z glinami się zadajesz? Rozczarowałeś mnie, Kroniewski. Bardzo."
+end
+:po
+"..."
+end
+:sojusz_po
+"Browar, capo. Nie każ mi czekać. Nie lubię czekać."
+
+@script s_goryl_biuro
+as straznik
+if WSTEP_DON wejdz
+ifhas ksiega ksiega
+ifge SZACUNEK 5 szacunek
+"Don nikogo dziś nie przyjmuje."
+end
+:ksiega
+"Masz coś dla Dona? Pokaż."
+as -
+"Pokazujesz czarną, oprawną w skórę księgę. Goryl blednie."
+as straznik
+"Księga O'Malleya... Czekaj."
+set WSTEP_DON
+goto wejdz
+:szacunek
+"Kroniewski? Don słyszał o tobie. Ponoć jesteś kimś w polskiej dzielnicy. Wejdź."
+set WSTEP_DON
+:wejdz
+"Don czeka. Kapelusz z głowy."
+
+@script s_goryl_ok
+as straznik
+"Don czeka. Nie każ mu czekać."
+
+@script s_don
+as don
+if DON_KSIEGA po
+ifhas ksiega ksiega
+"Siadaj, Kroniewski. Mówią o tobie na ulicach. To dobrze i źle zarazem."
+"W tym mieście przyjaźń to waluta. A zdrada... zdrada to podatek, który płaci się krwią."
+if VITO_1 rada
+"Jeśli szukasz pomocy, porozmawiaj z Vitem. On załatwia sprawy rodziny."
+end
+:rada
+"Vito powiedział mi, że szukasz brata. Przynieś księgę, a porozmawiamy jak ludzie honoru."
+end
+:ksiega
+"Masz ją. Księgę O'Malleya. Połowa Chicago dałaby się zabić, żeby jej nie było."
+menu
+ opt "Oddaj księgę Donowi Moretti." oddaj
+ opt "Jeszcze nie teraz." nie
+endmenu
+:nie
+"Decyzja należy do ciebie. Ale nie noś jej za długo. Takie księgi ważą więcej, niż się wydaje."
+end
+:oddaj
+take ksiega
+set DON_KSIEGA
+as -
+"Don zakłada okulary. Kartkuje księgę powoli, strona po stronie. Nagle nieruchomieje."
+as don
+"Kapitan Doyle... sędzia Hartmann... radny Kelly..."
+"...Vito Russo. Pięćset dolarów co tydzień od O'Malleya."
+if VITO_UCIEKL uciekl
+"Vito! Podejdź tu, synu."
+as vito
+"Don Salvatore? To... to fałszerstwo! Ten Polak chce nas skłócić, O'Malley to wymyślił!"
+as don
+"Spójrz mi w oczy, Vito. Znam cię od dziecka. Nauczyłem cię wiązać krawat."
+as vito
+"Nie będę się przed nikim tłumaczył. Ani przed tobą, stary człowieku!"
+battle vito bg=office
+set VITO_POKONANY
+set VITO_UCIEKL
+as don
+"Zabierzcie go. Niech Lucia tego nie widzi."
+goto nagroda
+:uciekl
+"Vito już uciekł, prawda? Jak szczur z tonącego statku. Znajdziemy go. Rodzina zawsze znajduje."
+:nagroda
+as don
+"Oddałeś mi coś więcej niż księgę, Kroniewski. Oddałeś mi prawdę. Nie zapominam o takich rzeczach."
+"Twój brat jest w {y}browarze O'Malleya{-} w dokach. Dziś w nocy Doyle i O'Malley chcą się go pozbyć."
+"Weź to. {y}Thompson{-}. W tym mieście czasem trzeba mówić głośniej."
+give thompson
+equip thompson
+learn seria
+give zegarek
+equip zegarek
+add MORETTI 3
+xp 80
+as don
+"Moi ludzie otworzą bramę browaru. Idź po brata. A potem... porozmawiamy o twojej przyszłości."
+set AKT3
+quest glowne "Browar O'Malleya jest we wschodniej części doków. Ludzie Dona otworzyli bramę. Uratuj Janka!"
+done dowody
+end
+:po
+"Idź po brata, Tomaszu. Rodzina czeka."
+
+@script s_lucia
+as lucia
+if VITO_POKONANY po
+"Szukasz kogoś? Wszyscy tu kogoś szukają. Albo przed kimś uciekają."
+"Uważaj na {y}Vita{-}. Patrzy na mojego ojca jak kot na kanarka. Ojciec tego nie widzi. Nie chce widzieć."
+end
+:po
+"Vito... Znałam go całe życie. Dziękuję, że otworzyłeś ojcu oczy, choć to boli."
+"Wróć kiedyś, kiedy to wszystko się skończy. Zaśpiewam coś tylko dla ciebie."
+
+@script s_kelner
+as kelner
+"Buona sera! Kawa? Coś mocniejszego? Oczywiście tylko „herbata”."
+shop kawa whiskey cygaro apteczka
+
+@script s_gosc_tr1
+as przechodzien
+"Najlepsze spaghetti po tej stronie Atlantyku. I najlepsza whiskey po tej stronie prawa."
+
+@script s_gosc_tr2
+as kobieta
+"Lucia śpiewa jak anioł. Szkoda, że jej ojciec to... no wiesz."
+
+# ------------------------------------------------------------ doki
+@script s_straz_mag
+as zbir
+"Magazyn siedem. Zjeżdżaj, zanim popływasz z rybami."
+menu
+ opt "Wchodzę. Zejdźcie mi z drogi." walka
+ opt "Może to wam poprawi humor? [60$]" lapowka ifgold 60
+ opt "Wiecie, kim jestem? [Szacunek 4]" strach ifge SZACUNEK 4
+ opt "Już mnie nie ma." nie
+endmenu
+:walka
+"Polaczek chce się bić! Chłopaki!"
+battle zbir,zbir,dokowiec
+goto przejscie
+:lapowka
+cash -60
+"Nic nie widzieliśmy. Paddy jest w środku. Powodzenia, będzie ci potrzebne."
+goto przejscie
+:strach
+add SZACUNEK 1
+"To ten Polak... ten od piekarni i ringu. Dobra, dobra. Idziemy na papierosa."
+:przejscie
+set STRAZ_MAG
+end
+:nie
+"Grzeczny."
+
+@script s_brama
+as cyngiel
+if OMALLEY_KSIEGA wpuszczony
+ifhas ksiega ksiega
+"Browar zamknięty. Prohibicja, nie słyszałeś? Spadaj."
+end
+:ksiega
+"Czego?"
+menu
+ opt "Mam księgę O'Malleya. Chcę się dogadać. Księga za brata." handel
+ opt "Nic." nie
+endmenu
+:handel
+set OMALLEY_KSIEGA
+set AKT3
+add HONOR -1
+"Księga? Pan O'Malley będzie zachwycony. Wchodź, Polak. Powoli."
+quest glowne "Umówiłeś się z O'Malleyem: księga za Janka. Wejdź do browaru."
+end
+:nie
+"Spadaj."
+end
+:wpuszczony
+"Wchodź. Pan O'Malley czeka."
+
+@script s_zoska_ranna
+as zoska
+"Spalili mi wszystko, Tomek. Dwadzieścia lat pracy. Zdjęcie męża. Wszystko."
+"Stefek mówi, że do ciebie biegł. Że wiedziałeś."
+menu
+ opt "Przepraszam, Zośka. Musiałem ratować brata." przepraszam
+ opt "(Milcz)" milcz
+endmenu
+:przepraszam
+"Wiem. Rozumiem. Tylko... nie przychodź tu przez jakiś czas."
+end
+:milcz
+"Idź już."
+
+@script s_mateusz
+as mateusz
+if MATEUSZ_ZEZNA po
+ifhas karta karta
+set MATEUSZ_1
+"Kolejny Polak w dokach? Uciekaj stąd, chłopcze, dopóki masz obie nogi."
+"Kowalik? Staszek był moim przyjacielem. Walczył o nas wszystkich. Tydzień temu poszedł na rozmowę z O'Malleyem i nie wrócił."
+"Ja widziałem tamtej nocy... mundur. Galony. Ale kto uwierzy staremu dokerowi?"
+"W {y}Magazynie nr 7{-} trzymają wszystko, co O'Malley chce ukryć. Może i to, co zostało po Staszku."
+quest kowalik "Stary Mateusz szuka prawdy o Kowaliku. W Magazynie nr 7 może coś być."
+end
+:karta
+take karta
+set MATEUSZ_ZEZNA
+add HONOR 1
+add POLICJA 1
+xp 40
+"To... karta związkowa Staszka. Krew... Boże."
+"Wystarczy. Mam dość strachu. Pójdę do tego detektywa, Walsha. Zeznam, co widziałem. Niech mnie potem wyłowią z rzeki, trudno."
+done kowalik
+end
+:po
+"Zeznam, chłopcze. Słowo dokera."
+
+@script s_doker_molo
+as dokowiec
+"Łódki? Nie, żadna łódka. To molo służy do... łowienia ryb. W nocy. Bardzo dużych ryb z kanadyjskimi etykietami."
+
+@script s_skrzynia_d1
+as -
+"Skrzynia z kanadyjską whiskey i apteczką. Ktoś tu zrobił sobie zapasy."
+set SKRZYNIA_D1
+give whiskey
+give apteczka
+cash 20
+
+# ------------------------------------------------------------ Magazyn nr 7
+@script s_paddy
+as paddy
+"No proszę. Kolejny mały Kroniewski. Pierwszy był chudszy."
+as tomek
+"Gdzie jest mój brat, Paddy?"
+as paddy
+"Tam, gdzie wszyscy, którzy za dużo widzą. Albo zaraz będzie."
+"Doyle go przywiózł, a my go przechowamy do nocy. Pan O'Malley lubi robić porządki osobiście."
+"Ale ty nie musisz się tym martwić. Ty zostaniesz tutaj. Na zawsze."
+battle paddy bg=warehouse
+set PADDY_POKONANY
+add SZACUNEK 2
+as paddy
+"Uff... Dobra... dobra, wygrałeś..."
+menu
+ opt "Gadaj, gdzie jest Janek." gdzie
+ opt "Kto sprzedał mojego brata?" kto
+endmenu
+:kto
+"Myślisz, że Irlandczycy znaleźli go sami? Ha!"
+"{y}Vito Russo{-}. Człowiek Moretti. Od roku bierze od nas pieniądze. To on powiedział O'Malleyowi o zdjęciach twojego brata."
+:gdzie
+"Chłopak jest w {y}browarze{-}, we wschodniej części doków. Dziś w nocy... sam wiesz."
+"Brama jest pilnowana. Bez przepustki nie wejdziesz. Albo bez armii."
+set VITO_ZDRAJCA
+xp 60
+quest glowne "Paddy pokonany. Janek jest w browarze O'Malleya. Zabierz księgę z biura magazynu (za Paddym)."
+
+@script s_ksiega
+as -
+"Na biurku, pod stosem faktur za „wodę sodową”, leży czarna księga oprawiona w skórę."
+"Nazwiska, kwoty, daty. {y}Kapitan Doyle{-} — 1000$ miesięcznie. Sędzia Hartmann. Radny Kelly. I... {y}Vito Russo{-}."
+give ksiega
+set KSIEGA_WZIETA
+as tomek
+"Ta księga może pogrzebać pół miasta. Albo mnie."
+quest glowne "Masz księgę O'Malleya. Komu ją oddasz? Donowi Moretti (Trattoria), detektywowi Walshowi (posterunek) czy... O'Malleyowi w zamian za brata (brama browaru)?"
+as -
+"Nagle do magazynu wpada zdyszany, przemoczony Stefek."
+as stefek
+"Tomek! TOMEK! Ludzie O'Malleya są w barze u Zośki! Mają kanistry z benzyną! Mówią, że to kara za ciebie!"
+as tomek
+"Cholera... Janek może nie mieć dużo czasu. Ale Zośka..."
+menu
+ opt "Biegnę do Zośki. Janek musi poczekać." ratuj
+ opt "Nie mogę. Najpierw brat. Zośka sobie poradzi." brat
+endmenu
+:ratuj
+fade out
+warp bar 7 9 up
+fade in
+as zbir
+"Patrzcie, kto przyszedł! Polaczek zdążył na ognisko!"
+as zoska
+"Tomek! Uważaj, ten z tyłu ma pistolet!"
+battle zbir,cyngiel,zbir bg=bar
+set ZOSKA_URATOWANA
+add HONOR 2
+add SZACUNEK 1
+xp 50
+as zoska
+"Tomek... Gdyby nie ty, zostałby tu tylko popiół."
+"Słuchaj. Kiedy przyszli, pod barem stał czarny Cadillac. {y}Cadillac Vita Russo{-}. Ten wąż wie o wszystkim, co robi O'Malley."
+"Weź to. Butelka od mojego świętej pamięci męża. I apteczka. I wracaj cały, słyszysz?"
+give whiskey 2
+give apteczka 2
+quest zoska "Obroniłeś bar Zośki przed podpaleniem."
+done zoska
+end
+:brat
+set BAR_SPALONY
+add HONOR -1
+as -
+"Odwracasz się od Stefka. Za plecami słyszysz, jak chłopak płacze."
+"Kiedy godzinę później przechodzisz Avenue, nad barem „Pod Białym Orłem” unosi się czarny dym."
+toast "Bar Zośki spłonął"
+
+@script s_karta
+as -
+"Na podłodze, przy plamie zaschniętej krwi, leży legitymacja związkowa. {y}Stanisław Kowalik, Związek Dokerów, Lokal 17.{-}"
+give karta
+set KARTA_WZIETA
+quest kowalik "Znalazłeś kartę związkową Kowalika w magazynie. Pokaż ją staremu Mateuszowi w dokach."
+
+@script s_skrzynia_m7
+as -
+"Skrzynka z zapasami Paddy'ego: bandaże, apteczka i zwitek banknotów."
+set SKRZYNIA_M7
+give apteczka
+give bandaz 2
+cash 60
+
+# ------------------------------------------------------------ posterunek
+@script s_sierzant
+as sierzant
+"Posterunek czternastej dzielnicy. Zgłoszenie? Skarga? Donos?"
+menu
+ opt "Szukam brata, Janka Kroniewskiego." janek
+ opt "Nic, dziękuję." pa
+endmenu
+:janek
+"Kroniewski... Kroniewski... Nie mamy tu nikogo takiego. Ani w celach, ani w papierach."
+if STEFEK_INFO swiadek
+end
+:swiadek
+as tomek
+"Świadek widział, jak wasi ludzie wsadzali go do auta. Tutaj, wczoraj w nocy."
+as sierzant
+"Świadek, powiadasz? Ciekawe. Świadkowie w tym mieście mają krótkie życie."
+"Idź do domu, synu. Dobra rada."
+end
+:pa
+"No to do widzenia."
+
+@script s_walsh
+as walsh
+if AKT3 akt3
+ifhas ksiega ksiega
+ifhas zdjecia zdjecia
+if MATEUSZ_ZEZNA mateusz
+if WALSH_1 znany
+set WALSH_1
+add POLICJA 1
+"Frank Walsh, detektyw. Nie patrz tak, nie wszyscy tu są na liście płac O'Malleya."
+"Kroniewski, tak? Brat tego chłopaka... Słuchaj uważnie, bo powiem to tylko raz, i to cicho."
+"Twój brat był wczoraj tutaj. {r}Doyle{-} go zabrał. Nie ma go w żadnych papierach. To znaczy, że ma kłopoty."
+"Nic nie mogę zrobić bez dowodów. Doyle ma przyjaciół w ratuszu. Przynieś mi coś, czego nie da się zamieść pod dywan."
+quest janek "Detektyw Walsh jest uczciwy, ale potrzebuje dowodów przeciwko Doyle'owi."
+end
+:znany
+"Masz coś dla mnie, Kroniewski? Dowody. Tylko dowody się liczą."
+end
+:mateusz
+if MATEUSZ_WALSH znany
+set MATEUSZ_WALSH
+add POLICJA 1
+"Był u mnie stary doker, Mateusz. Zeznał, że widział kapitana w dokach tej nocy, gdy zniknął Kowalik."
+"To już coś. Ale zeznanie jednego dokera przeciw kapitanowi... Potrzeba więcej."
+end
+:zdjecia
+if ZDJECIA_WALSH znany
+menu
+ opt "Pokaż Walshowi zdjęcia z doków." pokaz
+ opt "Jeszcze nie." pa
+endmenu
+:pokaz
+take zdjecia
+set ZDJECIA_WALSH
+add POLICJA 2
+xp 40
+as -
+"Walsh długo patrzy na zdjęcia. Jego szczęka pracuje, jakby coś żuł."
+as walsh
+"Doyle. Nad ciałem Kowalika. Mam cię, draniu."
+"To wystarczy na nakaz aresztowania. Ale Doyle ma plecy — sędziów, radnych. Potrzebuję {y}księgi O'Malleya{-}. Z nią rozwalę całą tę sieć."
+quest dowody "Walsh ma zdjęcia. Z księgą O'Malleya mógłby rozbić całą sieć łapówek."
+end
+:ksiega
+if WALSH_KSIEGA akt3
+"Czy to... to jest to, o czym myślę?"
+menu
+ opt "Oddaj księgę detektywowi Walshowi." oddaj
+ opt "Jeszcze się zastanowię." pa
+endmenu
+:oddaj
+take ksiega
+set WALSH_KSIEGA
+set AKT3
+add POLICJA 3
+add HONOR 1
+xp 80
+as walsh
+"Kapitanowie, sędziowie, radni... Wszyscy tu są. Kroniewski, właśnie zmieniłeś historię tego miasta."
+"Dziś w nocy robimy nalot na browar O'Malleya. Ale zanim zbiorę uczciwych ludzi, minie godzina. Twój brat może nie mieć godziny."
+"Weź to. {y}Kamizelka{-} i {y}rewolwer{-} z magazynu dowodów. Nikt nie zauważy."
+give kamizelka
+equip kamizelka
+give rewolwer
+equip rewolwer
+"Brama browaru jest we wschodniej części doków. Otworzę ją nakazem. Idź pierwszy — przyjdę za tobą."
+quest glowne "Walsh zbiera ludzi na nalot. Brama browaru (wschodnie doki) jest otwarta. Uratuj Janka!"
+done dowody
+end
+:akt3
+"Idź do browaru, Kroniewski. Jesteśmy tuż za tobą."
+end
+:pa
+"Pośpiesz się."
+
+@script s_doyle
+as doyle
+ifhas ksiega ksiega
+if VITO_1 grozi
+"Kroniewski. Słyszałem, że węszysz. Twój brat pewnie uciekł z jakąś dziewczyną do Milwaukee."
+"Idź do domu, zanim ciebie też coś spotka. Chicago to niebezpieczne miasto."
+menu
+ opt "Wiem, że go masz, Doyle. [Szacunek 3]" twardo ifge SZACUNEK 3
+ opt "Już idę, kapitanie." pa
+endmenu
+:twardo
+add SZACUNEK 1
+"Uważaj na słowa, chłopcze. Na słowa i na plecy."
+end
+:grozi
+"Słyszałem, że zadajesz się z makaroniarzami. Zły wybór towarzystwa, Kroniewski. Bardzo zły."
+end
+:ksiega
+"Coś ci wystaje z kieszeni, Kroniewski. Coś, co nie należy do ciebie."
+"Wiesz co? Nie tutaj. Nie przy świadkach. Ale niedługo się spotkamy."
+end
+:pa
+"Grzeczny chłopiec."
+
+@script s_straz_cela
+as gliniarz
+"Cele są prawie puste. Jeden pijak. Nie ma tu nic do oglądania."
+
+@script s_pijak
+as robotnik
+"Hik! Ty... ty jesteś brat tego chłopaka? Chudego, z czupryną?"
+"Był tu w nocy. Ale nie siedział długo. Kapitan wyprowadził go tylnymi drzwiami do {y}ciężarówki z beczkami piwa{-}."
+"Piwo! W prohibicję! Wiesz, kto wozi piwo w tym mieście? Hik! Tylko O'Malley. Z browaru w dokach."
+set PIJAK_INFO
+
+@script s_petent
+as helena
+"Przyszłam zgłosić kradzież kury. Czekam trzy godziny. Kapitan mówi, że kurę pewnie zjedli Włosi."
+
+@script s_glina2
+as gliniarz
+"Nie kręć się tu, Kroniewski. Kapitan nie lubi Polaków. Ani nikogo, kto nie płaci."

@@ -56,7 +56,7 @@ static int rnd(int a, int b) { return a + rand() % (b - a + 1); }
 static int hero_has_gun(void) {
   if (H.weapon < 0) return 0;
   const char *id = S.items[H.weapon].id;
-  return !strncmp(id, "rew", 3) || !strncmp(id, "tom", 3) || !strncmp(id, "pis", 3) || !strncmp(id, "strz", 4);
+  return !strncmp(id, "rew", 3) || !strncmp(id, "tho", 3) || !strncmp(id, "pis", 3) || !strncmp(id, "strz", 4);
 }
 
 void battle_start(const char *list, int noflee, const char *bg, int fromScript) {

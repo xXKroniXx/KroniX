@@ -322,7 +322,7 @@ void ui_title_update(void) {
     world_load_map(m, S.startX, S.startY, S.startDir);
     game_set_mode(MODE_WORLD);
     g_fade = 255;
-    g_autofade = 1;
+    g_autofade = S.startScript[0] ? 0 : 1; /* skrypt startowy sam robi „fade in” */
     if (S.startScript[0]) script_start(script_find(S.startScript), NULL);
   } else if (r == 1) {
     if (load_game()) { game_set_mode(MODE_WORLD); g_fade = 255; }
@@ -423,7 +423,14 @@ void ui_ending_draw(void) {
   int tw = text_width(endTitle) * 2;
   text_draw_big((SCREEN_W - tw) / 2, 16, endTitle, pal('z'), 2);
   int shown = (endT - 60) / 40;
-  for (int i = 0; i < endN && i <= shown; i++) text_draw_sh(30, 48 + i * LINE_H, endLines[i], pal('w'));
+  if (shown >= endN) shown = endN - 1;
+  int y0 = 48, maxY = SCREEN_H - 62;
+  if (y0 + shown * LINE_H > maxY) y0 -= y0 + shown * LINE_H - maxY;
+  for (int i = 0; i < endN && i <= shown; i++) {
+    int y = y0 + i * LINE_H;
+    if (y < 36) continue;
+    text_draw_sh(30, y, endLines[i], pal('w'));
+  }
   int total = 90 + endN * 40;
   if (endT > total) {
     const char *k = "KONIEC";

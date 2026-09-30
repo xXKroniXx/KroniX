@@ -269,6 +269,8 @@ static void parse_script_line(char *line) {
     emit(OP_CASH)->i[0] = ival(1, 0);
   } else if (!strcmp(c, "heal")) {
     emit(OP_HEAL);
+  } else if (!strcmp(c, "xp")) {
+    emit(OP_XP)->i[0] = ival(1, 10);
   } else if (!strcmp(c, "hurt")) {
     emit(OP_HURT)->i[0] = ival(1, 1);
   } else if (!strcmp(c, "battle")) {

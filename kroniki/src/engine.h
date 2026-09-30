@@ -187,7 +187,7 @@ int cond_check(int type, int a, int b);
 enum { CND_NONE, CND_IF, CND_IFNOT, CND_GE, CND_LT, CND_GOLD, CND_HAS };
 enum { OP_END, OP_SAY, OP_AS, OP_MENU, OP_GOTO, OP_IF, OP_SET, OP_ADD, OP_GIVE, OP_TAKE, OP_CASH, OP_HEAL,
        OP_BATTLE, OP_WARP, OP_FADE, OP_WAIT, OP_SFX, OP_MUSIC, OP_SHAKE, OP_QUEST, OP_DONE, OP_SHOP,
-       OP_SAVE, OP_ENDING, OP_LEARN, OP_FACE, OP_WALK, OP_CALL, OP_TOAST, OP_CHANCE, OP_HURT, OP_EQUIP, OP_NOP };
+       OP_SAVE, OP_ENDING, OP_LEARN, OP_FACE, OP_WALK, OP_CALL, OP_TOAST, OP_CHANCE, OP_HURT, OP_EQUIP, OP_XP, OP_NOP };
 int map_find(const char *id);
 int item_find(const char *id);
 int enemy_find(const char *id);

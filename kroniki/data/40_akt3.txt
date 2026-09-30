@@ -1,0 +1,265 @@
+# =====================================================================
+#  AKT III — BROWAR O'MALLEYA I ZAKOŃCZENIA
+# =====================================================================
+
+@script s_skrzynia_thompson
+as -
+set THOMPSON_ZNALEZIONY
+ifhas thompson zapasy
+"W skrzyni, w słomie, leży {y}pistolet maszynowy Thompson{-} z bębnowym magazynkiem. Arsenał O'Malleya."
+give thompson
+equip thompson
+learn seria
+end
+:zapasy
+"Skrzynia z amunicją i zapasami. Thompsona już masz — bierzesz resztę."
+give apteczka 2
+give cygaro
+
+@script s_skrzynia_b1
+as -
+"Skrzynia z medykamentami — O'Malley dba o swoich ludzi. Albo o to, żeby dłużej krwawili."
+set SKRZYNIA_B1
+give apteczka
+give whiskey
+
+@script s_doyle_browar
+set DOYLE_SPOTKANY
+as doyle
+if OMALLEY_KSIEGA eskorta
+"Kroniewski. Wiedziałem, że przyjdziesz. Wy, Polacy, zawsze przychodzicie po swoich."
+"Mogłeś siedzieć w domu. Mogłeś zapalić świeczkę w kościele i zapomnieć o bracie."
+menu
+ opt "To koniec, Doyle. Walsh ma księgę i zdjęcia." walsh if WALSH_KSIEGA
+ opt "Don Moretti przesyła pozdrowienia." don if DON_KSIEGA
+ opt "Vito Russo mówi, że twój czas minął." vito if VITO_SOJUSZ
+ opt "Zabiłeś Kowalika. A teraz chcesz zabić Janka." kowalik
+endmenu
+:vito
+"Russo? Ha! Ten wąż sprzeda i ciebie, jak tylko przestaniesz mu być potrzebny."
+goto walka
+:walsh
+"Walsh? Ten naiwny Irlandczyk? Zanim tu dotrze, będzie po wszystkim."
+goto walka
+:don
+"Makaroniarze... Myślisz, że Moretti jest lepszy od O'Malleya? Zmienisz tylko pana, Kroniewski."
+goto walka
+:kowalik
+"Kowalik chciał zmienić świat. Świat nie lubi, jak się go zmienia."
+:walka
+"Koniec gadania."
+battle doyle bg=warehouse
+set DOYLE_POKONANY
+add SZACUNEK 1
+xp 60
+as doyle
+"Czekaj! Czekaj, Kroniewski... Pięćset dolarów. Mam je przy sobie. I bilet do Meksyku."
+"Puść mnie tylnym wyjściem i nigdy więcej o mnie nie usłyszysz. Nikt się nie dowie."
+menu
+ opt "Dawaj kasę i znikaj." lapowka
+ opt "Nie. Odpowiesz za Kowalika." sprawiedliwosc
+endmenu
+:lapowka
+cash 500
+add HONOR -2
+set DOYLE_UCIEKL
+as -
+"Doyle wciska ci plik banknotów i znika za kadziami. Słychać trzaśnięcie tylnych drzwi."
+if WALSH_KSIEGA walsh_zly
+if DON_KSIEGA don_zly
+goto dalej
+:walsh_zly
+set POLICJA 0
+toast "Walsh zrywa współpracę"
+as walsh
+"Kroniewski! Gdzie jest Doyle?! Moi ludzie widzieli go przy tylnych drzwiach!"
+"...Uciekł. Ty go puściłeś, prawda? Widzę to po twojej twarzy."
+"Myślałem, że jesteś inny. Idź po brata. Nie mamy sobie nic więcej do powiedzenia."
+goto dalej
+:don_zly
+add MORETTI -3
+as straznik
+"Gdzie kapitan? Don kazał go przyprowadzić. Don nie lubi, jak coś znika."
+goto dalej
+:sprawiedliwosc
+add HONOR 1
+if WALSH_KSIEGA aresztowanie
+if DON_KSIEGA moretti
+as doyle
+"To... jeszcze... nie koniec..."
+as -
+"Doyle czołga się w cień za kadziami i znika. Nie masz czasu go gonić."
+goto dalej
+:aresztowanie
+as walsh
+"Kapitanie Doyle, jest pan aresztowany za zabójstwo Stanisława Kowalika. Ma pan prawo milczeć. Proszę z niego korzystać."
+as -
+"Walsh zakłada Doyle'owi kajdanki. Za nim wchodzą policjanci w mundurach — ci, którzy nie są na niczyjej liście płac."
+as walsh
+"Dalej sam, Kroniewski. O'Malley jest w biurze. My pilnujemy wyjścia."
+goto dalej
+:moretti
+as -
+"Z cienia wychodzą dwaj ludzie w czarnych garniturach. Bez słowa podnoszą Doyle'a i wynoszą go na zewnątrz."
+as straznik
+"Don przesyła pozdrowienia. Idź po brata, Polak. My się zajmiemy resztą."
+goto dalej
+:eskorta
+"Kroniewski z księgą. Pan O'Malley czeka w biurze. Ręce trzymaj tak, żebym je widział."
+:dalej
+quest glowne "Sean O'Malley jest w biurze na końcu browaru. Janek też tam jest."
+
+@script s_sean
+set SEAN_SPOTKANY
+music boss
+as janek
+"Tomek?! TOMEK! Uważaj, oni mają broń!"
+as sean
+"Cisza, szczeniaku."
+"Tomasz Kroniewski. Wreszcie się poznajemy. Sean O'Malley."
+"Twój brat to bystry chłopak. Zrobił zdjęcia, których nie powinien był robić. Potem próbował je sprzedać, komu nie powinien był sprzedawać."
+if OMALLEY_KSIEGA handel
+"Przyszedłeś po niego? Rozumiem. Rodzina. Szanuję to."
+"Mam propozycję. Pracuj dla mnie. Połowa doków, własny samochód, szacunek. A chłopak wraca do mamusi."
+menu
+ opt "Zgoda. Wchodzę w to." zgoda
+ opt "Nigdy. Oddawaj Janka, O'Malley." walka
+endmenu
+:zgoda
+add HONOR -3
+as sean
+"Mądry człowiek. Wiedziałem, że się dogadamy."
+ending "Cementowe buty" "Tomek uścisnął dłoń Seana O'Malleya. Janek patrzył na brata, jakby widział obcego.\nPrzez tydzień Tomek był prawą ręką O'Malleya. Zbierał haracze w Polonii — od Zośki, od Wiśniewskiego, od ludzi, z którymi dorastał. Nikt mu nie patrzył w oczy.\nÓsmego dnia Sean zaprosił braci Kroniewskich na nocną przejażdżkę łodzią po jeziorze. „Jest coś, co musimy uczcić” — powiedział.\nTej nocy jezioro Michigan przyjęło dwa ciała w cementowych butach. Gazety nie napisały o tym ani słowa.\nMama czekała w oknie jeszcze wiele lat.\n\nW Chicago nie robi się interesów z diabłem. Diabeł zawsze wygrywa."
+end
+:handel
+"A ty przyniosłeś mi moją księgę. Rozsądnie. Bardzo rozsądnie."
+menu
+ opt "Oddaj księgę O'Malleyowi." oddaj
+ opt "Najpierw rozwiąż Janka. Potem księga." najpierw
+endmenu
+:oddaj
+take ksiega
+as sean
+"Dziękuję, Kroniewski. Wiesz, co jest najgorsze w świadkach?"
+"Że zawsze jest ich dwóch."
+ending "Cementowe buty" "Tomek oddał księgę. Sean O'Malley przewertował ją powoli, uśmiechnął się i skinął na swoich ludzi.\nNie było strzałów. Nie było krzyków. Tylko ciężarówka z beczkami piwa, która o świcie odjechała w stronę jeziora.\nTej nocy jezioro Michigan przyjęło dwa ciała w cementowych butach. Kapitan Doyle osobiście zamknął sprawę: „Bracia Kroniewscy wyjechali z miasta w nieznanym kierunku.”\nMama czekała w oknie jeszcze wiele lat. Ojciec Stanisław odprawiał mszę za braci co roku, w październiku.\n\nW Chicago nie robi się interesów z diabłem. Diabeł zawsze wygrywa."
+end
+:najpierw
+as sean
+"Negocjujesz? W MOIM browarze?"
+"Chłopaki, zabierzcie mu księgę. Po kawałku."
+:walka
+as sean
+"Szkoda. Naprawdę szkoda. Mogliśmy razem zrobić wielkie rzeczy."
+battle sean bg=warehouse
+set SEAN_POKONANY
+music koniec
+as sean
+"Ty... polski... Nikt... nikt nie pokonał O'Malleya..."
+as janek
+"Tomek! Tomek, rozwiąż mnie!"
+as -
+"Przecinasz sznury. Janek pada ci w ramiona, drżący, posiniaczony, ale żywy."
+as janek
+"Wiedziałem, że przyjdziesz. Mówiłem im, że przyjdziesz. Śmiali się."
+"Przepraszam, Tomek. Chciałem tylko zarobić... dla mamy. Myślałem, że te zdjęcia..."
+as tomek
+"Cicho, mały. Później. Najpierw musimy zdecydować, co z nim."
+as -
+"Sean O'Malley leży pod ścianą. Krew na eleganckim garniturze. W oczach — po raz pierwszy — strach."
+menu
+ opt "Oddaj go Walshowi. Niech odpowie przed sądem. [Walsh 3]" swiadek ifge POLICJA 3
+ opt "Oddaj go ludziom Dona Moretti. [Rodzina 3]" capo ifge MORETTI 3
+ opt "Oddaj go Vitowi Russo, jak się umówiliście." nowydon if VITO_SOJUSZ
+ opt "Puść go. Zabierz Janka i wracajcie do domu." dom
+endmenu
+:nowydon
+call s_epilog
+ending "Nowy Don" "Vito Russo sam zajął się Seanem O'Malleyem. Nikt nie pytał, co się z nim stało.\nMiesiąc później, w środę wieczorem, przed Trattorią Moretti zatrzymał się czarny samochód. Seria z Thompsona trwała osiem sekund. Don Salvatore Moretti zmarł na rękach córki.\nNa pogrzebie Lucia splunęła Tomkowi pod nogi. Nikt jej nie powstrzymał.\nVito Russo został Donem. Z czarną księgą w sejfie trzymał w garści pół ratusza. Tomek dostał doki, jak obiecano — łodzie z Kanady, magazyny, ludzi.\nJanek wrócił do domu, ale z bratem już nie rozmawia.\nCzasem, przy kolacji, Vito uśmiecha się do Tomka dokładnie tak, jak kiedyś uśmiechał się do starego Dona."
+end
+:swiadek
+call s_epilog
+ending "Świadek" "Proces Seana O'Malleya trwał trzy miesiące. Janek zeznawał drżącym głosem, ale nie zawahał się ani razu. Zdjęcia Rubina trafiły na pierwsze strony gazet w całym kraju.\nKsięga O'Malleya pogrzebała sędziego Hartmanna, radnego Kelly'ego i dziesiątki mniejszych płotek. Detektyw Frank Walsh dostał awans, którego nie chciał, i biuro, którego nie lubi.\nZwiązek dokerów nazwał swój lokal imieniem Stanisława Kowalika. Stary Mateusz przeciął wstęgę i płakał jak dziecko.\nWiosną 1932 roku Kroniewscy spakowali walizki. Detroit, fabryka Forda, nowe nazwiska w aktach świadków. Mama długo żegnała się z ojcem Stanisławem i z Zośką.\nTomek czasem wraca myślami do mokrych ulic Chicago. Nie żałuje. Są rzeczy cenniejsze niż pieniądze i władza.\nNa przykład spokojny sen."
+end
+:capo
+call s_epilog
+ending "Polski Książę" "Ludzie Dona zabrali Seana O'Malleya nad jezioro. Nikt więcej go nie widział.\nTydzień później Don Moretti zaprosił Tomka na kolację. Przy stole siedziała cała rodzina. Lucia zaśpiewała, a Don podniósł kieliszek: „Za naszego przyjaciela z Polonii. Nowego capo doków.”\nIrlandzkie gangi rozpadły się jak domek z kart. Doki należały teraz do Tomka — whiskey, piwo, łodzie z Kanady, koperty dla gliniarzy.\nJanek wyjechał na studia do Nowego Jorku. Rzadko pisze. Mama chodzi na mszę codziennie i modli się za syna, którego coraz trudniej jej poznać.\nTomek ma Cadillaca, szyte na miarę garnitury i dwóch ochroniarzy. Śpi z rewolwerem pod poduszką.\nW Chicago nazywają go Polskim Księciem. On sam wciąż nie wie, czy wygrał."
+end
+:dom
+call s_epilog
+ending "Dom" "Tomek rzucił Seanowi pod nogi jego własny pistolet. „Wynoś się z Chicago. Jeśli jeszcze raz cię zobaczę...” Nie musiał kończyć.\nSean O'Malley wyjechał do Bostonu tej samej nocy. Bez browaru, bez ludzi i bez strachu, który budził, był nikim.\nJanek wrócił do domu nad ranem, owinięty w płaszcz brata. Mama nie zadawała pytań. Postawiła na stole pierogi i patrzyła, jak jej synowie jedzą.\nReszta — księgi, kapitanowie, dony — to sprawa innych ludzi. Chicago się nie zmieniło. Ale dla Kroniewskich wojna się skończyła.\nTomek wrócił do pracy w dokach. Czasem, idąc nabrzeżem, zatrzymuje się w miejscu, gdzie zginął Kowalik, i zdejmuje kaszkiet.\nNie został bohaterem. Został bratem. To wystarczy."
+end
+
+@script s_sean_gada
+as sean
+"Podejdź bliżej, Kroniewski. Nie gryzę. Mam od tego ludzi."
+
+@script s_janek_browar
+as janek
+if SEAN_POKONANY po
+"Tomek... Uważaj na niego..."
+end
+:po
+"Chodźmy do domu, Tomek. Proszę."
+
+# ------------------------------------------------------------ epilog: skutki decyzji
+@script s_epilog
+fade out
+as -
+"{y}Co stało się potem...{-}"
+if DOYLE_UCIEKL doyle_uciekl
+if DOYLE_POKONANY doyle_zlapany
+goto zoska
+:doyle_uciekl
+"Kapitana Doyle'a widziano podobno w Tijuanie. Sprawa zabójstwa Kowalika nigdy nie została zamknięta."
+goto zoska
+:doyle_zlapany
+"Kapitan Doyle stanął przed sądem za zabójstwo Stanisława Kowalika. Nie pomogli mu przyjaciele z ratusza."
+:zoska
+if ZOSKA_URATOWANA zoska_ok
+if BAR_SPALONY zoska_spalony
+goto piekarz
+:zoska_ok
+"Zośka odnowiła bar „Pod Białym Orłem”. Najlepszą nalewkę nazwała „Kroniewski” i nalewa ją tylko przyjaciołom."
+goto piekarz
+:zoska_spalony
+"Bar „Pod Białym Orłem” nigdy nie został odbudowany. Zośka wyjechała do siostry w Milwaukee i nie zostawiła adresu."
+:piekarz
+if PIEKARNIA_ZDRADA piekarz_zly
+if PIEKARNIA_ZALATWIONA piekarz_ok
+goto boks
+:piekarz_zly
+"Pan Wiśniewski zamknął piekarnię. Na drzwiach została kartka: „Nie obsługujemy zdrajców”."
+goto boks
+:piekarz_ok
+"Pan Wiśniewski co niedzielę zostawia pod drzwiami Kroniewskich ciepły chleb. Nigdy nie chce pieniędzy."
+:boks
+if BOKS_WYGRANA boks_ok
+if BOKS_RZUCONA boks_zly
+goto rubin
+:boks_ok
+"Mickey powiesił w sali zdjęcie z walki z Irlandzkim Bykiem. Pod spodem napisał: „Tak się wygrywa”."
+goto rubin
+:boks_zly
+"Mickey nigdy więcej nie wypowiedział imienia Tomka. Zdjęcie z tamtej walki spalił w piecu."
+:rubin
+ifnot ZDJECIA_DANE mateusz
+"Pan Rubin otworzył nowe atelier. Na wystawie wisi portret braci Kroniewskich — za darmo, jak mówi, „na zawsze”."
+:mateusz
+ifnot MATEUSZ_ZEZNA kielich
+"Stary Mateusz dożył dziewięćdziesięciu lat. Do końca opowiadał wnukom o nocy, w której przestał się bać."
+:kielich
+ifnot KIELICH_ODDANY honor
+"Srebrny kielich wrócił na ołtarz św. Stanisława. Ojciec Stanisław wspomina Tomka w każdej niedzielnej modlitwie."
+:honor
+ifge HONOR 4 dobry
+iflt HONOR 0 zly
+"Tomek nie był święty. Ale nie był też potworem. W Chicago to już bardzo dużo."
+goto koniec
+:dobry
+"Mówią, że Tomek Kroniewski to ostatni uczciwy człowiek w polskiej dzielnicy. Mama jest z niego dumna."
+goto koniec
+:zly
+"W Polonii ludzie przechodzą na drugą stronę ulicy, kiedy widzą Tomka Kroniewskiego. Mama zamyka się w kuchni i płacze."
+:koniec
+wait 20

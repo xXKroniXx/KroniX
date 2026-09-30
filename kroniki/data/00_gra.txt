@@ -1,0 +1,267 @@
+# =====================================================================
+#  KroniX: PROHIBICJA — Chicago, 1931
+#  Plik fabuły silnika KroniX. Sekcje: @game, @item, @enemy, @map, @script.
+# =====================================================================
+
+@game
+title "KroniX: Prohibicja"
+start mieszkanie 6 4 down s_intro
+stat SZACUNEK "Szacunek"
+stat HONOR "Honor"
+stat MORETTI "Rodzina Moretti"
+stat POLICJA "Zaufanie Walsha"
+
+speaker tomek "Tomek" tomek
+speaker mama "Mama" mama
+speaker janek "Janek" janek
+speaker zoska "Zośka" zoska
+speaker olek "Olek" robotnik
+speaker bronek "Bronek" bronek
+speaker piekarz "Pan Wiśniewski" piekarz
+speaker feliks "Pan Feliks" feliks
+speaker ksiadz "Ojciec Stanisław" ksiadz
+speaker stefek "Stefek" stefek
+speaker helena "Pani Helena" helena
+speaker mickey "Mickey" mickey
+speaker bokser "Irlandzki Byk" bokser
+speaker rubin "Pan Rubin" pan
+speaker menel "Kulawy Józek" menel
+speaker vito "Vito Russo" vito
+speaker don "Don Moretti" don
+speaker lucia "Lucia" lucia
+speaker kelner "Kelner" kelner
+speaker straznik "Goryl" mafioso
+speaker zbir "Zbir O'Malleya" zbir2
+speaker cyngiel "Cyngiel" zbir
+speaker paddy "Wielki Paddy" paddy
+speaker sean "Sean O'Malley" sean
+speaker doyle "Kapitan Doyle" doyle
+speaker walsh "Detektyw Walsh" walsh
+speaker sierzant "Sierżant" gliniarz
+speaker mateusz "Stary Mateusz" robotnik
+speaker gliniarz "Posterunkowy" gliniarz
+speaker przechodzien "Przechodzień" pan
+speaker kobieta "Kobieta" pani
+speaker robotnik "Robotnik" robotnik
+speaker nonna "Nonna Rosa" helena
+speaker lucky "Lucky" lucky
+speaker dokowiec "Doker" dokowiec
+
+# ------------------------------------------------------------ przedmioty
+@item bandaz
+name "Bandaż"
+type heal
+power 30
+price 12
+desc "Czysty opatrunek z apteki. Przywraca 30 zdrowia."
+
+@item apteczka
+name "Apteczka"
+type heal
+power 90
+price 40
+desc "Wojskowa apteczka. Przywraca 90 zdrowia."
+
+@item kawa
+name "Czarna kawa"
+type mana
+power 6
+price 6
+desc "Mocna jak kopniak muła. +6 zimnej krwi."
+
+@item cygaro
+name "Hawańskie cygaro"
+type mana
+power 16
+price 22
+desc "Nic tak nie uspokaja nerwów. +16 zimnej krwi."
+
+@item whiskey
+name "Whiskey z przemytu"
+type elixir
+power 50
+price 28
+desc "Nielegalna i pyszna. +50 zdrowia i +10 zimnej krwi."
+
+@item chleb
+name "Chleb od Wiśniewskiego"
+type heal
+power 20
+price 4
+desc "Jeszcze ciepły. Przywraca 20 zdrowia."
+
+@item kastet
+name "Kastet"
+type weapon
+power 3
+price 35
+desc "Mosiężny kastet. Siła +3."
+
+@item palka
+name "Pałka"
+type weapon
+power 6
+price 70
+desc "Ciężka drewniana pałka. Siła +6."
+
+@item noz
+name "Nóż sprężynowy"
+type weapon
+power 8
+price 110
+desc "Szybki i cichy. Siła +8."
+
+@item rewolwer
+name "Rewolwer Colt"
+type weapon
+power 12
+price 190
+desc "Sześć kul i dobre argumenty. Siła +12."
+
+@item thompson
+name "Thompson M1928"
+type weapon
+power 17
+desc "Maszyna do pisania Chicago. Siła +17. Pozwala strzelać serią."
+
+@item marynarka
+name "Porządna marynarka"
+type armor
+power 2
+price 30
+desc "Tweed z Maxwell Street. Obrona +2."
+
+@item plaszcz
+name "Skórzany płaszcz"
+type armor
+power 5
+price 90
+desc "Gruby jak skóra nosorożca. Obrona +5."
+
+@item kamizelka
+name "Kamizelka kuloodporna"
+type armor
+power 9
+price 240
+desc "Stalowe płytki pod materiałem. Obrona +9."
+
+@item medalik
+name "Medalik św. Krzysztofa"
+type charm
+power 2
+desc "Od ojca Stanisława. Chroni podróżnych. Obrona +2."
+
+@item zegarek
+name "Złoty zegarek"
+type charm
+power 3
+desc "Prezent od Dona Moretti. Obrona +3. Punktualność to szacunek."
+
+@item notatka
+name "Notatka Janka"
+desc "„Tomek, wpakowałem się. Widziałem coś w dokach. Nie idź na policję. Zośka wie. — J.”"
+
+@item gazeta
+name "Chicago Tribune"
+desc "Nagłówek: „Związkowiec Kowalik zaginął. Policja bezradna.”"
+
+@item aparat
+name "Aparat Rubina"
+desc "Stary Graflex. Własność fotografa z ulicy tylnej."
+
+@item zdjecia
+name "Zdjęcia z doków"
+desc "Rozmazane, ale widać mundur kapitana i ciało na nabrzeżu."
+
+@item kielich
+name "Kielich mszalny"
+desc "Srebrny kielich skradziony z kościoła św. Stanisława."
+
+@item ksiega
+name "Księga rachunkowa"
+desc "Czarna księga O'Malleya. Łapówki, nazwiska, daty. Warta więcej niż złoto."
+
+@item list
+name "List polecający"
+desc "Kilka słów od Bronka do Vita Russo."
+
+@item karta
+name "Karta związkowa"
+desc "Legitymacja Kowalika, przywódcy dokerów. Zakrwawiona."
+
+# ------------------------------------------------------------ przeciwnicy
+# stats HP SIŁA OBRONA SZYBKOŚĆ DOŚW KASA
+@enemy zbir
+name "Zbir O'Malleya"
+sprite zbir2
+stats 20 7 2 4 18 6
+skill "Cios z byka" dmg 150 25
+drop bandaz 25
+
+@enemy dokowiec
+name "Doker z hakiem"
+sprite dokowiec
+stats 30 9 3 4 26 8
+skill "Hak rzeźnicki" dmg 160 25
+drop bandaz 20
+
+@enemy cyngiel
+name "Cyngiel"
+sprite zbir
+stats 28 11 2 6 32 14
+skill "Strzał z biodra" mag 150 30
+drop whiskey 15
+
+@enemy gliniarz
+name "Skorumpowany gliniarz"
+sprite gliniarz
+stats 38 11 5 5 36 10
+skill "Pałowanie" dmg 170 25
+drop apteczka 15
+
+@enemy zolnierz
+name "Żołnierz Vita"
+sprite mafioso
+stats 40 13 5 6 42 16
+skill "Strzał z rewolweru" mag 150 30
+drop whiskey 20
+
+@enemy bokser
+name "Irlandzki Byk"
+sprite bokser
+stats 85 11 4 6 90 0
+skill "Seria prostych" dmg 185 30
+boss 1
+
+@enemy paddy
+name "Wielki Paddy"
+sprite paddy
+stats 170 15 6 5 160 70
+skill "Miażdżący uścisk" drainhp 170 30
+boss 1
+scale 4
+
+@enemy vito
+name "Vito Russo"
+sprite vito
+stats 170 16 7 9 190 120
+skill "Strzał w plecy" mag 170 35
+boss 1
+scale 4
+
+@enemy doyle
+name "Kapitan Doyle"
+sprite doyle
+stats 200 16 8 7 230 90
+skill "Służbowy rewolwer" mag 160 25
+drop apteczka 100
+boss 1
+scale 4
+
+@enemy sean
+name "Sean O'Malley"
+sprite sean
+stats 300 19 10 9 0 0
+skill "Seria z Thompsona" mag 150 30
+boss 1
+scale 4

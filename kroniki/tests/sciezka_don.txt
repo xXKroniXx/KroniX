@@ -1,0 +1,111 @@
+debug newgame
+autoplay 1
+untilidle
+choose 0
+debug script s_mama
+untilidle
+debug script s_notatka
+untilidle
+choose 1
+debug script s_wyjscie
+untilidle
+log po samouczku:
+debug dump
+choose 0
+debug script s_zoska
+untilidle
+choose 0
+debug script s_olek
+untilidle
+choose 0
+debug script s_bronek
+untilidle
+debug battle zbir
+untilidle
+debug battle zbir,zbir
+untilidle
+debug give bandaz 3
+choose 0
+debug script s_zbir_piekarnia
+untilidle
+debug script s_piekarz
+untilidle
+debug script s_bronek
+untilidle
+debug script s_stefek
+untilidle
+debug script s_rubin
+untilidle
+debug battle zbir,dokowiec
+untilidle
+debug script s_skrzynia_aparat
+untilidle
+debug script s_rubin
+untilidle
+debug script s_walsh
+untilidle
+choose 0
+debug script s_walsh
+untilidle
+debug script s_vito
+untilidle
+debug equip kastet
+debug equip marynarka
+debug cash -65
+log przed boksem:
+debug dump
+choose 0
+debug script s_mickey
+untilidle
+log po boksie:
+debug dump
+debug warp doki 2 6
+debug battle dokowiec,zbir
+untilidle
+debug battle zbir,zbir
+untilidle
+debug battle cyngiel,zbir
+untilidle
+debug give bandaz 3
+debug give apteczka 1
+choose 0
+debug script s_straz_mag
+untilidle
+debug equip palka
+debug equip plaszcz
+debug cash -160
+log przed Paddym:
+debug dump
+debug warp magazyn7 16 4
+choose 0
+debug script s_paddy
+untilidle
+log po Paddym:
+debug dump
+choose 0
+debug script s_ksiega
+untilidle
+debug warp trattoria 10 5
+debug script s_goryl_biuro
+untilidle
+choose 0
+debug script s_don
+untilidle
+expect DON_KSIEGA 1
+expect VITO_POKONANY 1
+expect AKT3 1
+debug warp browar 15 17
+debug battle zbir,zbir,dokowiec
+untilidle
+debug heal
+choose 1 1
+debug script s_doyle_browar
+untilidle
+debug heal
+choose 1 1
+debug script s_sean
+untilidle
+wait 30
+expect _UKONCZONO 1
+debug dump
+quit
