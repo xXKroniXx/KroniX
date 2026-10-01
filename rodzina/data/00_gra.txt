@@ -43,6 +43,21 @@ speaker russo "Carmine Russo" russo
 speaker gosc "Gość" pan
 speaker babcia "Nonna Carla" mama
 speaker capo "Capo Fabrizio" lucky
+speaker kessler "Agent Kessler" kessler
+speaker dolores "Dolores Vane" dolores
+speaker kierownik "Kierownik lokalu" lucky
+speaker tancerka "Tancerka" flapper
+speaker bywalec "Bywalec" pan
+speaker barman "Barman" barman
+speaker bramkarz "Bramkarz" ochroniarz
+speaker pijak "Pijak" menel
+speaker krupier "Krupier" kelner
+speaker gracz "Gracz" pan
+speaker urzednik "Urzędnik" kelner
+speaker bokser "Bokser" bokser
+speaker kibic "Kibic" robotnik
+speaker trener "Trener Feliks" feliks
+speaker muzyk "Muzyk" muzyk
 
 # ---------------------------------------------------------------- przedmioty
 @item apteczka

@@ -1,0 +1,1041 @@
+# ====================================================================== KRONIKA: sceny w okresie Księgi (1933–1934)
+# Sceny uruchamia Księga w wyznaczone dni (src/tycoon.c, BEATS). Na czas sceny ustawiona jest zmienna _S_<SKRYPT>,
+# a stan Rodziny jest widoczny w zmiennych: _DZIEN, _SZACUNEK, _GORACZKA, _SLEDZTWO, _ZOLNIERZE, _WOJNA,
+# _BRONEK_JEST, _VITO_JEST, _<RODZINA>_ZYJE, _WROG_<RODZINA>, _PROHIBICJA.
+# Polecenia "tycoon ..." zmieniają stan Księgi (respect, heat, invest, soldiers, booze, rel, war, truce, ally,
+# infl, loyal, remove, capo, hurt, spawn, log).
+
+# ---------------------------------------------------------------------- 1. Lucia i księgi ojca
+@script k_lucia_ksiegi
+music biuro
+say - "Gabinet Dona. Za oknem dzwoni tramwaj na Taylor Street. Na biurku leży Księga — i trzy zeszyty, których wcześniej nie widziałeś."
+as lucia
+"Znalazłam je w sejfie ojca. Prawdziwe księgi, Tomaszu. Te w Księdze są dla ludzi. Te tutaj — dla Boga i dla urzędu skarbowego."
+"Ojciec trzymał rachunki sam. Nie ufał księgowym. Mówił, że księgowi zeznają szybciej niż żołnierze."
+"Capone nie poszedł siedzieć za morderstwa. Poszedł za podatki. Za zeszyt w kratkę."
+menu
+ opt "Ty prowadź rachunki, Lucio. Ufam ci." ty
+ opt "To nie jest robota dla ciebie." nie
+ opt "Spal je. Nie ma zeszytów — nie ma dowodów." spal
+endmenu
+:ty
+"...Naprawdę? Ojciec nigdy by mi nie pozwolił."
+"Skończyłam szkołę u sióstr z wyróżnieniem z rachunków. Nikt nigdy nie zapytał, po co."
+"Dobrze. Zrobię to porządnie. Pieniądze będą czyste jak komunia."
+set LUCIA_KSIEGI 1
+add LUCIA_ZAUFANIE 2
+tycoon log "Lucia prowadzi księgi Rodziny. Śledztwo będzie wolniej postępować."
+toast "Lucia prowadzi rachunki: śledztwo federalne słabnie z czasem"
+goto koniec
+:nie
+"Nie dla mnie. Oczywiście."
+"Wiesz, co mówił ojciec, kiedy byłam mała? „Lucia, idź pobawić się lalkami.” Miałam dwadzieścia lat."
+"Myślałam, że ty jesteś inny."
+add LUCIA_ZAUFANIE -1
+goto koniec
+:spal
+"Spalić trzydzieści lat pracy ojca? Wszystkie długi, wszystkie przysługi, kto komu ile winien?"
+"...Masz rację. To, czego nie ma na papierze, nie może nikogo powiesić."
+say - "Zeszyty płoną w kominku. Lucia patrzy w ogień i nic nie mówi."
+tycoon invest -10
+tycoon respect -2
+toast "Śledztwo -10, ale dłużnicy Dona zapomnieli o długach (szacunek -2)"
+:koniec
+as lucia
+"Wracaj do Księgi. Miasto nie poczeka."
+tycoon open
+
+# ---------------------------------------------------------------------- 2. Agent Kessler
+@script k_kessler
+music doki
+say - "W pustej trattorii, przy stoliku pod oknem, siedzi mężczyzna w szarym płaszczu. Przed nim stoi szklanka wody. Nietknięty chleb."
+say - "Beppe szepcze ci do ucha: „Siedzi tu od dwóch godzin, szefie. Nie zamówił nic. Ma odznakę federalną.”"
+as kessler
+"Pan Kowalski. Tomasz Kowalski, syn Jana Kowalskiego, kaprala 77. Dywizji. Poległ pod Argonne w osiemnastym."
+"Proszę usiąść. Nie zajmę panu dużo czasu. Nazywam się Kessler. Departament Skarbu, wydział wywiadu podatkowego."
+"To my posadziliśmy Ala Capone. Nie strzelaniną na ulicy — rachunkami. Lubię rachunki, panie Kowalski. Są cierpliwe."
+menu
+ opt "Prowadzę restaurację. Polecam osso buco." grzecznie
+ opt "Ile kosztuje cierpliwość pana Kesslera?" lapowka
+ opt "Kiedy następnym razem przyjdziesz do mojej trattorii, wyjdziesz w worku." grozba
+ opt "Mogę panu pomóc. Russo, Irlandczycy... dużo wiem." kapus
+endmenu
+:grzecznie
+"Osso buco. Oczywiście. A pańska restauracja zarabia tygodniowo więcej niż szpital Cook County."
+"Proszę się nie martwić. Ja nigdzie się nie spieszę."
+goto koniec
+:lapowka
+"..."
+"Pan wie, ilu ludzi zadało mi to pytanie? Siedmiu. Sześciu siedzi w Leavenworth. Siódmy zmarł, zanim zdążyliśmy."
+"Zapiszę sobie tę rozmowę, panie Kowalski. Dziękuję. Bardzo mi pan pomógł."
+tycoon invest 12
+toast "Kessler zapisał próbę przekupstwa (śledztwo +12)"
+goto koniec
+:grozba
+"Proszę bardzo. Na moje miejsce przyjdzie dwóch następnych. A potem czterech. Rząd ma więcej ludzi niż pan, panie Kowalski."
+"Ale doceniam szczerość. Rzadko ją widuję w tej branży."
+tycoon heat 8
+tycoon respect 4
+toast "Gorączka +8, szacunek +4"
+goto koniec
+:kapus
+"Ciekawe. Bardzo ciekawe."
+"Proszę zapisać tu adres, pod którym można pana zastać o każdej porze. I nazwiska."
+say - "Zapisujesz kilka nazwisk ludzi z innych rodzin. Kessler chowa kartkę do wewnętrznej kieszeni."
+"Rząd Stanów Zjednoczonych pamięta przyjaciół. Przez jakiś czas."
+set KAPUS 1
+tycoon invest -15
+tycoon rel wrog -15
+toast "Śledztwo -15. Jeśli ktoś się dowie..."
+:koniec
+as kessler
+"Dobranoc, panie Kowalski. Jeszcze się spotkamy."
+say - "Kessler kładzie na stole dziesięć centów za wodę i wychodzi w deszcz."
+tycoon open
+
+# ---------------------------------------------------------------------- 3. Wieczór w Blue Moon
+@script k_klub
+music bar
+say - "Blue Moon na Rush Street. Dym papierosów, mosiężne lampy, zespół gra „Sweet Georgia Brown”. Za kontuarem — whisky z naszych beczek."
+say - "Nikt tu nie pyta, skąd. Wszyscy wiedzą."
+as lucia
+"Tak tu jest? Wszyscy tacy... szczęśliwi?"
+"Ojciec mówił, że to jaskinia rozpusty. Podejrzewam, że po prostu nie umiał tańczyć."
+as dolores
+"Panie i panowie, następna piosenka dla pięknej pani przy wejściu. Mówią, że przyszła z samym szefem."
+as lucia
+"O Boże. Wszyscy się patrzą."
+menu
+ opt "Zatańczymy?" taniec
+ opt "Usiądźmy. Chcę ci coś powiedzieć." rozmowa
+ opt "Przepraszam, mam tu interesy. Baw się." interes
+endmenu
+:taniec
+say - "Parkiet się rozstępuje. Trąbka zaczyna wolny numer. Lucia tańczy lepiej, niż przyznała."
+"Nie jesteś taki zimny, jak mówił ojciec."
+"Ani taki straszny, jak mówią w dzielnicy."
+add LUCIA_ZAUFANIE 2
+set LUCIA_TANIEC 1
+goto koniec
+:rozmowa
+"Mów."
+menu
+ opt "Kiedy to się skończy, wyjedziemy. Kalifornia, ocean." kalifornia
+ opt "Potrzebuję cię przy sobie. W interesach." interesy
+endmenu
+:kalifornia
+"Kalifornia..."
+"Wszyscy w tej branży mówią „kiedy to się skończy”. To się nigdy nie kończy, Tomaszu."
+"Ale miło, że to powiedziałeś."
+add LUCIA_ZAUFANIE 1
+set OBIETNICA_KALIFORNIA 1
+goto koniec
+:interesy
+"W interesach. Oczywiście."
+"Dobrze. Jestem przy tobie. Dopóki to ma sens."
+goto koniec
+:interes
+"Jasne. Interesy."
+say - "Lucia siada sama przy barze. Barman nalewa jej wina na koszt firmy."
+add LUCIA_ZAUFANIE -1
+:koniec
+as kierownik
+"Szefie, lokal pęka w szwach. W tym tygodniu zarobiliśmy więcej niż przez cały maj."
+tycoon respect 3
+toast "Wizyta w Blue Moon: szacunek +3"
+objective "Rozejrzyj się po klubie. Wyjście — drzwi na dole."
+
+# ---------------------------------------------------------------------- 4. Obiad u matki
+@script k_mama
+music polonia
+say - "Niedziela w Polonii. Pachnie kapustą i węglem. Przez ścianę słychać, jak sąsiad słucha audycji z Warszawy na krótkich falach."
+as mama
+"Tomuś! Chudy jesteś. Siadaj, siadaj. Gołąbki są jeszcze ciepłe."
+"Pani Nowakowa mówi, że jeździsz teraz czarnym packardem. I że ludzie ci się kłaniają na ulicy."
+"Ludzie kłaniali się też panu Capone. Do czasu."
+menu
+ opt "Mamo, przyniosłem pieniądze. Na czynsz, na nowy piec." pieniadze
+ opt "Obiecuję ci: kiedyś to rzucę." obietnica
+ opt "Mamo, nie musisz się martwić. Wiem, co robię." pewny
+endmenu
+:pieniadze
+"Pieniądze..."
+"Weź je z powrotem. Nie. Daj je proboszczowi na sierociniec. Niech chociaż ktoś na tym skorzysta."
+cash -300
+tycoon respect 5
+tycoon infl 1 8
+toast "Datek dla sierocińca w Polonii: szacunek +5, wpływy w Polonii +8"
+goto koniec
+:obietnica
+"Kiedyś. Twój ojciec też mówił „kiedyś”. Kiedyś pojedziemy do Krakowa. Kiedyś kupimy dom z ogródkiem."
+"A potem przyszła wojna i nie było żadnego kiedyś."
+"Trzymam cię za słowo, synku. Matka Boska też słyszała."
+set OBIETNICA_MAMA 1
+goto koniec
+:pewny
+"Wiesz, co robisz. Każdy mężczyzna w tej rodzinie wiedział, co robi."
+"Zjedz. Przynajmniej to wiem, że robisz dobrze."
+:koniec
+say - "Zjadasz trzy gołąbki. Matka patrzy na ciebie tak, jak patrzyła, kiedy miałeś dziewięć lat i wróciłeś z rozbitym nosem."
+as mama
+"Pamiętaj, skąd jesteś. I wracaj czasem w niedzielę."
+tycoon open
+
+# ---------------------------------------------------------------------- 5. Bronek chce awansu
+@script k_bronek
+music biuro
+as bronek
+"Tomek. Szefie. Jak zwał, tak zwał."
+"Znamy się od pierwszej komunii. Razem kradliśmy węgiel z wagonów na Ashland Avenue."
+"Moi chłopcy z Polonii robią dla Rodziny tyle, co Włosi. A Włosi patrzą na nas jak na kelnerów."
+"Daj mi Polonię. Pod moje słowo. Swoi ludzie, swoje sprawy. Będę capo — jak Fabrizio u Włochów."
+menu
+ opt "Polonia jest twoja, Bronek. Jesteś moim capo." tak
+ opt "Jeszcze nie. Najpierw pokaż, że potrafisz." nie
+ opt "Polonia należy do Rodziny. Nie do ciebie." twardo
+endmenu
+:tak
+"...Dziękuję, Tomek. Nie pożałujesz."
+"Kowal z Polonii. Capo. Matka zemdleje."
+set BRONEK_CAPO 1
+tycoon capo bronek
+tycoon loyal bronek 25
+toast "Bronek capo Polonii: wpływy w Polonii rosną z każdym tygodniem"
+goto koniec
+:nie
+"Pokazać. Pokazuję od dziesięciu lat, Tomek."
+"Dobra. Jak chcesz."
+tycoon loyal bronek -15
+set BRONEK_URAZONY 1
+goto koniec
+:twardo
+"Do Rodziny. Do Rodziny Marino. Do Włochów."
+"Zapamiętam to."
+tycoon loyal bronek -30
+set BRONEK_URAZONY 1
+:koniec
+tycoon open
+
+# ---------------------------------------------------------------------- 6. Zamach w trattorii
+@script k_zamach
+music noc
+say - "Późny wieczór. Trattoria prawie pusta. Lucia zamówiła osso buco, ty — tylko wino. Za oknem pada drobny deszcz."
+as lucia
+"Wiesz, że pierwszy raz od miesięcy jemy kolację jak normalni ludzie?"
+"Bez Księgi, bez gości, bez..."
+sfx horn
+wait 20
+say - "Za oknem pisk opon. Czarny sedan zwalnia przed wejściem. Szyby opuszczają się jednocześnie."
+as lucia
+"TOMASZ! NA ZIEMIĘ!"
+sfx tommy
+shake 12
+music walka
+weapon pistol 24
+tycoon spawn 6 8
+tycoon spawn 5 8
+tycoon spawn 7 8
+tycoon spawn 4 7
+objective "Przeżyj zamach. Zabij napastników."
+waitkill
+music noc
+say - "Cisza. Dzwoni ci w uszach. Na podłodze — szkło, wino i trzech martwych ludzi w płaszczach."
+as lucia
+"Żyjesz... Żyjesz. Dzięki Bogu."
+"Beppe dostał w ramię. Wyliże się. Okno... całe okno, Tomaszu."
+if _WROG_RUS rus
+if _WROG_IRL irl
+if _WROG_TRI tri
+if _WROG_KAN kan
+goto decyzja
+:rus
+say - "Jeden z martwych ma w kieszeni zapałki z klubu Russo na Levee."
+goto decyzja
+:irl
+say - "Jeden z martwych ma na szyi szkaplerz z Dublina i bilet tramwajowy z North Side."
+goto decyzja
+:tri
+say - "Przy jednym z martwych leży nóż z rękojeścią owiniętą czerwonym jedwabiem."
+goto decyzja
+:kan
+say - "Jeden z martwych to policjant z Cicero. Jeszcze w służbowych butach."
+:decyzja
+menu
+ opt "Odpowiemy. Dziś w nocy. Wojna." wojna
+ opt "Spokojnie. Zemsta to danie, które je się na zimno." zimno
+ opt "Lucia, wyjedź z miasta na kilka tygodni." lucia
+endmenu
+:wojna
+say - "Dzwonisz do chłopców. Przed północą pół miasta wie, że Polak z Taylor Street nie nadstawia drugiego policzka."
+tycoon war wrog
+tycoon respect 8
+tycoon heat 10
+toast "Wojna! Szacunek +8"
+goto koniec
+:zimno
+say - "Każesz posprzątać i wstawić nowe okno. Do rana. Jakby nic się nie stało."
+say - "Ta cisza przeraża ich bardziej niż strzelanina."
+tycoon respect 4
+tycoon rel wrog -20
+goto koniec
+:lucia
+as lucia
+"Wyjechać? Uciec? To moja restauracja. Restauracja mojego ojca."
+"Nie, Tomaszu. Zostaję. Ale dzięki, że się martwisz."
+add LUCIA_ZAUFANIE 1
+:koniec
+set ZAMACH_PRZEZYTY 1
+tycoon open
+
+# ---------------------------------------------------------------------- 7. Balbo nad Chicago
+@script k_balbo
+music italia
+say - "15 lipca 1933. Dwadzieścia cztery hydroplany generała Balbo wylądowały na jeziorze Michigan, prosto pod Wystawą Światową."
+say - "Taylor Street oszalała: flagi, akordeony, sycylijskie pączki, dzieci na ramionach ojców. Nawet gliniarze się uśmiechają."
+as babcia
+"Signor Tomasso! Widziałeś samoloty? Mój wnuk mówi, że lecieli przez ocean jak anioły!"
+"Ojciec Bernardo chce zrobić festę na całą ulicę, ale parafia nie ma pieniędzy na orkiestrę."
+as ksiadz
+"Synu... wiem, skąd biorą się twoje pieniądze. Ale dzisiaj ci ludzie zasłużyli na jeden dzień radości."
+menu
+ opt "Ojcze, festa jest na mój koszt. Orkiestra, wino, wszystko. ($800)" festa ifgold 800
+ opt "Dam na orkiestrę. ($200)" troche ifgold 200
+ opt "Nie mam dziś czasu na festyny." nie
+endmenu
+:festa
+cash -800
+say - "Do północy na Taylor Street gra orkiestra. Ludzie piją za zdrowie Balbo, za zdrowie Mussoliniego, za zdrowie Roosevelta — i za zdrowie Polaka z trattorii."
+as babcia
+"Dio ti benedica, Tomasso. Salvatore by płakał."
+tycoon respect 10
+tycoon infl 0 12
+toast "Festa na Taylor Street: szacunek +10, wpływy w Małej Italii +12"
+goto koniec
+:troche
+cash -200
+as ksiadz
+"Bóg zapłać. To dużo dla tych ludzi."
+tycoon respect 3
+tycoon infl 0 4
+goto koniec
+:nie
+as babcia
+"Nie ma czasu... Salvatore zawsze miał czas."
+tycoon respect -3
+:koniec
+objective "Ciesz się festą. Tab — powrót do Księgi."
+
+# ---------------------------------------------------------------------- 8. Szczur
+@script k_szczur
+music doki
+as gino
+"Szefie... Szefie, ja nie wiem, czy powinienem... ale Don mówił zawsze: „Gino, jak coś widzisz, mów”."
+"Wczoraj w nocy byłem w porcie po towar. I widziałem Bronka. W samochodzie z tym federalnym. Z Kesslerem."
+"Rozmawiali godzinę. Potem Kessler dał mu kopertę."
+if BRONEK_CAPO capo
+"Bronek ostatnio chodzi zły jak osa. Mówi, że Włosi go nie szanują..."
+goto dalej
+:capo
+"Nie wiem, szefie. Przecież dałeś mu Polonię. Po co miałby..."
+:dalej
+say - "Wieczorem wzywasz Bronka do gabinetu. Przychodzi sam. Siada. Nie patrzy ci w oczy."
+as bronek
+"Gino ci powiedział. Wiedziałem, że ten szczur..."
+"Dobra. Kessler przyszedł do mnie miesiąc temu. Mają mojego brata, Staszka. Przemyt na granicy z Kanadą. Dwadzieścia lat."
+"Powiedział: albo Kowalski, albo Staszek. Nie dałem mu nic ważnego, Tomek. Przysięgam na matkę. Godziny dostaw. Bzdury."
+menu
+ opt "Wybaczam ci. Załatwimy sprawę Staszka po naszemu." wybacz
+ opt "Wynoś się z Chicago. Dziś. I nigdy nie wracaj." wygnaj
+ opt "Wiesz, co Rodzina robi z kapusiami, Bronek." zabij
+endmenu
+:wybacz
+as bronek
+"...Tomek. Ja..."
+"Do końca życia. Słyszysz? Do końca życia jestem twój."
+say - "Twoi prawnicy i dwa tysiące dolarów dla sędziego w Detroit sprawiają, że Staszek wychodzi po trzech tygodniach."
+cash -1000
+tycoon loyal bronek 50
+tycoon invest 8
+set BRONEK_ZOSTAL 1
+toast "Bronek ci wierny do śmierci. Śledztwo +8 (Kessler wie, że się dowiedziałeś)"
+goto koniec
+:wygnaj
+as bronek
+"Dwadzieścia lat przyjaźni. I tak się kończy."
+"Powodzenia, szefie. Będziesz go potrzebował."
+tycoon remove bronek
+clear BRONEK
+tycoon respect 3
+toast "Bronek opuścił Chicago"
+goto koniec
+:zabij
+as bronek
+"Tomek... Tomek, nie. Pamiętasz Ashland Avenue? Węgiel? Twoją matkę?"
+say - "Twoi ludzie czekają na zapleczu. Mówisz tylko jedno słowo. Bronek wychodzi z nimi tylnymi drzwiami. Nie wraca."
+say - "Następnego dnia matka Bronka pyta w kościele, czy ktoś widział jej syna."
+tycoon remove bronek
+clear BRONEK
+set BRONEK_ZABITY 1
+tycoon respect 10
+tycoon invest -10
+toast "Szacunek +10. Kessler stracił informatora (śledztwo -10)"
+:koniec
+tycoon open
+
+# ---------------------------------------------------------------------- 9. Kane i polityka
+@script k_kane
+music bar
+say - "Blue Moon, stolik pod sceną. Victor Kane w białym fraku, z cygarem i dwoma ochroniarzami. Wygląda jak senator. Kiedyś pewnie nim będzie."
+as kane
+"Panie Kowalski! Proszę, proszę. Słyszałem o pańskich sukcesach. Całe miasto słyszało."
+"Przejdę do rzeczy, bo czas to pieniądze, a pieniądze to wybory."
+"W listopadzie wybieramy radnych. Mój człowiek w Pierwszym Okręgu potrzebuje... wsparcia. Pański człowiek w Polonii też by się przydał."
+"Jeśli wygramy, policja w tym mieście zapomni, jak się pisze pańskie nazwisko. A Wystawa Światowa potrzebuje dostawcy... napojów."
+menu
+ opt "Wchodzę. Ile? ($2000)" wchodze ifgold 2000
+ opt "Tylko kontrakt na wystawę. Bez polityki. ($900)" expo ifgold 900
+ opt "Nie robię interesów z politykami, Kane." nie
+ opt "Twój człowiek przegra. Mój reformator wygra." przeciw
+endmenu
+:wchodze
+cash -2000
+as kane
+"Wspaniale. Kocham demokrację, panie Kowalski. Jest taka... przewidywalna."
+tycoon politician 1
+tycoon rel kan 25
+set KANE_RADNY 1
+set EXPO_DNI 30
+toast "Swój człowiek w ratuszu + kontrakt na wystawie ($150/dzień przez 30 dni)"
+goto koniec
+:expo
+cash -900
+as kane
+"Rozsądnie. Zawsze lubiłem ostrożnych ludzi. Żyją dłużej."
+set EXPO_DNI 30
+tycoon rel kan 8
+toast "Kontrakt na dostawy dla Wystawy: $150 dziennie przez 30 dni"
+goto koniec
+:nie
+as kane
+"Szkoda. Politycy i tak będą robić interesy z panem, panie Kowalski. Tylko nie będzie pan o tym wiedział."
+tycoon rel kan -10
+goto koniec
+:przeciw
+as kane
+"..."
+"Odważne. Głupie, ale odważne. Zobaczymy się w listopadzie."
+tycoon rel kan -35
+tycoon heat -12
+tycoon respect 5
+toast "Wsparłeś reformatora: gorączka -12, ale Kane jest wściekły"
+:koniec
+objective "Rozejrzyj się po klubie. Wyjście — drzwi na dole."
+
+# ---------------------------------------------------------------------- 10. Herbata z Lee Wongiem
+@script k_lee
+music chiny
+say - "Herbaciarnia Złoty Smok. Pachnie jaśminem i kadzidłem. Lee Wong sam nalewa herbatę — rzadki zaszczyt."
+as lee
+"Panie Kowalski. W moim kraju mówi się: kiedy pijesz wodę, pamiętaj o tym, kto wykopał studnię."
+"Pański poprzednik, Don Salvatore, wykopał studnię między Chinatown a Małą Italią. Czterdzieści lat pokoju."
+"Ale czasy się zmieniają. Ludzie z Szanghaju przysyłają... nowy towar. Opium. Ładniejsze niż whisky, łatwiejsze do ukrycia."
+"Proponuję spółkę. Moi ludzie, pańskie lokale. Połowa zysków."
+menu
+ opt "Wchodzę. Interes to interes." tak
+ opt "Don nigdy nie tknął narkotyków. Ja też nie." nie
+ opt "Mam lepszy pomysł: sojusz. Bez opium." sojusz
+endmenu
+:tak
+as lee
+"Mądry człowiek. Pieniądze przyjdą jak deszcz w porze monsunu."
+"Ale pamiętaj — monsun przynosi też powódź."
+set OPIUM 1
+tycoon rel tri 15
+toast "Spółka opiumowa: +$220 dziennie, ale gorączka rośnie każdego dnia"
+goto koniec
+:nie
+as lee
+"Szanuję to. Naprawdę."
+"Don mówił to samo, czterdzieści lat temu, przy tym samym stoliku. Jesteś bardziej podobny do niego, niż myślisz."
+tycoon rel tri 10
+tycoon respect 4
+goto koniec
+:sojusz
+as lee
+"Sojusz... bez opium. Hm."
+if _WOJNA wojna
+"Nie mamy wspólnych wrogów, panie Kowalski. Sojusz bez wroga jest jak herbata bez wody."
+tycoon rel tri 5
+goto koniec
+:wojna
+"Ale ma pan wrogów, a wróg mojego przyjaciela... Dobrze. Moi ludzie są do pana dyspozycji."
+tycoon ally tri
+toast "Sojusz z Triadą!"
+:koniec
+say - "Lee nalewa drugą filiżankę. Herbata jest gorzka i doskonała."
+objective "Tab — powrót do Księgi."
+
+# ---------------------------------------------------------------------- 11. Kessler wraca
+@script k_kessler2
+music boss
+as kessler
+"Panie Kowalski. Mówiłem, że się spotkamy."
+"To agent Dunn i agent Murphy. Mają nakaz przeszukania lokalu. Proszę nie robić trudności."
+say - "Agenci przewracają gabinet do góry nogami: szuflady, obrazy, podwójne dno w biurku Dona."
+if KAPUS kapus
+ifge _SLEDZTWO 50 zle
+"Cóż. Muszę przyznać — pańskie rachunki są... nudne. Czyste jak łza."
+if LUCIA_KSIEGI lucia
+goto dobrze
+:lucia
+"Ktoś tu bardzo dobrze zna się na księgowości. Gratuluję. Ale czysta księgowość też jest podejrzana."
+:dobrze
+"To nie koniec, panie Kowalski. To przerwa."
+tycoon invest -10
+toast "Przeszukanie nic nie dało (śledztwo -10)"
+goto koniec
+:zle
+"Tak... tak. Wpływy z „restauracji” w Małej Italii. Trzy razy wyższe niż Ritz-Carlton."
+"Prokurator Hogan bardzo się ucieszy, panie Kowalski."
+menu
+ opt "Zadzwonię do mojego prawnika. Do widzenia." prawnik
+ opt "Ile chce prokurator Hogan? ($2500)" hogan ifgold 2500
+ opt "Agenci czasem znikają w jeziorze, Kessler." grozba
+endmenu
+:prawnik
+tycoon invest 5
+"Proszę dzwonić. My też mamy prawników. Więcej niż pan."
+goto koniec
+:hogan
+cash -2500
+say - "Kessler patrzy na kopertę. Długo. Potem odsuwa ją dwoma palcami."
+"Hogan — może. Ja — nie. Ale dobrze, niech pan to da Hoganowi. Przez pośrednika. Ja niczego nie widziałem."
+tycoon invest -25
+toast "Prokurator „zgubił” część dowodów (śledztwo -25)"
+goto koniec
+:grozba
+"Agent Lingle z Tribune też groził komuś w tym mieście. Pamięta pan, jak skończył Capone po zabiciu Lingle'a?"
+tycoon invest 15
+tycoon heat 10
+goto koniec
+:kapus
+"Nasz układ, panie Kowalski. Pamięta pan? Te nazwiska, które pan mi podał..."
+"Okazały się bardzo pomocne. Na tyle, że ktoś się zorientował, skąd pochodzą."
+"Ostrzegam pana z sympatii: jest pan teraz bardzo samotnym człowiekiem."
+tycoon rel wrog -25
+tycoon invest -5
+toast "Inne rodziny wiedzą, że rozmawiałeś z federalnymi"
+:koniec
+say - "Agenci wychodzą. Na podłodze zostają papiery, odłamki ramy i zdjęcie Dona w trumnie, wyjęte z szuflady."
+tycoon open
+
+# ---------------------------------------------------------------------- 12. Lucia w kościele
+@script k_lucia
+music kosciol
+say - "Kościół św. Rocha o zmierzchu. Świece. Zapach wosku. Lucia klęczy w pierwszej ławce. Wstaje, kiedy słyszy twoje kroki."
+as lucia
+"Przyszedłeś. Dobrze."
+"Byłam dziś u spowiedzi. Pierwszy raz od pogrzebu ojca. Ojciec Bernardo zapytał, czy żałuję za grzechy."
+"Powiedziałam, że nie wiem, które z nich są moje, a które twoje."
+ifge LUCIA_ZAUFANIE 3 blisko
+"Nie jesteśmy... nie wiem, czym jesteśmy, Tomaszu. Wspólnikami? Rodziną?"
+goto pytanie
+:blisko
+"Wiesz, że ojciec chciał wydać mnie za syna Russo? Dla pokoju. Jak krowę na targu."
+"A ty jesteś pierwszym człowiekiem, który zapytał mnie o zdanie. Choćby o rachunki."
+:pytanie
+"Pytam cię więc wprost: kiedy to wszystko się skończy — kiedy wygrasz — co potem?"
+menu
+ opt "Potem wyjedziemy. Ty i ja. Gdzieś, gdzie nikt nie zna naszych nazwisk." wyjazd
+ opt "Potem Rodzina będzie najsilniejsza w Chicago. Z tobą u boku." rodzina
+ opt "Potem nic. To się nigdy nie kończy, Lucio." nic
+endmenu
+:wyjazd
+"..."
+"Kalifornia. Ocean. Pomarańcze. Mówiłeś to w Blue Moon. Myślałam, że żartujesz."
+"Dobrze. Trzymam cię za słowo. Przed Bogiem."
+set LUCIA_RAZEM 1
+set LUCIA_KALIFORNIA 1
+goto koniec
+:rodzina
+"Z tobą u boku. Jak królowa."
+"Ojciec mówił, że królowe w tym mieście kończą jako wdowy. Ale... dobrze. Jestem z tobą."
+set LUCIA_RAZEM 1
+tycoon respect 4
+goto koniec
+:nic
+"Wiem. Chciałam tylko usłyszeć, czy też to wiesz."
+"Dobranoc, Tomaszu."
+set LUCIA_ODESZLA 1
+:koniec
+say - "Wychodzicie razem w deszcz. Dzwon na wieży bije siódmą."
+sfx bell
+objective "Tab — powrót do Księgi."
+
+# ---------------------------------------------------------------------- 13. Vito
+@script k_vito
+music noc
+as vito
+"Szefie. Siadaj. Napij się. Grappa od cioci z Palermo."
+"Wiesz, ile razy myślałem, żeby cię zastrzelić? W pierwszym miesiącu? Codziennie."
+"Polak na krześle mojego wuja. Krew Marino podaje ci kawę."
+"A potem patrzyłem. Jak prowadzisz. Jak liczysz. Jak nie strzelasz, kiedy ja bym strzelał. I wiesz co?"
+"Wuj miał rację. Ja bym ich wszystkich pozabijał i sam bym leżał w trumnie przed Bożym Narodzeniem."
+menu
+ opt "Vito, chcę, żebyś był moim consigliere." consigliere
+ opt "Idź spać, Vito. Jesteś pijany." spac
+ opt "Gdybyś spróbował, leżałbyś obok wuja." twardo
+endmenu
+:consigliere
+"Consigliere? Ja? Ja nie umiem doradzać. Ja umiem łamać nosy."
+"...Ale mogę się nauczyć. Dla wuja. I dla ciebie, Polaku."
+tycoon loyal vito 40
+tycoon capo vito
+tycoon respect 4
+set VITO_CONSIGLIERE 1
+toast "Vito Marino twoim consigliere"
+goto koniec
+:spac
+"Pijany. Tak. Pijany i szczery. Rzadkie połączenie w tej branży."
+tycoon loyal vito 10
+goto koniec
+:twardo
+"Ha! Właśnie dlatego cię szanuję."
+tycoon loyal vito 20
+tycoon respect 2
+:koniec
+tycoon open
+
+# ---------------------------------------------------------------------- 14. Koniec prohibicji
+@script k_repeal
+music bar
+say - "5 grudnia 1933. Utah ratyfikowało 21. poprawkę. Prohibicja nie żyje."
+say - "Blue Moon pęka w szwach. Ludzie piją legalnie pierwszy raz od czternastu lat i nikt nie wie, czy się śmiać, czy płakać."
+as lucia
+"Słyszysz? Grają „Happy Days Are Here Again”. Trzeci raz z rzędu."
+"Pół miasta właśnie straciło pracę. Bimbrownicy, przemytnicy, kierowcy ciężarówek. Nasi ludzie, Tomaszu."
+as kierownik
+"Szefie, browary z Milwaukee już dzwonią. Chcą legalnie sprzedawać przez nasze lokale. Na fakturę!"
+menu
+ opt "Idziemy w legalne interesy. Hotele, związki zawodowe, automaty." legalnie
+ opt "Hazard i ochrona nie potrzebują poprawki. Zostajemy przy swoim." stare
+endmenu
+:legalnie
+as lucia
+"Legalnie. Ojciec by umarł drugi raz."
+"Ale ja się cieszę."
+set LEGALNIE 1
+tycoon heat -15
+tycoon invest -10
+tycoon respect 3
+toast "Rodzina wchodzi w legalne interesy: gorączka -15, śledztwo -10"
+goto koniec
+:stare
+as kierownik
+"Tak jest, szefie. Ludzie zawsze będą grać. I zawsze będą się bać."
+tycoon respect 6
+:koniec
+say - "O północy cały klub śpiewa. Ktoś otwiera szampana. Prawdziwego, z Francji, z legalną akcyzą."
+objective "Świętuj albo wyjdź — drzwi na dole."
+
+# ====================================================================== WIZYTY W LOKALACH
+@script w_wyjscie
+tycoon open
+
+@script w_klub
+music bar
+say - "Blue Moon. Saksofon, dym i brzęk kieliszków. Na twój widok kierownik poprawia muszkę."
+call w_zdarzenie
+
+@script w_melina
+music bar
+say - "Zakład fryzjerski „Tony”. Drugie drzwi za lustrem. Hasło: „Przyszedłem się ogolić na mokro”."
+call w_zdarzenie
+
+@script w_kasyno
+music bar
+say - "Złota Podkowa. Zielone sukno, stuk kulki w ruletce, szelest banknotów. Bank zawsze wygrywa — bank to ty."
+call w_zdarzenie
+
+@script w_bukmacher
+music bar
+say - "Biuro „Pewniak”. Radio nadaje wyścigi z Arlington Park. Dwunastu ludzi wstrzymuje oddech."
+call w_zdarzenie
+
+@script w_hala
+music walka
+say - "Hala na Halsted Street. Pot, kurz i krzyk. Dwóch chłopaków z rzeźni okłada się w ringu za pięć dolarów."
+call w_zdarzenie
+
+@script w_zdarzenie
+if _WIZ_DZIS juz
+tycoon respect 1
+if _S_W_KLUB klub
+if _S_W_MELINA melina
+if _S_W_KASYNO kasyno
+if _S_W_BUKMACHER bukmacher
+if _S_W_HALA hala
+end
+:juz
+say - "Byłeś tu już dzisiaj. Ludzie kiwają głowami, ale nikt nie ma nowych spraw."
+objective "Wyjście — drzwi na dole."
+end
+# ------------------------------------------------ klub
+:klub
+chance 50 klub2
+as kierownik
+"Szefie, mamy problem. Dziennikarz z Tribune siedzi przy barze trzeci wieczór. Zadaje pytania o właściciela."
+menu
+ opt "Daj mu stolik przy scenie i najlepszego szampana. Na koszt firmy." klub_mily
+ opt "Daj mu kopertę. ($300)" klub_koperta ifgold 300
+ opt "Niech chłopcy odprowadzą go do domu. Przez zaułek." klub_grozba
+endmenu
+:klub_mily
+say - "Reporter pisze w niedzielę zachwycony felieton o „najlepszym jazzie po tej stronie Mississippi”. O właścicielu — ani słowa."
+tycoon heat -3
+goto wyjdz
+:klub_koperta
+cash -300
+tycoon heat -8
+say - "Reporter odkrywa w sobie nagłą pasję do wyścigów konnych w Kentucky."
+goto wyjdz
+:klub_grozba
+tycoon heat 6
+tycoon respect 3
+say - "Następnego dnia Tribune pisze o „brutalnym napadzie na dziennikarza”. Bez nazwisk."
+goto wyjdz
+:klub2
+as kierownik
+"Szefie, Dolores — nasza śpiewaczka — dostała ofertę z klubu Kane'a. Dwa razy większa gaża."
+menu
+ opt "Podwój jej gażę. Ona jest sercem tego lokalu. ($400)" klub_gaza ifgold 400
+ opt "Porozmawiam z nią sam." klub_rozmowa
+ opt "Niech idzie. Śpiewaczek jest pełno." klub_idzie
+endmenu
+:klub_gaza
+cash -400
+as dolores
+"Dla ciebie zaśpiewam nawet hymn Irlandii, kochanie."
+tycoon respect 2
+goto wyjdz
+:klub_rozmowa
+as dolores
+"Kane obiecał mi płytę. Nagranie w Nowym Jorku. Ty możesz mi obiecać coś lepszego?"
+chance 50 klub_zostaje
+"Tak myślałam. Żegnaj, przystojniaku."
+tycoon rel kan 3
+goto wyjdz
+:klub_zostaje
+"...Dobra. Zostaję. Ale tylko dlatego, że patrzysz na mnie, jakbym śpiewała dla ciebie."
+tycoon respect 3
+goto wyjdz
+:klub_idzie
+say - "Dolores odchodzi do Kane'a. Przez tydzień klub jest pół pusty."
+tycoon respect -2
+tycoon rel kan 5
+goto wyjdz
+# ------------------------------------------------ melina
+:melina
+chance 50 melina2
+as kierownik
+"Szefie, Irlandczyk przy stoliku. Pije od południa, nie płaci i mówi, że O'Donnell tu rządzi."
+menu
+ opt "Wyrzucę go osobiście." melina_bijatyka
+ opt "Postaw mu drinka. I jego kumplom. Niech O'Donnell wie, że jesteśmy gościnni." melina_drink
+ opt "Ignorujcie go." melina_ignoruj
+endmenu
+:melina_bijatyka
+music walka
+spawn irl_zbir 6 6
+objective "Wyrzuć awanturnika"
+waitkill
+music bar
+say - "Lokal bije brawo. Barman nalewa ci na koszt firmy, choć to twoja firma."
+tycoon respect 3
+tycoon rel irl -5
+goto wyjdz
+:melina_drink
+cash -50
+tycoon rel irl 6
+say - "Irlandczycy śpiewają „Danny Boy”. Fałszują. Ale płacą za następną kolejkę."
+goto wyjdz
+:melina_ignoruj
+tycoon respect -2
+goto wyjdz
+:melina2
+as kierownik
+"Szefie, glina z rewiru przychodzi co tydzień po „kawę”. Teraz chce dwa razy więcej. Mówi, że mają nowego kapitana."
+menu
+ opt "Płać. ($150)" melina_glina ifgold 150
+ opt "Przekaż mu, że jego kapitan pije u nas za darmo od trzech lat." melina_kapitan
+endmenu
+:melina_glina
+cash -150
+tycoon heat -5
+goto wyjdz
+:melina_kapitan
+chance 60 melina_ok
+say - "Nowy kapitan okazuje się abstynentem. Tydzień później melina ma nalot."
+tycoon heat 8
+goto wyjdz
+:melina_ok
+say - "Glina wraca z przeprosinami i butelką wina od kapitana."
+tycoon heat -2
+tycoon respect 2
+goto wyjdz
+# ------------------------------------------------ kasyno
+:kasyno
+chance 50 kasyno2
+as kierownik
+"Szefie, złapaliśmy szulera. Znaczone karty w rękawie. Wygrał od nas osiemset dolarów w tydzień."
+menu
+ opt "Połamcie mu palce. Wszyscy mają to widzieć." kasyno_palce
+ opt "Zatrudnij go. Ktoś, kto oszuka nas, oszuka też gości." kasyno_zatrudnij
+ opt "Niech odda pieniądze i wynocha." kasyno_oddaj
+endmenu
+:kasyno_palce
+tycoon respect 4
+tycoon heat 3
+say - "Krzyk słychać aż na ulicy. Od tej pory nikt w Chicago nie oszukuje w Złotej Podkowie."
+goto wyjdz
+:kasyno_zatrudnij
+cash 400
+say - "„Profesor” pracuje dla ciebie od jutra. W pierwszym tygodniu goście tracą czterysta dolarów więcej niż zwykle."
+goto wyjdz
+:kasyno_oddaj
+cash 800
+say - "Szuler oddaje forsę i ucieka, gubiąc kapelusz."
+goto wyjdz
+:kasyno2
+as kierownik
+"Szefie, przy ruletce siedzi radny Brennan. Przegrał trzy tysiące. Na kredyt."
+menu
+ opt "Daruj mu dług. Niech pamięta, komu jest winien przysługę." kasyno_radny
+ opt "Dług to dług. Niech płaci." kasyno_plac
+endmenu
+:kasyno_radny
+tycoon heat -10
+tycoon log "Radny Brennan winien nam przysługę."
+say - "Radny ściska ci rękę obiema dłońmi. Mówi, że jesteś „prawdziwym przyjacielem Pierwszego Okręgu”."
+goto wyjdz
+:kasyno_plac
+chance 50 kasyno_placi
+say - "Radny nie ma pieniędzy. Ma za to znajomych w komisariacie."
+tycoon heat 6
+goto wyjdz
+:kasyno_placi
+cash 1500
+say - "Radny sprzedaje żonie futro i oddaje połowę. Resztę „w ratach”."
+goto wyjdz
+# ------------------------------------------------ bukmacher
+:bukmacher
+chance 50 bukmacher2
+as kierownik
+"Szefie, Wiktor z rzeźni przegrał pensję na koniu „Szczęśliwy Ned”. Czwarty raz w tym miesiącu. Żona i piątka dzieci."
+menu
+ opt "Daruj mu. I niech nie wraca." buk_daruj
+ opt "Niech odpracuje. Przyda się chłopak z siłą." buk_odpracuj
+ opt "Weźcie mu radio i zegarek." buk_zabierz
+endmenu
+:buk_daruj
+tycoon respect 3
+say - "W niedzielę żona Wiktora zapala za ciebie świeczkę u św. Rocha."
+goto wyjdz
+:buk_odpracuj
+tycoon soldiers 1
+say - "Wiktor nosi teraz broń dla Rodziny. Nie gra już na koniach. Nie ma czasu."
+goto wyjdz
+:buk_zabierz
+cash 60
+tycoon respect -2
+goto wyjdz
+:bukmacher2
+as kierownik
+"Szefie, jest okazja. Dżokej w trzeciej gonitwie w Arlington wstrzyma konia. Za pięćset dolarów."
+menu
+ opt "Ustawiamy gonitwę. ($500)" buk_ustaw ifgold 500
+ opt "Uczciwe zakłady to podstawa interesu." buk_uczciwie
+endmenu
+:buk_ustaw
+cash -500
+chance 70 buk_wygrana
+say - "Koń dżokeja potyka się sam z siebie i... wygrywa. Dżokej znika z miasta."
+goto wyjdz
+:buk_wygrana
+cash 1800
+tycoon heat 3
+say - "„Wolny Polak” przychodzi pierwszy, 12 do 1. Przypadek."
+goto wyjdz
+:buk_uczciwie
+tycoon respect 2
+goto wyjdz
+# ------------------------------------------------ hala
+:hala
+chance 50 hala2
+as kierownik
+"Szefie, Irlandczycy przysłali swojego zawodnika. Mówią, że pobije każdego od nas. Zakład: tysiąc dolarów."
+menu
+ opt "Przyjmujemy. Nasz chłopak go zniszczy. ($1000)" hala_zaklad ifgold 1000
+ opt "Ustawmy walkę. Nasz przegra w piątej rundzie, my postawimy na Irlandczyka." hala_ustaw
+ opt "Nie dziś." hala_nie
+endmenu
+:hala_zaklad
+cash -1000
+chance 55 hala_wygrana
+say - "Irlandczyk nokautuje naszego w trzeciej rundzie. Kibice z North Side śpiewają do rana."
+tycoon respect -2
+goto wyjdz
+:hala_wygrana
+cash 2000
+tycoon respect 4
+say - "Nasz chłopak z rzeźni kładzie Irlandczyka w drugiej rundzie. Hala szaleje."
+goto wyjdz
+:hala_ustaw
+cash 900
+tycoon rel irl -5
+say - "W piątej rundzie nasz zawodnik pada jak ścięty. Bardzo przekonująco. Irlandczycy płacą i nic nie rozumieją."
+goto wyjdz
+:hala_nie
+goto wyjdz
+:hala2
+as kierownik
+"Szefie, w ringu jest chłopak z Polonii. Dwudziestu trzech zwycięstw. Chce dla nas pracować, nie tylko bić się."
+menu
+ opt "Weź go do Rodziny." hala_rekrut
+ opt "Niech się bije. Na nim zarabiamy." hala_bij
+endmenu
+:hala_rekrut
+tycoon soldiers 2
+say - "Chłopak przyprowadza brata. Dwóch nowych żołnierzy."
+goto wyjdz
+:hala_bij
+cash 300
+goto wyjdz
+:wyjdz
+objective "Porozmawiaj z ludźmi albo wyjdź — drzwi na dole."
+
+# ------------------------------------------------ postacie w lokalach
+@script w_muzyk
+as muzyk
+chance 33 b
+chance 50 c
+"Szefie! Dziś gramy „St. Louis Blues”. Specjalnie dla pana."
+end
+:b
+"Mój stary grał w Nowym Orleanie z samym Kingiem Oliverem. Ja gram w Chicago dla Polaka. Świat się kręci."
+end
+:c
+"Jeszcze jeden kawałek i przerwa, szefie. Trąbka mi wysycha."
+
+@script w_dolores
+as dolores
+chance 50 b
+"Cześć, przystojniaku. Zostaniesz na ostatni set? Śpiewam wtedy wolniej."
+end
+:b
+"Mówią, że Billie Holiday w Nowym Jorku śpiewa jak anioł. Ja śpiewam jak grzesznica. Więcej płacą."
+
+@script w_tancerka
+as tancerka
+chance 33 b
+chance 50 c
+"Charleston! Umiesz? Nie? Szkoda, taki elegancki pan..."
+end
+:b
+"Mój chłopak pracuje w rzeźni na Halsted. Nie wie, że tu jestem. Nie mów mu, dobrze?"
+end
+:c
+"Podobno to pan jest właścicielem? Ojej. To ja już będę grzeczna."
+
+@script w_bywalec
+as bywalec
+chance 25 b
+chance 33 c
+chance 50 d
+"Najlepsza whisky w mieście. Kanadyjska, mówią. Ja tam nie pytam."
+end
+:b
+"Słyszał pan? Roosevelt zamyka banki, a ja tu wydaję ostatnie pięć dolarów. Ameryka!"
+end
+:c
+"Pracowałem w Armour's dwanaście lat. Teraz pracuję tu. Przy kieliszku. Lepsze godziny."
+end
+:d
+"Pan Kowalski? Dziękuję za lampy na naszej ulicy. Wszyscy wiedzą, kto zapłacił."
+
+@script w_barman
+as barman
+chance 50 b
+"Co podać, szefie? Mamy dziś szkocką. Prawdziwą, ze statku z Halifax."
+end
+:b
+"Spokojny wieczór, szefie. Dwie bijatyki, jedna oświadczyna. Normalka."
+
+@script w_bramkarz
+as bramkarz
+chance 50 b
+"Szefie. Nikt nie wchodzi bez hasła. Nawet burmistrz."
+end
+:b
+"Dwóch gliniarzy stało tu godzinę temu. Poszli sobie. Dostali po flaszce."
+
+@script w_kierownik
+as kierownik
+"Wszystko pod kontrolą, szefie. Kasa się zgadza, ludzie zadowoleni."
+"Jeśli chce pan więcej zarabiać — rozbudowa lokalu w Księdze. Więcej stolików, więcej forsy."
+
+@script w_pijak
+as pijak
+chance 50 b
+"Ty... ty jesteś ten Polak. Ten, co... hik... Dobry chłop. Postaw mi jednego."
+end
+:b
+"Prohibicja... Wiesz, co jest najlepsze w prohibicji? Hik. Że nikt jej nie przestrzega."
+
+@script w_krupier
+as krupier
+chance 50 b
+"Faites vos jeux, messieurs. Szefie, czerwone wypadło dziś osiem razy pod rząd. Goście płaczą."
+end
+:b
+"Stół numer trzy to radni. Stół numer pięć to policja. Proszę nie mylić, szefie."
+
+@script w_gracz
+as gracz
+chance 33 b
+chance 50 c
+"Jeszcze jedna runda. Czuję, że teraz wygram. Czuję to w kościach."
+end
+:b
+"Postawiłem dom na czarne. Wypadło czerwone. Ale jutro będzie czarne, prawda?"
+end
+:c
+"Wie pan, że Seabiscuit był kiedyś w Chicago? Mój wuj go widział. Mój wuj kłamie, ale i tak."
+
+@script w_urzednik
+as urzednik
+chance 50 b
+"Kurs na „Księżniczkę” spadł do trzech do jednego, szefie. Ktoś wie coś, czego my nie wiemy."
+end
+:b
+"Telefon z Nowego Jorku, szefie. Pytają o wyniki z Hialeah. Wszyscy chcą wiedzieć pierwsi."
+
+@script w_bokser
+as bokser
+chance 50 b
+"Szefie! Widział pan mój prawy sierpowy? Tak samo walił Jack Dempsey!"
+end
+:b
+"Trener mówi, że za rok będę walczył w Madison Square Garden. Albo w kostnicy. Zobaczymy."
+
+@script w_kibic
+as kibic
+chance 50 b
+"Dawaj, dawaj! W szczękę! ...Och, przepraszam, szefie, nie zauważyłem."
+end
+:b
+"Postawiłem dolara na tego z lewej. Mam przeczucie. Nigdy nie mam dobrego przeczucia, ale teraz mam."
+
+@script w_trener
+as trener
+"Chłopaki z rzeźni mają najtwardsze łby w Chicago, szefie. Bije się tylko w ringu albo za pieniądze."

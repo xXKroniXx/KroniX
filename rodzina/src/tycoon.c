@@ -4,6 +4,7 @@
  * dyplomacja, policja i federalne śledztwo podatkowe. */
 #include "engine.h"
 #include <stdarg.h>
+#include <ctype.h>
 
 /* ================================================================ dane stałe */
 #define ND 8          /* dzielnice */
@@ -110,6 +111,8 @@ static struct {
   char today[NTODAY][100]; int ntoday;
   Ev ev[MAXEV]; int nev;
   int warnInvest;
+  /* v2: kronika */
+  int beats, visitDay, newsWeek, lastWar;
 } T;
 
 /* akcja prowadzona osobiście w 3D */
@@ -624,9 +627,15 @@ static int t_diplo(int f, int a) {
 
 /* ================================================================ wydarzenia */
 enum { EV_RAISE = 1, EV_COPDEAL, EV_JOURNALIST, EV_ALLYOFFER, EV_TRUCEOFFER, EV_VASSALOFFER, EV_TRIBUTEDEMAND, EV_RAT, EV_WEDDING,
-       EV_ELECTION, EV_REPEAL, EV_SHIPMENT, EV_WIDOW, EV_INFORMANT, EV_STORY = 100 };
+       EV_ELECTION, EV_REPEAL, EV_SHIPMENT, EV_WIDOW, EV_INFORMANT, EV_STORY = 100, EV_BEAT, EV_NEWS };
 
-typedef struct { char title[48]; char text[4][100]; int ntext; char opt[4][60]; int nopt; } EvView;
+typedef struct { char title[48]; char text[7][100]; int ntext; char opt[4][60]; int nopt; } EvView;
+static void beat_view(const Ev *e, EvView *v);
+static void news_view(const Ev *e, EvView *v);
+static void beat_apply(const Ev *e);
+static void beats_check(void);
+static int var_or(const char *n, int def);
+static void var_set(const char *n, int v);
 
 static void ev_view(const Ev *e, EvView *v) {
   memset(v, 0, sizeof *v);
@@ -718,6 +727,8 @@ static void ev_view(const Ev *e, EvView *v) {
       TXT("Za $300 sprzeda nam, gdzie trzymają broń.");
       OPT("Kup informacje ($300)"); OPT("Przegoń go");
       break;
+    case EV_BEAT: beat_view(e, v); break;
+    case EV_NEWS: news_view(e, v); break;
     case EV_STORY:
       snprintf(v->title, 48, "Wieści z miasta");
       TXT("Ktoś chce się z tobą widzieć w kwaterze.");
@@ -789,6 +800,8 @@ static void ev_apply(const Ev *e, int c) {
     case EV_INFORMANT:
       if (c == 0 && H.gold >= 300 && fam_alive(e->a)) { H.gold -= 300; int s = rr(3, 6); T.f[e->a].soldiers -= s; tlog("Dzięki informatorowi rozbiliśmy skład broni: %s -%d.", FT[e->a].name, s); }
       break;
+    case EV_BEAT: beat_apply(e); break;
+    case EV_NEWS: break;
     case EV_STORY: {
       char sc[40];
       snprintf(sc, sizeof sc, "tyc_koniec_%s", FT[e->a].id);
@@ -1005,6 +1018,8 @@ void tycoon_end_day(void) {
 
   rivals_day();
   recompute_owners(1);
+  T.lastWar = 0;
+  for (int f = 1; f < NF; f++) if (fam_alive(f) && T.f[f].state == F_WAR) T.lastWar = 1;
 
   /* wydarzenia losowe */
   if (rnd(100) < 5 && T.heat > 30) push_ev(EV_COPDEAL, 0, 800 + T.heat * 15);
@@ -1021,6 +1036,14 @@ void tycoon_end_day(void) {
 
   T.day++;
   if (T.day % 7 == 0) refresh_recruits();
+  if (T.day % 7 == 3 && T.day / 7 != T.newsWeek) { T.newsWeek = T.day / 7; push_ev(EV_NEWS, 0, T.day / 7); }
+  beats_check();
+  /* trwałe skutki decyzji z kroniki */
+  if (var_or("LUCIA_KSIEGI", 0) && T.day % 2 == 0) T.invest = CLAMP(T.invest - 1, 0, 100);
+  if (var_or("BRONEK_CAPO", 0) && T.day % 4 == 0) infl_take(1, 0, 1, -1);
+  if (var_or("EXPO_DNI", 0) > 0) { H.gold += 150; T.lastIncome += 150; var_set("EXPO_DNI", var_or("EXPO_DNI", 0) - 1); if (!var_or("EXPO_DNI", 0)) tlog("Kontrakt na wystawie wygasł."); }
+  if (var_or("OPIUM", 0)) { H.gold += 220; T.lastIncome += 220; T.heat = CLAMP(T.heat + 1, 0, 100); }
+  if (var_or("KANE_RADNY", 0) && T.day % 3 == 0) T.heat = CLAMP(T.heat - 1, 0, 100);
   T.respect = CLAMP(T.respect, 0, 100);
   check_end();
 }
@@ -1115,7 +1138,7 @@ void tycoon_start(int trust) {
   if (var_or("VITO_ZYJE", 1) && T.nmen < MAXMEN) {
     Man *m = &T.men[T.nmen++];
     make_man(m, 4);
-    snprintf(m->name, sizeof m->name, "Vito Corleoni");
+    snprintf(m->name, sizeof m->name, "Vito Marino");
     snprintf(m->nick, sizeof m->nick, "Kuzyn");
     snprintf(m->sprite, sizeof m->sprite, "vito");
     m->fight = 6; m->brains = 3; m->loyal = 80; m->lvl = 2;
@@ -1152,7 +1175,7 @@ void tycoon_save(FILE *f) {
 
 int tycoon_load_line(const char *line) {
   static int sizeOk;
-  if (!strncmp(line, "tysize ", 7)) { sizeOk = (size_t)atol(line + 7) == sizeof T; if (sizeOk) memset(&T, 0, sizeof T); return 1; }
+  if (!strncmp(line, "tysize ", 7)) { size_t n = (size_t)atol(line + 7); sizeOk = n > 0 && n <= sizeof T; if (sizeOk) memset(&T, 0, sizeof T); return 1; }
   if (!strncmp(line, "tyx ", 4)) {
     if (!sizeOk) return 1;
     unsigned off = (unsigned)atol(line + 4);
@@ -1385,6 +1408,274 @@ static void fmt_money(char *b, int n, int v) {
 }
 static u32 fcol(int f) { return f < 0 ? pal('d') : pal(FT[f].col); }
 
+static int md; /* liczba otwartych okien (definicja niżej) */
+/* ================================================================ kronika: sceny fabularne, gazeta, wizyty */
+typedef struct { int day; const char *script, *map; int x, y, dir; const char *title, *l1, *l2, *need; } Beat;
+static const Beat BEATS[] = {
+  {1, "k_lucia_ksiegi", NULL, 0, 0, 0, "Lucia czeka w gabinecie", "Mówi, że chodzi o księgi ojca.", "I że to nie może czekać.", NULL},
+  {5, "k_kessler", "trattoria", 6, 7, DIR_UP, "Gość z Waszyngtonu", "W trattorii siedzi człowiek w szarym płaszczu.", "Pije tylko wodę. Pyta o ciebie po nazwisku.", NULL},
+  {10, "k_klub", "klub", 10, 12, DIR_UP, "Wieczór w Blue Moon", "Lucia pyta, czy zabierzesz ją dziś na jazz.", "„Ojciec nigdy mnie nie zabierał. Mówił, że to nie miejsce dla córki.”", NULL},
+  {15, "k_mama", "dom", 2, 2, DIR_RIGHT, "List z Polonii", "„Tomuś, przyjdź w niedzielę na obiad. Zrobię gołąbki.", "Dawno cię nie widziałam. Mama.”", NULL},
+  {21, "k_bronek", NULL, 0, 0, 0, "Bronek prosi o rozmowę", "Mówi, że to sprawa „między nami, z Polonii”.", NULL, "_BRONEK_JEST"},
+  {27, "k_zamach", "trattoria", 12, 4, DIR_LEFT, "Spokojny wieczór", "Kolacja w trattorii. Beppe poleca dziś osso buco.", "Nic nie zapowiada kłopotów.", NULL},
+  {36, "k_szczur", NULL, 0, 0, 0, "Gino jest zdyszany", "Gino z warsztatu przybiegł bez czapki.", "Mówi, że widział coś, czego nie powinien był widzieć.", "_BRONEK_JEST"},
+  {44, "k_balbo", "italia", 13, 5, DIR_RIGHT, "Balbo nad Chicago!", "Hydroplany generała Balbo wylądowały na jeziorze Michigan.", "Mała Italia świętuje na ulicach. Ludzie chcą zobaczyć ciebie.", NULL},
+  {50, "k_kane", "klub", 10, 12, DIR_UP, "Zaproszenie od Kane'a", "Victor Kane zaprasza na rozmowę w Blue Moon.", "„O przyszłości miasta”, jak napisał na wizytówce.", "_KAN_ZYJE"},
+  {57, "k_lee", "herbaciarnia", 6, 7, DIR_UP, "Herbata z Lee Wongiem", "Do trattorii przyszła paczka jaśminowej herbaty.", "I zaproszenie wypisane kaligraficznym pismem.", "_TRI_ZYJE"},
+  {64, "k_kessler2", NULL, 0, 0, 0, "Kessler wraca", "Agent Kessler stoi w drzwiach trattorii.", "Tym razem nie jest sam.", NULL},
+  {72, "k_lucia", "kosciol", 7, 11, DIR_UP, "Lucia u św. Rocha", "Ojciec Bernardo mówi, że Lucia siedzi w kościele od rana.", "Prosiła, żebyś przyszedł. Sam.", NULL},
+  {78, "k_vito", NULL, 0, 0, 0, "Rodzinna sprawa", "Vito pił od południa.", "Chce mówić z tobą. Teraz.", "_VITO_JEST"},
+  {188, "k_repeal", "klub", 10, 12, DIR_UP, "Koniec prohibicji!", "Ameryka znów może legalnie pić.", "W Blue Moon trwa największa impreza w historii Chicago.", NULL},
+};
+#define NBEATS ((int)(sizeof(BEATS) / sizeof(BEATS[0])))
+
+static void var_set(const char *n, int v) { H.vars[var_find(n, 1)] = v; }
+
+static int man_by_sprite(const char *sp) {
+  for (int i = 0; i < T.nmen; i++) if (!strcmp(T.men[i].sprite, sp)) return i;
+  return -1;
+}
+
+static int most_hostile(void) {
+  int best = -1, bv = 1000;
+  for (int f = 1; f < NF; f++) {
+    if (!fam_alive(f)) continue;
+    int v = T.f[f].rel - (T.f[f].state == F_WAR ? 200 : 0) - T.f[f].soldiers / 4;
+    if (v < bv) { bv = v; best = f; }
+  }
+  return best;
+}
+
+/* stan Księgi widoczny dla skryptów fabuły */
+static void export_vars(void) {
+  var_set("_DZIEN", T.day);
+  var_set("_SZACUNEK", T.respect);
+  var_set("_GORACZKA", T.heat);
+  var_set("_SLEDZTWO", T.invest);
+  var_set("_ZOLNIERZE", T.soldiers);
+  var_set("_BRONEK_JEST", man_by_sprite("bronek") >= 0);
+  var_set("_VITO_JEST", man_by_sprite("vito") >= 0);
+  int wars = 0;
+  for (int f = 1; f < NF; f++) {
+    char b[24];
+    snprintf(b, sizeof b, "_%s_ZYJE", FT[f].id);
+    for (char *c = b; *c; c++) *c = (char)toupper((unsigned char)*c);
+    var_set(b, fam_alive(f));
+    if (fam_alive(f) && T.f[f].state == F_WAR) wars++;
+  }
+  var_set("_WOJNA", wars);
+  int h = most_hostile();
+  for (int f = 1; f < NF; f++) {
+    char b[24];
+    snprintf(b, sizeof b, "_WROG_%s", FT[f].id);
+    for (char *c = b; *c; c++) *c = (char)toupper((unsigned char)*c);
+    var_set(b, f == h);
+  }
+  var_set("_PROHIBICJA", !T.repealed);
+}
+
+static char sceneVar[40];
+static void scene_clear(void) {
+  if (sceneVar[0]) var_set(sceneVar, 0);
+  sceneVar[0] = 0;
+}
+
+static void scene_start(const char *map, int x, int y, int dir, const char *script) {
+  int mp = map ? map_find(map) : map_find(S.hqMap);
+  int sc = script_find(script);
+  if (mp < 0 || sc < 0 || g_autoplay) return;
+  scene_clear();
+  snprintf(sceneVar, sizeof sceneVar, "_S_%s", script);
+  for (char *c = sceneVar; *c; c++) *c = (char)toupper((unsigned char)*c);
+  var_set(sceneVar, 1);
+  if (!map) { x = S.hqX; y = S.hqY; dir = S.hqDir; }
+  else if (x == 0 && y == 0) map_entry(mp, &x, &y, &dir);
+  export_vars();
+  md = 0;
+  world_load_map(mp, x, y, dir);
+  game_set_mode(MODE_WORLD);
+  g_fade = 255; g_autofade = 1;
+  script_start(sc, NULL);
+}
+
+static void beats_check(void) {
+  for (int i = 0; i < NBEATS; i++) {
+    if (T.beats & (1 << i) || T.day < BEATS[i].day) continue;
+    if (BEATS[i].need) { export_vars(); if (!var_or(BEATS[i].need, 0)) { T.beats |= 1 << i; continue; } }
+    T.beats |= 1 << i;
+    push_ev(EV_BEAT, i, 0);
+    break; /* najwyżej jedna scena dziennie */
+  }
+}
+
+static void beat_view(const Ev *e, EvView *v) {
+  const Beat *b = &BEATS[e->a];
+  snprintf(v->title, 48, "%s", b->title);
+  snprintf(v->text[v->ntext++], 100, "%s", b->l1);
+  if (b->l2) snprintf(v->text[v->ntext++], 100, "%s", b->l2);
+  snprintf(v->opt[v->nopt++], 60, "Jedź (scena w świecie 3D)");
+}
+
+static void beat_apply(const Ev *e) {
+  const Beat *b = &BEATS[e->a];
+  scene_start(b->map, b->x, b->y, b->dir, b->script);
+}
+
+/* ---------------------------------------------------------------- gazeta */
+typedef struct { int day; const char *head, *sub; } News;
+static const News HIST[] = {
+  {0, "WYSTAWA ŚWIATOWA OTWARTA NAD JEZIOREM", "„Stulecie Postępu” przyciąga tłumy. Burmistrz Kelly: „Chicago pokazuje światu przyszłość”."},
+  {14, "FEDERALNI OBIECUJĄ: SKOŃCZYMY Z GANGAMI", "Prokurator generalny zapowiada nowy wydział do walki z przestępczością zorganizowaną."},
+  {28, "ROOSEVELT PODPISUJE USTAWĘ O ODBUDOWIE", "Błękitny Orzeł NRA w witrynach sklepów. „Robimy swoje” — piszą kupcy z Halsted Street."},
+  {42, "BALBO I JEGO ESKADRA LĄDUJĄ W CHICAGO!", "24 hydroplany na jeziorze Michigan. Tysiące Włochów wiwatuje na brzegu."},
+  {56, "PROCES ROGERA TOUHY'EGO W CIENIU SKANDALU", "Obrona twierdzi, że oskarżenie o porwanie Factora to spisek. Miasto wstrzymuje oddech."},
+  {70, "CAPONE WCIĄŻ ZA KRATAMI W ATLANCIE", "Były król Chicago pisze listy do rodziny. „Nikt już nie pamięta jego nazwiska” — mówi policja."},
+  {84, "„NIE STRZELAJCIE, G-MEN!”", "Machine Gun Kelly aresztowany w Memphis. Federalni mają nowy przydomek."},
+  {98, "WYSTAWA BIJE REKORD: 22 MILIONY GOŚCI", "Hale Postępu zamykają się na zimę. Organizatorzy zapowiadają drugi sezon."},
+  {112, "ZIMA NADCHODZI, KOLEJKI PO ZUPĘ ROSNĄ", "Na West Madison Street tysiąc bezrobotnych czeka na miskę grochówki."},
+  {126, "STANY GŁOSUJĄ NAD 21. POPRAWKĄ", "Utah może przesądzić o końcu prohibicji. Barmani z Loopu ostrzą korkociągi."},
+  {182, "PROHIBICJA NIE ŻYJE! AMERYKA ZNÓW PIJE", "Tłumy na ulicach Loopu. „Szczęśliwe dni znowu tu są” — śpiewają w każdym barze."},
+  {196, "ŚWIĘTA W MIEŚCIE WIATRU", "Pierwsze od czternastu lat legalne Boże Narodzenie z kieliszkiem. Kościoły pełne."},
+  {224, "DILLINGER UCIEKA Z WIĘZIENIA W CROWN POINT", "„Wrogiem publicznym numer jeden” podobno wystrugał drewniany pistolet."},
+};
+
+static void news_view(const Ev *e, EvView *v) {
+  int week = e->b;
+  char ds[40];
+  date_str(T.day, ds, sizeof ds);
+  snprintf(v->title, 48, "Chicago Daily Herald");
+  snprintf(v->text[v->ntext++], 100, "{s}%s • 3 centy • wydanie poranne{-}", ds);
+  const News *h = NULL;
+  for (int i = 0; i < (int)(sizeof HIST / sizeof HIST[0]); i++) if (HIST[i].day <= week * 7 + 6 && HIST[i].day >= week * 7 - 7) h = &HIST[i];
+  if (h) {
+    snprintf(v->text[v->ntext++], 100, "{y}%s{-}", h->head);
+    snprintf(v->text[v->ntext++], 100, "%s", h->sub);
+  }
+  /* wiadomości z naszego półświatka */
+  const char *lh = NULL, *ls = NULL;
+  static char b1[100], b2[100];
+  int hf = most_hostile();
+  if (T.lastWar > 0 && hf > 0) {
+    snprintf(b1, sizeof b1, "STRZELANINA W %s", DT[FT[hf].hq].name);
+    for (char *c = b1; *c; c++) if (*c >= 'a' && *c <= 'z') *c = (char)(*c - 32);
+    snprintf(b2, sizeof b2, "Policja łączy ją z wojną gangów. Ludzie „%s” nie komentują.", FT[hf].boss);
+    lh = b1; ls = b2;
+  } else if (T.invest >= 50) {
+    lh = "URZĄD SKARBOWY BADA KSIĘGI TRATTORII";
+    ls = "Anonimowy urzędnik: „Liczby się nie zgadzają. A liczby nie kłamią”.";
+  } else if (T.heat >= 55) {
+    lh = "KOMISARZ ZAPOWIADA CZYSTKĘ NA ULICACH";
+    ls = "Nocne naloty na meliny w kilku dzielnicach. Właściciele milczą.";
+  } else if (dist_count(0) >= 4) {
+    snprintf(b1, sizeof b1, "KIM JEST „POLAK” Z TAYLOR STREET?");
+    snprintf(b2, sizeof b2, "Rodzina Marino kontroluje już %d dzielnic, szepczą na posterunkach.", dist_count(0));
+    lh = b1; ls = b2;
+  } else if (T.respect >= 50) {
+    lh = "DATKI DLA SIEROCIŃCA OD „ANONIMOWEGO DOBROCZYŃCY”";
+    ls = "Siostry z parafii św. Rocha dziękują. Wszyscy wiedzą, kto to.";
+  } else {
+    static const char *H2[][2] = {
+      {"NOCNY POŻAR W MAGAZYNIE NA LEVEE", "Strażacy znaleźli puste beczki po piwie. Właściciel nieznany."},
+      {"CICHE ULICE MAŁEJ ITALII", "Kupcy z Taylor Street: „Ostatnio nikt nie przychodzi po pieniądze”."},
+      {"RADNY KOWALCZYK OBIECUJE NOWE LATARNIE", "Polonia czeka na nie od dziesięciu lat."},
+      {"PRZEMYTNIK ZATRZYMANY NA MOŚCIE", "W ciężarówce z jabłkami znaleziono 40 skrzynek kanadyjskiej whisky."},
+    };
+    int k = (week * 7 + T.respect) % 4;
+    lh = H2[k][0]; ls = H2[k][1];
+  }
+  snprintf(v->text[v->ntext++], 100, "{y}%s{-}", lh);
+  snprintf(v->text[v->ntext++], 100, "%s", ls);
+  snprintf(v->opt[v->nopt++], 60, "Odłóż gazetę");
+}
+
+/* ---------------------------------------------------------------- polecenia skryptów: tycoon KLUCZ ... */
+void tycoon_script_cmd(const char *key, const char *a, int n) {
+  int na = a ? atoi(a) : 0;
+  if (!T.active) return;
+  if (!strcmp(key, "respect")) T.respect = CLAMP(T.respect + na, 0, 100);
+  else if (!strcmp(key, "heat")) T.heat = CLAMP(T.heat + na, 0, 100);
+  else if (!strcmp(key, "invest")) T.invest = CLAMP(T.invest + na, 0, 100);
+  else if (!strcmp(key, "soldiers")) T.soldiers = CLAMP(T.soldiers + na, 0, 200);
+  else if (!strcmp(key, "booze")) T.booze = CLAMP(T.booze + na, 0, 150);
+  else if (!strcmp(key, "politician")) T.politician = na;
+  else if (!strcmp(key, "rel") || !strcmp(key, "war") || !strcmp(key, "truce") || !strcmp(key, "ally")) {
+    int f = -1;
+    for (int k = 1; k < NF; k++) if (a && !strcmp(a, FT[k].id)) f = k;
+    if (a && !strcmp(a, "wrog")) f = most_hostile();
+    if (f <= 0 || !fam_alive(f)) return;
+    if (!strcmp(key, "rel")) rel_add(f, n);
+    else if (!strcmp(key, "war")) go_war(f);
+    else if (!strcmp(key, "truce")) { T.f[f].state = F_TRUCE; T.f[f].stateT = n ? n : 14; }
+    else if (!strcmp(key, "ally")) { T.f[f].state = F_ALLY; rel_add(f, 10); }
+  } else if (!strcmp(key, "infl")) {
+    int d = na;
+    if (d >= 0 && d < ND) infl_take(d, 0, n, -1);
+    recompute_owners(0);
+  } else if (!strcmp(key, "loyal") || !strcmp(key, "remove") || !strcmp(key, "capo") || !strcmp(key, "hurt")) {
+    int i = a ? man_by_sprite(a) : -1;
+    if (i < 0) return;
+    if (!strcmp(key, "loyal")) T.men[i].loyal = CLAMP(T.men[i].loyal + n, 0, 100);
+    else if (!strcmp(key, "capo")) { T.men[i].capo = 1; T.men[i].brains = CLAMP(T.men[i].brains + 1, 1, 10); }
+    else if (!strcmp(key, "hurt")) { unassign(i); T.men[i].status = MS_HURT; T.men[i].statusT = n ? n : 5; }
+    else { unassign(i); remove_man(i); }
+  } else if (!strcmp(key, "spawn")) {
+    /* wróg z najbardziej wrogiej rodziny: tycoon spawn X Y */
+    world_spawn(enemy_for(most_hostile(), 0), na, n, 0);
+  } else if (!strcmp(key, "log")) {
+    if (a) tlog("%s", a);
+  }
+  export_vars();
+}
+
+/* ---------------------------------------------------------------- wizyty we własnych lokalach */
+static const char *visit_map(int type) {
+  switch (type) {
+    case B_MELINA: return "melina";
+    case B_KASYNO: return "kasyno";
+    case B_BUKMACHER: return "bukmacher";
+    case B_KLUB: return "klub";
+    case B_BOKS: return "hala";
+    case B_RESTAUR: return "trattoria";
+    case B_BROWAR: return "browar";
+    case B_PORT: return "doki";
+  }
+  return NULL;
+}
+
+static int visit_ok(int i) {
+  const char *m = visit_map(T.biz[i].type);
+  return m && map_find(m) >= 0 && !T.biz[i].closed && !MS.active;
+}
+
+static void visit_start(int i) {
+  const char *m = visit_map(T.biz[i].type);
+  char sc[40];
+  snprintf(sc, sizeof sc, "w_%s", m);
+  var_set("_WIZ_POZIOM", T.biz[i].lvl);
+  var_set("_WIZ_ZARZADCA", T.biz[i].manager >= 0);
+  var_set("_WIZ_DZIS", T.visitDay == T.day + 1);
+  T.visitDay = T.day + 1;
+  int mp = map_find(m), x, y, d;
+  map_entry(mp, &x, &y, &d);
+  if (script_find(sc) >= 0) scene_start(m, x, y, d, sc);
+  else { export_vars(); md = 0; world_load_map(mp, x, y, d); game_set_mode(MODE_WORLD); g_fade = 255; g_autofade = 1; }
+}
+
+/* test: scena kroniki (beat >= 0) albo wizyta w lokalu typu -1-beat */
+int tycoon_debug_beat(int b) {
+  if (!T.active) tycoon_start(60);
+  int ga = g_autoplay;
+  g_autoplay = 0;
+  if (b >= 0 && b < NBEATS) { Ev e = {EV_BEAT, b, 0}; beat_apply(&e); }
+  else if (b < 0) {
+    int type = -1 - b;
+    T.biz[T.nbiz++] = (Biz){type, 0, 1, -1, 0, 0};
+    visit_start(T.nbiz - 1);
+  }
+  g_autoplay = ga;
+  return b;
+}
+
 /* ================================================================ UI: okna modalne */
 enum { MK_INFO = 1, MK_EVENT, MK_DIST, MK_BUILD, MK_BIZ, MK_MANAGER, MK_MAN, MK_GUARD, MK_OPTARGET, MK_TEAM, MK_FAM, MK_PICKDIST, MK_REPORT };
 #define MOPT 16
@@ -1477,6 +1768,7 @@ static void open_biz(int i) {
   mopt(m, T.nmen > 0, 1, "Zarządca zwiększa dochód o 6% za każdy punkt sprytu.", "Wyznacz zarządcę");
   mopt(m, b->manager >= 0, 2, NULL, "Odwołaj zarządcę");
   mopt(m, 1, 3, "Połowa wartości inwestycji wraca do kasy.", "Sprzedaj (+$%d)", sell_value(i));
+  if (visit_map(b->type)) mopt(m, visit_ok(i), 4, b->closed ? "Lokal jest zamknięty." : "Zajrzyj osobiście: pogadaj z ludźmi, załatw sprawy na miejscu.", "Odwiedź lokal (świat 3D)");
   mopt(m, 1, 9, NULL, "Wróć");
 }
 
@@ -1675,6 +1967,7 @@ static void mactivate(void) {
       else if (v == 1) open_pick_man(MK_MANAGER, a, "Wybierz zarządcę");
       else if (v == 2) { unassign(T.biz[a].manager); mclose(); open_biz(a); }
       else if (v == 3) { t_sell(a); mclose(); tsel[TAB_BIZ] = 0; }
+      else if (v == 4) visit_start(a);
       else mclose();
       break;
     case MK_MANAGER:
@@ -1772,6 +2065,7 @@ void tycoon_open(void) {
     if (v < 0 || !H.vars[v]) return;
     tycoon_start(H.vars[var_find("ZAUFANIE", 1)]); /* awaryjnie: zapis sprzed startu */
   }
+  scene_clear();
   game_set_mode(MODE_TYCOON);
   music_play("biuro");
   audio_ambience(AMB_OFFICE, 0.7f, 1);

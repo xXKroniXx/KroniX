@@ -133,6 +133,14 @@ add('italia', ['name "Mała Italia"', 'music italia', 'night 120', 'district 1',
     'npc kierowca2 31 7 mafioso up s_kierowca if STEFEK_OUT',
     'npc gliniarz 20 2 gliniarz down s_gliniarz wander',
     'npc pani2 25 7 pani up s_przechodzien wander',
+    'npc parada1 15 3 flapper down - dance if _S_K_BALBO',
+    'npc parada2 16 3 pan down - dance if _S_K_BALBO',
+    'npc parada3 18 7 pani up - dance if _S_K_BALBO',
+    'npc parada4 19 7 pan up - dance if _S_K_BALBO',
+    'npc parada5 11 3 muzyk down - play if _S_K_BALBO',
+    'npc parada6 12 3 muzyk down - play if _S_K_BALBO',
+    'npc ksiadz_p 16 7 ksiadz up - if _S_K_BALBO',
+    'npc babcia_p 15 2 mama down - if _S_K_BALBO',
 ])
 
 # ------------------------------------------------------------------ sklep Gina (broń)
@@ -162,13 +170,22 @@ add('trattoria', ['ambient crowd', 'name "Trattoria Bella Napoli"', 'music itali
     'warp 6 9 italia 8 2 down',
     'npc don 18 2 don down s_don ifnot DON_NIE_ZYJE',
     'npc kelner 2 2 kelner down s_kelner',
-    'npc lucia 10 6 lucia left s_lucia',
-    'npc vito_hq 8 4 vito down s_vito_hq if SZEF if VITO_ZYJE',
-    'npc bronek_hq 12 7 bronek up s_bronek_hq if SZEF if BRONEK',
+    'npc lucia 10 6 lucia left s_lucia ifnot _S_K_LUCIA_KSIEGI ifnot _S_K_ZAMACH',
+    'npc vito_hq 8 4 vito down s_vito_hq if SZEF if VITO_ZYJE ifnot _S_K_VITO',
+    'npc bronek_hq 12 7 bronek up s_bronek_hq if SZEF if BRONEK ifnot _S_K_BRONEK',
     'npc kane 5 6 kane right s_kane if MISJA_URODZINY ifnot STRZELANINA',
     'npc gosc1 9 2 pan down s_gosc if MISJA_URODZINY ifnot STRZELANINA',
     'npc gosc2 12 4 pani left s_gosc if MISJA_URODZINY ifnot STRZELANINA',
     'obj ksiega 18 3 ledger up s_ksiega if SZEF',
+    'npc lucia_o 16 3 lucia right - if _S_K_LUCIA_KSIEGI',
+    'npc bronek_o 16 3 bronek right - if _S_K_BRONEK',
+    'npc gino_o 16 3 gino right - if _S_K_SZCZUR',
+    'npc kessler_o 16 3 kessler right - if _S_K_KESSLER2',
+    'npc agent_o1 15 2 agent down - if _S_K_KESSLER2',
+    'npc agent_o2 19 5 agent left - if _S_K_KESSLER2',
+    'npc vito_o 16 3 vito right - if _S_K_VITO',
+    'npc kessler_t 8 5 kessler left - sit if _S_K_KESSLER',
+    'npc lucia_z 11 4 lucia left - sit if _S_K_ZAMACH',
 ])
 
 # ------------------------------------------------------------------ kościół św. Rocha
@@ -193,6 +210,7 @@ add('kosciol', ['ambient church', 'name "Kościół św. Rocha"', 'music kosciol
     'npc vito_k 9 4 vito down s_vito_pogrzeb if MISJA_POGRZEB ifnot POGRZEB_OK',
     'npc enzo_k 11 8 enzo up s_enzo if MISJA_POGRZEB ifnot POGRZEB_OK',
     'npc babcia 3 6 mama down s_babcia',
+    'npc lucia_c 7 4 lucia down - if _S_K_LUCIA',
 ])
 
 # ------------------------------------------------------------------ doki
@@ -257,7 +275,8 @@ g = [list(r) for r in [
     'zzzzzzDzzzzzzz']]
 add('herbaciarnia', ['ambient crowd', 'name "Herbaciarnia Złoty Smok"', 'music chiny', 'night 120', 'interior 1.7'], g, [
     'warp 6 8 chinatown 10 2 down',
-    'npc lee 7 1 lee down s_lee',
+    'npc lee 7 1 lee down s_lee ifnot _S_K_LEE',
+    'npc lee_k 7 4 lee down - sit if _S_K_LEE',
     'npc tri1 4 2 triada down s_straz_triady',
     'npc tri2 10 2 triada down s_straz_triady',
 ])
@@ -281,6 +300,156 @@ add('browar', ['ambient warehouse', 'name "Levee — browar Russo"', 'music akcj
     'warp 13 15 italia 30 6 left', 'warp 14 15 italia 30 6 left',
     'npc vito_b 12 13 vito up s_vito_browar if MISJA_BROWAR ifnot BROWAR_OK',
     'npc robotnik_b 21 12 robotnik left s_robotnik_browar if BROWAR_OK',
+])
+
+# ------------------------------------------------------------------ lokale Rodziny (wizyty z Księgi, sceny kroniki)
+# klub jazzowy Blue Moon
+W_, H_ = 22, 15
+g = grid(W_, H_, 'r')
+border(g, 'z')
+rect(g, 1, 1, 20, 3, 'y')
+rect(g, 5, 4, 16, 6, 'q')
+g[2][3] = 'P'
+for x, y in ((2, 5), (2, 8), (2, 11), (6, 8), (13, 8), (6, 11), (14, 11), (19, 5)):
+    g[y][x] = 't'
+for y in range(8, 12):
+    g[y][17] = 'b'; g[y][20] = 'S'
+g[13][1] = 'p'; g[13][20] = 'p'; g[1][1] = 'p'; g[1][20] = 'p'
+g[14][10] = 'D'
+add('klub', ['ambient crowd', 'name "Blue Moon — klub jazzowy"', 'music bar', 'night 120', 'interior 2.0', 'entry 10 12 up'], g, [
+    'event 10 13 w_wyjscie',
+    'npc pianista 3 3 muzyk up w_muzyk play',
+    'obj kontrabas 7 2 upbass down -',
+    'npc basista 7 3 muzyk down w_muzyk play',
+    'obj perkusja 13 2 drums down -',
+    'npc perkusista 13 3 muzyk down w_muzyk play',
+    'npc trebacz 16 3 muzyk down w_muzyk play',
+    'obj mikrofon 10 3 mic down -',
+    'npc dolores 10 2 dolores down w_dolores',
+    'npc tan1 7 5 flapper right w_tancerka dance',
+    'npc tan2 8 5 pan left w_bywalec dance',
+    'npc tan3 12 4 pani down w_tancerka dance',
+    'npc tan4 13 5 pan up w_bywalec dance',
+    'npc tan5 10 6 flapper up w_tancerka dance',
+    'npc gosc_k1 3 5 pan left w_bywalec sit',
+    'npc gosc_k2 3 8 pani left w_bywalec sit',
+    'npc gosc_k3 7 8 pan left w_bywalec sit',
+    'npc gosc_k4 12 8 flapper right w_tancerka sit',
+    'npc gosc_k5 5 11 pan right w_bywalec sit',
+    'npc gosc_k6 15 11 pani left w_bywalec sit',
+    'npc barman_k 19 9 barman left w_barman',
+    'npc gosc_k7 16 10 pan right w_bywalec',
+    'npc bramkarz_k 12 13 ochroniarz up w_bramkarz',
+    'npc kierownik_k 18 13 lucky left w_kierownik',
+    'npc lucia_k 11 11 lucia up - if _S_K_KLUB',
+    'npc lucia_k2 11 11 lucia up - if _S_K_REPEAL',
+    'npc kane_k 12 8 kane right - sit if _S_K_KANE',
+    'npc kane_ochr 14 9 ochroniarz left - if _S_K_KANE',
+    'npc vito_k 4 5 vito right - sit if _S_K_REPEAL if _VITO_JEST',
+    'npc bronek_k 18 10 bronek left - if _S_K_REPEAL if BRONEK_ZOSTAL',
+])
+
+# melina za zakładem fryzjerskim
+W_, H_ = 16, 11
+g = grid(W_, H_, '_')
+border(g, 'i')
+for x in range(2, 9):
+    g[1][x] = 'S'; g[3][x] = 'b'
+g[1][13] = 'k'; g[1][14] = 'k'; g[2][14] = 'k'; g[5][14] = 'k'
+g[7][14] = 'P'
+for x, y in ((4, 6), (9, 6), (4, 8), (11, 8)):
+    g[y][x] = 't'
+g[10][8] = 'D'
+add('melina', ['ambient crowd', 'name "Melina „U Fryzjera”"', 'music bar', 'night 120', 'interior 1.5', 'entry 8 8 up'], g, [
+    'event 8 9 w_wyjscie',
+    'npc barman_m 5 2 barman down w_barman',
+    'npc pianista_m 13 7 muzyk right w_muzyk play',
+    'npc gosc_m1 5 6 robotnik left w_bywalec sit',
+    'npc gosc_m2 3 6 dokowiec right w_bywalec sit',
+    'npc gosc_m3 10 6 pan left w_bywalec sit',
+    'npc gosc_m4 12 8 flapper left w_tancerka sit',
+    'npc gosc_m5 7 4 menel up w_pijak',
+    'npc gosc_m6 3 4 marynarz up w_bywalec',
+    'npc bramkarz_m 6 9 ochroniarz up w_bramkarz',
+    'npc kierownik_m 10 4 mafioso down w_kierownik',
+])
+
+# kasyno na zapleczu
+W_, H_ = 18, 12
+g = grid(W_, H_, 'r')
+border(g, 'j')
+for x, y in ((4, 3), (13, 3), (4, 7)):
+    g[y][x] = 't'
+for x in range(13, 17):
+    g[8][x] = 'b'
+for x in range(13, 17):
+    g[10][x] = 'S'
+g[1][1] = 'p'; g[1][16] = 'p'
+g[11][9] = 'D'
+add('kasyno', ['ambient crowd', 'name "Kasyno „Złota Podkowa”"', 'music bar', 'night 120', 'interior 1.7', 'entry 9 9 up'], g, [
+    'event 9 10 w_wyjscie',
+    'obj ruletka 9 3 roulette down -',
+    'npc krupier 9 2 kelner down w_krupier',
+    'npc gracz1 8 4 pan up w_gracz',
+    'npc gracz2 10 4 pani up w_gracz',
+    'npc gracz3 3 3 pan right w_gracz sit',
+    'npc gracz4 5 3 lucky left w_gracz sit',
+    'npc gracz5 12 3 pan right w_gracz sit',
+    'npc gracz6 14 3 flapper left w_gracz sit',
+    'npc gracz7 3 7 robotnik right w_gracz sit',
+    'npc gracz8 5 7 pan left w_gracz sit',
+    'npc barman_ka 15 9 barman up w_barman',
+    'npc bramkarz_ka 7 10 ochroniarz up w_bramkarz',
+    'npc kierownik_ka 11 7 mafioso down w_kierownik',
+])
+
+# biuro bukmachera
+W_, H_ = 14, 9
+g = grid(W_, H_, 'o')
+border(g, 'Q')
+for x in (3, 7, 10):
+    g[2][x] = 'd'
+g[1][12] = 'k'
+g[8][7] = 'D'
+add('bukmacher', ['ambient room', 'name "Biuro bukmacherskie „Pewniak”"', 'music bar', 'night 120', 'interior 1.5', 'entry 7 6 up'], g, [
+    'event 7 7 w_wyjscie',
+    'obj tablica 5 1 chalkboard down -',
+    'obj radio_b 11 3 radio down -',
+    'obj telefon_b 3 3 phone down -',
+    'npc urzednik1 3 1 kelner down w_urzednik',
+    'npc urzednik2 10 1 kelner down w_urzednik',
+    'npc gracz_b1 4 4 robotnik up w_gracz',
+    'npc gracz_b2 9 4 pan up w_gracz',
+    'npc gracz_b3 11 5 dokowiec left w_gracz',
+    'npc kierownik_b 7 1 lucky down w_kierownik',
+])
+
+# hala bokserska
+W_, H_ = 20, 14
+g = grid(W_, H_, 'o')
+border(g, 'M')
+rect(g, 8, 4, 10, 6, 'y')
+for x in range(3, 17):
+    if x < 7 or x > 11:
+        g[9][x] = 'e'
+for y in (3, 5, 7):
+    g[y][3] = 'e'; g[y][15] = 'e'
+g[1][1] = 'k'; g[1][2] = 'X'; g[1][17] = 'X'; g[12][17] = 'k'
+g[13][9] = 'D'
+add('hala', ['ambient warehouse', 'name "Hala bokserska na Halsted"', 'music walka', 'night 120', 'interior 2.6', 'entry 9 11 up'], g, [
+    'event 9 12 w_wyjscie',
+    'obj ring 9 5 boxring down -',
+    'npc bokser_h1 8 5 bokser right w_bokser dance',
+    'npc bokser_h2 10 5 bokser2 left w_bokser dance',
+    'npc sedzia 9 4 kelner down w_bywalec',
+    'npc kibic1 4 8 robotnik up w_kibic',
+    'npc kibic2 5 8 dokowiec up w_kibic',
+    'npc kibic3 13 8 pan up w_kibic',
+    'npc kibic4 14 8 marynarz up w_kibic',
+    'npc kibic5 4 4 robotnik right w_kibic',
+    'npc kibic6 14 6 pan left w_kibic',
+    'npc trener 12 10 feliks up w_trener',
+    'npc kierownik_h 6 10 lucky up w_kierownik',
 ])
 
 # ------------------------------------------------------------------ mapy akcji (tycoon)

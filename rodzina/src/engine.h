@@ -117,11 +117,12 @@ typedef struct {
   char sprite[24];
   int script;
   int wander;
-  int condVar[2], condNeg[2];
+  int condVar[3], condNeg[3];
   int toMap, toX, toY, toDir;
   char enemies[64];
   int once;
   int ally; /* mob sojuszniczy */
+  int pose; /* stała animacja NPC: AN_SIT / AN_DANCE / AN_PLAY (0 = zwykła) */
 } EntDef;
 
 typedef struct {
@@ -320,6 +321,7 @@ void ui_toast_draw(void);
 void tycoon_init(void);
 void tycoon_start(int trust);
 void tycoon_open(void);
+void tycoon_script_cmd(const char *key, const char *arg, int n);
 void tycoon_update(void);
 void tycoon_draw(void);
 void tycoon_end_day(void);
@@ -333,6 +335,7 @@ int tycoon_sim_days(int days, int verbose); /* test: symulacja z prostą AI grac
 void tycoon_world_tick(void);   /* co klatkę w świecie 3D (akcje osobiste) */
 int tycoon_mission_active(void);
 void tycoon_mission_fail(void); /* gracz zginął podczas akcji */
+int tycoon_debug_beat(int b);
 int tycoon_debug_mission(int type, int target);
 
 /* ------------------------------------------------------------------ test / debug */

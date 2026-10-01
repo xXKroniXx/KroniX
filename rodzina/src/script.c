@@ -230,6 +230,7 @@ static void exec(void) {
           return;
         }
         if (!strcmp(c->s[0], "open")) { tycoon_open(); V.state = VS_TYCOON; }
+        else tycoon_script_cmd(c->s[0], c->s[1], c->i[0]);
         break;
       case OP_END:
         if (V.sp > 0) V.pc = V.stack[--V.sp];

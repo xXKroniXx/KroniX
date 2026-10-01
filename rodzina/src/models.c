@@ -518,11 +518,127 @@ static void m_sconce(void) {
   cyl(0, 0.0f, 0.08f, 0.035f, 0.05f, 0.08f, 8, 3);
 }
 
+
+/* ---- v2: lokale (jazz, kasyno, hala, bukmacher) */
+static void m_upbass(void) {
+  /* kontrabas (≈1,8 m) */
+  PNT(0xFF6A3418, L_WOOD); P_.uvs = 0.5f;
+  sph(0, 0.22f, 0, 0.14f, 0.16f, 0.07f, 12);
+  sph(0, 0.42f, 0, 0.11f, 0.12f, 0.065f, 12);
+  box(-0.09f, 0.3f, -0.06f, 0.09f, 0.34f, 0.06f);
+  PNT(0xFF14100C, L_WOOD);
+  box(-0.018f, 0.45f, 0.055f, 0.018f, 0.92f, 0.075f);
+  sph(0, 0.94f, 0.06f, 0.025f, 0.035f, 0.025f, 8);
+  box(-0.03f, 0.24f, 0.06f, 0.03f, 0.26f, 0.08f);
+  PNT(0xFFD8D0C0, L_METAL);
+  for (int i = -1; i <= 1; i += 2) box(i * 0.006f - 0.002f, 0.25f, 0.075f, i * 0.006f + 0.002f, 0.9f, 0.079f);
+  PNT(0xFF22252A, L_METAL);
+  cyl(0, 0.0f, 0, 0.008f, 0.008f, 0.08f, 6, 0);
+}
+static void m_drumkit(void) {
+  PNT(0xFFE8E0D0, L_CLOTH);
+  mb_cyl_z(M_, v3(0, 0.13f, 0), 0.13f, 0.12f, 16, 3);   /* bęben basowy */
+  PNT(0xFF8A1A1E, L_METAL);
+  mb_cyl_z(M_, v3(0, 0.13f, -0.065f), 0.135f, 0.01f, 16, 0);
+  mb_cyl_z(M_, v3(0, 0.13f, 0.055f), 0.135f, 0.01f, 16, 0);
+  PNT(0xFFE8E0D0, L_CLOTH);
+  cyl(-0.18f, 0.28f, 0.1f, 0.07f, 0.07f, 0.05f, 12, 3);  /* werbel */
+  cyl(0.12f, 0.3f, 0.05f, 0.06f, 0.06f, 0.06f, 12, 3);   /* tom */
+  PNT(0xFF22252A, L_METAL);
+  cyl(-0.18f, 0, 0.1f, 0.006f, 0.006f, 0.28f, 6, 0);
+  cyl(-0.3f, 0, 0.0f, 0.006f, 0.006f, 0.44f, 6, 0);
+  cyl(0.28f, 0, -0.05f, 0.006f, 0.006f, 0.55f, 6, 0);
+  PNT(0xFFD8A840, L_BRASS);
+  cyl(-0.3f, 0.44f, 0.0f, 0.09f, 0.09f, 0.008f, 14, 3);  /* hi-hat */
+  cyl(-0.3f, 0.455f, 0.0f, 0.09f, 0.09f, 0.008f, 14, 3);
+  cyl(0.28f, 0.55f, -0.05f, 0.13f, 0.02f, 0.02f, 16, 1);  /* ride */
+  PNT(0xFF3A2A1E, L_LEATHER);
+  cyl(0, 0, 0.32f, 0.07f, 0.07f, 0.22f, 10, 3);          /* stołek */
+}
+static void m_mic(void) {
+  PNT(0xFF22252A, L_METAL);
+  cyl(0, 0, 0, 0.08f, 0.08f, 0.012f, 12, 3);
+  cyl(0, 0.012f, 0, 0.007f, 0.007f, 0.72f, 6, 0);
+  PNT(0xFFE0E0E8, L_METAL);
+  sph(0, 0.76f, 0, 0.03f, 0.045f, 0.022f, 10);
+  PNT(0xFF22252A, L_METAL);
+  box(-0.035f, 0.73f, -0.004f, 0.035f, 0.745f, 0.004f);
+}
+static void m_boxring(void) {
+  /* ring 3x3 kafle, środek w (0,0) */
+  float R = 1.42f;
+  PNT(0xFFDCD4C2, L_CLOTH); P_.uvs = 2.0f;
+  box(-R, 0, -R, R, 0.03f, R);
+  PNT(0xFF2A3A6A, L_CLOTH);
+  box(-R - 0.05f, 0, -R - 0.05f, R + 0.05f, 0.025f, -R);
+  box(-R - 0.05f, 0, R, R + 0.05f, 0.025f, R + 0.05f);
+  box(-R - 0.05f, 0, -R, -R, 0.025f, R);
+  box(R, 0, -R, R + 0.05f, 0.025f, R);
+  for (int i = 0; i < 4; i++) {
+    float x = (i & 1) ? R : -R, z = (i & 2) ? R : -R;
+    PNT(i == 0 ? 0xFFA81E1E : i == 3 ? 0xFF1E3AA8 : 0xFFE8E8E8, L_METAL);
+    cyl(x, 0, z, 0.035f, 0.035f, 0.72f, 8, 2);
+  }
+  PNT(0xFFE8E2D4, L_CLOTH);
+  for (int k = 0; k < 3; k++) {
+    float y = 0.3f + k * 0.17f, t = 0.013f;
+    box(-R, y, -R - t, R, y + 0.025f, -R + t);
+    box(-R, y, R - t, R, y + 0.025f, R + t);
+    box(-R - t, y, -R, -R + t, y + 0.025f, R);
+    box(R - t, y, -R, R + t, y + 0.025f, R);
+  }
+}
+static void m_roulette(void) {
+  PNT(0xFF3A2414, L_WOOD);
+  rbx(-0.55f, 0, -0.32f, 0.55f, 0.36f, 0.32f, 0.03f);
+  PNT(0xFF1E5A2E, L_CLOTH); P_.uvs = 1.0f;
+  box(-0.52f, 0.36f, -0.29f, 0.52f, 0.375f, 0.29f);
+  PNT(0xFFE8E0C8, L_WHITE);
+  for (int i = 0; i < 6; i++) box(-0.1f + i * 0.1f, 0.375f, -0.2f, -0.095f + i * 0.1f, 0.378f, 0.2f);
+  PNT(0xFF4A2A14, L_WOOD);
+  cyl(-0.36f, 0.375f, 0, 0.17f, 0.15f, 0.05f, 20, 3);
+  PNT(0xFF8A1A1A, L_CLOTH);
+  cyl(-0.36f, 0.42f, 0, 0.12f, 0.12f, 0.005f, 18, 3);
+  PNT(0xFFD8A840, L_BRASS);
+  cyl(-0.36f, 0.425f, 0, 0.012f, 0.008f, 0.06f, 8, 1);
+  /* żetony */
+  for (int i = 0; i < 5; i++) {
+    PNT(i & 1 ? 0xFFE8E8E8 : 0xFFB82020, L_WHITE);
+    cyl(0.1f + i * 0.07f, 0.378f, 0.1f - (i % 2) * 0.15f, 0.018f, 0.018f, 0.01f + (i % 3) * 0.012f, 10, 1);
+  }
+}
+static void m_chalkboard(void) {
+  PNT(0xFF3A2414, L_WOOD);
+  box(-0.6f, 0.3f, -0.03f, 0.6f, 1.15f, 0.03f);
+  PNT(0xFF1C2620, L_CONCRETE); P_.uvs = 0.5f;
+  box(-0.56f, 0.34f, 0.03f, 0.56f, 1.11f, 0.035f);
+  PNT(0xFFE8E8E0, L_WHITE); P_.emis = 0.15f;
+  for (int r = 0; r < 7; r++) {
+    float y = 1.02f - r * 0.1f;
+    box(-0.5f, y, 0.036f, -0.5f + 0.2f + (r * 37 % 5) * 0.04f, y + 0.015f, 0.04f);
+    box(-0.12f, y, 0.036f, -0.02f + (r * 13 % 3) * 0.03f, y + 0.015f, 0.04f);
+    box(0.2f, y, 0.036f, 0.3f + (r * 7 % 4) * 0.04f, y + 0.015f, 0.04f);
+  }
+  box(-0.56f, 0.55f, 0.036f, 0.56f, 0.56f, 0.04f);
+}
+static void m_sax(void) {
+  /* saksofon na stojaku */
+  PNT(0xFF22252A, L_METAL);
+  cyl(0, 0, 0, 0.06f, 0.06f, 0.01f, 8, 3);
+  cyl(0, 0, 0, 0.006f, 0.006f, 0.2f, 6, 0);
+  PNT(0xFFD8A840, L_BRASS);
+  cyl(0, 0.12f, 0, 0.035f, 0.05f, 0.08f, 10, 1);
+  cyl(0, 0.2f, 0.0f, 0.02f, 0.03f, 0.28f, 8, 0);
+  mb_cyl_z(M_, v3(0, 0.12f, 0.04f), 0.03f, 0.08f, 8, 0);
+  cyl(0, 0.48f, 0.0f, 0.012f, 0.02f, 0.06f, 8, 0);
+}
+
 int objmodel_find(const char *n) {
   static const struct { const char *name; int md; } T[] = {
     {"ledger", MD_LEDGER}, {"papers", MD_PHOTO}, {"photo", MD_PHOTO}, {"money", MD_MONEY}, {"bottle", MD_BOTTLE},
     {"briefcase", MD_BRIEFCASE}, {"safe", MD_SAFE}, {"radio", MD_RADIO}, {"phone", MD_PHONE}, {"crate", MD_CRATE},
-    {"gramophone", MD_GRAMOPHONE}, {"note", MD_LEDGER}};
+    {"gramophone", MD_GRAMOPHONE}, {"note", MD_LEDGER}, {"upbass", MD_UPBASS}, {"drums", MD_DRUMKIT}, {"mic", MD_MIC},
+    {"boxring", MD_BOXRING}, {"roulette", MD_ROULETTE}, {"chalkboard", MD_CHALKBOARD}, {"sax", MD_SAX}, {"chair", MD_CHAIR}, {"table", MD_TABLE}};
   for (unsigned i = 0; i < sizeof T / sizeof T[0]; i++) if (!strcmp(T[i].name, n)) return T[i].md;
   return -1;
 }
@@ -533,7 +649,8 @@ void models_build(void) {
     m_piano, m_desk, m_bookcase, m_fireplace, m_crate, m_crates, m_barrel, m_vat, m_pew, m_altar,
     m_bed, m_fence, m_bars, m_machine, m_tree, m_plant, m_car, m_truck, m_chandelier, m_candle,
     m_mailbox, m_phone, m_radio, m_gramophone, m_counter, m_safe, m_ring, m_tank, m_ceillamp,
-    m_sofa, m_boat, m_ledger, m_photo, m_money, m_bottle, m_briefcase, m_sconce};
+    m_sofa, m_boat, m_ledger, m_photo, m_money, m_bottle, m_briefcase, m_sconce,
+    m_upbass, m_drumkit, m_mic, m_boxring, m_roulette, m_chalkboard, m_sax};
   for (int i = 0; i < MD_COUNT; i++) {
     mb_init(&MODEL_MB[i]);
     M_ = &MODEL_MB[i];

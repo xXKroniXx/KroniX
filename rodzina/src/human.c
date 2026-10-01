@@ -379,8 +379,12 @@ static void pose_rot(const HumanPose *p, Rot *r) {
       r->rz[B_PELVIS] = s * 0.12f;
       r->rx[B_LEG_L] = -fmaxf(0, s) * 0.6f; r->rx[B_SHIN_L] = fmaxf(0, s) * 0.9f;
       r->rx[B_LEG_R] = -fmaxf(0, -s) * 0.6f; r->rx[B_SHIN_R] = fmaxf(0, -s) * 0.9f;
-      r->rz[B_ARM_L] = 1.2f + s * 0.4f; r->rz[B_ARM_R] = -1.2f + s * 0.4f;
-      r->rx[B_FORE_L] = -0.6f; r->rx[B_FORE_R] = -0.6f;
+      float c = cosf(t * 3.5f);
+      r->rx[B_ARM_L] = -0.5f + c * 0.35f; r->rx[B_ARM_R] = -0.5f - c * 0.35f;
+      r->rz[B_ARM_L] = 0.25f; r->rz[B_ARM_R] = -0.25f;
+      r->rx[B_FORE_L] = -1.3f; r->rx[B_FORE_R] = -1.3f;
+      r->ry[B_SPINE] = c * 0.25f;
+      r->rx[B_HEAD] = s * 0.06f;
       r->lift = fabsf(s) * 0.02f;
       break;
     }

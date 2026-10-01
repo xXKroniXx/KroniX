@@ -26,7 +26,7 @@ int world_los(float x0, float z0, float x1, float z1) {
 
 /* ---------------------------------------------------------------- encje */
 static int ent_cond(EntDef *d) {
-  for (int k = 0; k < 2; k++)
+  for (int k = 0; k < 3; k++)
     if (d->condVar[k] >= 0) {
       int v = H.vars[d->condVar[k]] != 0;
       if (d->condNeg[k] ? v : !v) return 0;
@@ -119,7 +119,7 @@ void world_spawn(const char *enemyId, int tx, int ty, int ally) {
   snprintf(d->sprite, sizeof d->sprite, "%s", ed >= 0 ? S.enemies[ed].sprite : "zbir");
   snprintf(d->enemies, sizeof d->enemies, "%s", enemyId);
   d->x = tx; d->y = ty;
-  d->condVar[0] = d->condVar[1] = -1;
+  d->condVar[0] = d->condVar[1] = d->condVar[2] = -1;
   d->script = -1;
   d->ally = ally;
   Ent *e = &W.ents[W.n++];
@@ -420,12 +420,16 @@ static void draw_ent(Ent *e) {
   else if ((e->hostile || e->ally) && e->state >= 2) p.anim = e->moving ? AN_RUN : AN_AIM;
   else if (e->moving) p.anim = AN_WALK;
   else if (script_self() == e && script_blocking()) p.anim = AN_TALK;
-  else p.anim = AN_IDLE;
+  else p.anim = e->d->pose ? e->d->pose : AN_IDLE;
   if (p.anim == AN_AIM || p.anim == AN_SHOOT) {
     float d = sqrtf(dx * dx + dz * dz);
     p.aimPitch = atan2f(0.0f, d > 0.1f ? d : 0.1f);
   }
   float gy = world_ground(e->x, e->z);
+  if (e->d->pose == AN_SIT && !e->dead && p.anim == AN_SIT) {
+    M4 cm = m4_mul(m4_translate(e->x, gy, e->z), m4_roty(e->ang + PI_F));
+    r_draw(&MODELS[MD_CHAIR], &cm, 0);
+  }
   human_draw(e->htype, e->x, gy, e->z, e->ang, &p, 0);
 }
 

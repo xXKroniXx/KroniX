@@ -621,6 +621,15 @@ void city_build(MapDef *m) {
         model_add(&mb, warehouse ? MD_CEILLAMP : MD_CHANDELIER, x + 0.5f, ch, z + 0.5f, 0, 1.0f, 0);
         addlight(x + 0.5f, ch - 0.6f, z + 0.5f, 2.0f, 1.55f, 0.95f, 6.5f, 0);
       }
+  /* reflektory nad sceną (podłoga 'y' przy ścianie) */
+  if (interior)
+    for (int z = 1; z < Mh - 1; z++)
+      for (int x = 1; x < Mw - 1; x++) {
+        if (tile(x, z) != 'y' || !isblock(x, z - 1) || x % 5 != 2) continue;
+        int k = (x / 5) % 3;
+        float r = k == 1 ? 0.9f : 2.4f, g = k == 1 ? 1.1f : 1.5f, b = k == 1 ? 2.6f : 0.7f;
+        addlight(x + 0.5f, Mp->ceil - 0.25f, z + 1.6f, r, g, b, 4.5f, 0);
+      }
   cars();
   street_furniture();
   skyline();

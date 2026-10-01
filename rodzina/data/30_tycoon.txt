@@ -57,11 +57,43 @@ say - "Chicago, 1934."
 as lucia
 "Wszyscy przyszli, Tomaszu. Irlandczycy, Chińczycy, ludzie z Cicero. Nawet radni."
 "Czekają w sali. Na ciebie."
+# ------------- losy bohaterów kroniki
+if BRONEK_ZABITY e_bz
+if BRONEK_ZOSTAL e_bw
+goto e_2
+:e_bz
+say - "Matka Bronka co niedzielę pyta w kościele o syna. Nikt jej nie odpowiada. Ty też nie."
+goto e_2
+:e_bw
+say - "Bronek Mazur stoi przy drzwiach sali jak cień. Jego brat Staszek wozi teraz mąkę dla piekarni Wiśniewskiego."
+:e_2
+if OPIUM e_op
+goto e_3
+:e_op
+say - "Opium z Szanghaju płynie przez twoje lokale. Pieniądze są ogromne. Sny — coraz gorsze."
+:e_3
+if VITO_CONSIGLIERE e_vc
+goto e_4
+:e_vc
+as vito
+"Szefie. Wszyscy na miejscach. Wuj by się popłakał. Ja prawie."
+:e_4
+if OBIETNICA_MAMA e_mama
+goto e_5
+:e_mama
+say - "Na stole leży list od matki. „Obiecałeś, synku. Matka Boska też słyszała.”"
+:e_5
+as lucia
 ifge _PODBOJ 3 krew
+if LUCIA_KALIFORNIA kalifornia
 # ------------- zakończenie pokojowe
 "Ojciec marzył o tym przez trzydzieści lat. Żeby rodziny przestały się zabijać i zaczęły liczyć pieniądze."
 "Ty zrobiłeś to w niecałe dwa."
 ending "KOMISJA" "Zamiast wojny — stół. Bossowie wszystkich rodzin Chicago siadają do rozmów w trattorii Bella Napoli, a ty im przewodniczysz.\n\nMiasto zarabia, ulice są spokojniejsze niż od lat. Gazety piszą o „cudzie Kowalskiego”, a nikt nie potrafi wyjaśnić, na czym polega.\n\nDon Salvatore byłby dumny. Twoja matka — trochę mniej. Ale w niedzielę siedzisz w pierwszej ławce u św. Rocha i nikt już nie mówi na ciebie „Polaczek”.\n\nKONIEC"
+:kalifornia
+"Pamiętasz, co obiecałeś mi u św. Rocha? Ocean. Pomarańcze."
+"Rodzina jest bezpieczna. Komisja będzie rządzić bez nas. Vito, Fabrizio... poradzą sobie."
+ending "KALIFORNIA" "Przewodniczysz pierwszemu posiedzeniu Komisji. Potem wstajesz, kładziesz sygnet Dona na stole i wychodzisz.\n\nTrzy dni później pociąg Super Chief wjeżdża na dworzec w Los Angeles. Lucia śpi z głową na twoim ramieniu. W walizce masz akt własności małego gaju pomarańczowego w Riverside — na jej nazwisko.\n\nW Chicago mówią, że Polak z Taylor Street zniknął jak duch. Matka dostaje co miesiąc list ze stemplem z Kalifornii i kartkę z rysunkiem oceanu.\n\nKONIEC"
 :krew
 "Ojciec rządził strachem i szacunkiem. Ty rządzisz już tylko strachem."
 "Uważaj, Tomaszu. Królowie, których wszyscy się boją, rzadko umierają w łóżku."

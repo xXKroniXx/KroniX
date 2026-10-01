@@ -142,10 +142,13 @@ static void close_section(void) {
 }
 
 static void parse_cond_ent(EntDef *e, int from) {
-  e->condVar[0] = e->condVar[1] = -1;
+  e->condVar[0] = e->condVar[1] = e->condVar[2] = -1;
   int k = 0;
-  for (int i = from; i < ntok && k < 2; i++) {
-    if (!strcmp(tok[i], "if") || !strcmp(tok[i], "ifnot")) {
+  for (int i = from; i < ntok; i++) {
+    if (!strcmp(tok[i], "sit")) e->pose = AN_SIT;
+    else if (!strcmp(tok[i], "dance")) e->pose = AN_DANCE;
+    else if (!strcmp(tok[i], "play")) e->pose = AN_PLAY;
+    else if ((!strcmp(tok[i], "if") || !strcmp(tok[i], "ifnot")) && k < 3) {
       if (i + 1 >= ntok) { err("brak zmiennej po '%s'", tok[i]); break; }
       e->condNeg[k] = !strcmp(tok[i], "ifnot");
       e->condVar[k] = var_find(tok[i + 1], 1);
@@ -295,6 +298,11 @@ static void parse_script_line(char *line) {
   } else if (!strcmp(c, "tycoon")) {
     Cmd *k = emit(OP_TYCOON);
     k->s[0] = sval(1) ? sval(1) : "start";
+    static const char *TK[] = {"start", "open", "respect", "heat", "invest", "soldiers", "booze", "politician", "rel", "war", "truce",
+                               "ally", "infl", "loyal", "remove", "capo", "hurt", "spawn", "log"};
+    int okk = 0;
+    for (unsigned q = 0; q < sizeof TK / sizeof TK[0]; q++) if (!strcmp(k->s[0], TK[q])) okk = 1;
+    if (!okk) err("nieznane polecenie tycoon '%s'", k->s[0]);
     k->s[1] = sval(2);
     k->i[0] = ival(3, 0);
   } else if (!strcmp(c, "armor")) {
