@@ -122,7 +122,13 @@ static struct { int active, op, endT, n; int ent[8], man[8]; } MS;
 static int rnd(int n) { return n > 0 ? rand() % n : 0; }
 static int rr(int a, int b) { return a + rnd(b - a + 1); }
 
+static char tlogHeader[100]; /* nagłówek dnia — wpisywany dopiero przy pierwszym zdarzeniu */
+static void tlog_raw(const char *b) {
+  if (T.nlog >= NLOG) { memmove(T.log[0], T.log[1], sizeof(T.log[0]) * (NLOG - 1)); T.nlog = NLOG - 1; }
+  snprintf(T.log[T.nlog++], 100, "%s", b);
+}
 static void tlog(const char *fmt, ...) {
+  if (tlogHeader[0]) { char h[100]; snprintf(h, sizeof h, "%s", tlogHeader); tlogHeader[0] = 0; tlog_raw(h); }
   char b[100];
   va_list ap;
   va_start(ap, fmt);
@@ -927,7 +933,7 @@ void tycoon_end_day(void) {
   T.ntoday = 0;
   char ds[40];
   date_str(T.day, ds, sizeof ds);
-  tlog("— %s —", ds);
+  snprintf(tlogHeader, sizeof tlogHeader, "{y}— %s —{-}", ds);
   int incomeBefore = H.gold;
   T.lastIncome = T.lastCosts = 0;
 
@@ -1666,7 +1672,8 @@ int tycoon_debug_beat(int b) {
   if (!T.active) tycoon_start(60);
   int ga = g_autoplay;
   g_autoplay = 0;
-  if (b >= 0 && b < NBEATS) { Ev e = {EV_BEAT, b, 0}; beat_apply(&e); }
+  if (b >= 0 && b < NBEATS) { Ev e = {EV_BEAT, b, 0}; T.beats |= 1 << b; beat_apply(&e); }
+  else if (b == 100) { T.nev = 0; push_ev(EV_NEWS, 0, T.day / 7); tycoon_open(); }
   else if (b < 0) {
     int type = -1 - b;
     T.biz[T.nbiz++] = (Biz){type, 0, 1, -1, 0, 0};
@@ -2424,7 +2431,66 @@ static void draw_log(void) {
   text_r(466, CY + CH - 13, "↑↓ przewijanie", pal('d'));
 }
 
+/* gazeta: kremowy papier, winieta i nagłówki szeryfowe */
+static void strip_codes(const char *in, char *out, int n) {
+  int o = 0;
+  for (const char *p = in; *p && o < n - 1; p++) {
+    if (*p == '{' && p[1] && p[2] == '}') { p += 2; continue; }
+    out[o++] = *p;
+  }
+  out[o] = 0;
+}
+static void ctext(int font, float size, float cx, float y, const char *s, u32 col) {
+  d2_text(font, size, cx - d2_text_w(font, size, s) * 0.5f, y, s, col);
+}
+static void draw_news(Modal *m) {
+  float W = 780, Hh = 560, x = (UI_W - W) / 2, y = (UI_H - Hh) / 2;
+  u32 ink = 0xFF1C1814, ink2 = 0xFF3A342C;
+  d2_rect(0, 0, UI_W, UI_H, 0x9A000000);
+  d2_shadow(x, y, W, Hh, 4, 22, 0xC0000000);
+  d2_grad(x, y, W, Hh, 0xFFEDE5CF, 0xFFDCD0B2);
+  d2_rrect_line(x + 10, y + 10, W - 20, Hh - 20, 2, 1.0f, 0x60302820);
+  float cx = x + W / 2;
+  ctext(FONT_SERIF, 50, cx, y + 32, "CHICAGO DAILY HERALD", ink);
+  d2_rect(x + 30, y + 98, W - 60, 3, ink);
+  d2_rect(x + 30, y + 104, W - 60, 1, ink);
+  char b[256];
+  strip_codes(m->text[0], b, sizeof b);
+  ctext(FONT_SANS, 17, cx, y + 110, b, ink2);
+  d2_rect(x + 30, y + 134, W - 60, 1, ink);
+  float yy = y + 150;
+  for (int i = 1; i + 1 < m->ntext + 1 && i < m->ntext; i += 2) {
+    strip_codes(m->text[i], b, sizeof b);
+    char hl[4][256];
+    int n = d2_wrap(FONT_SERIF, i == 1 ? 38 : 28, b, W - 80, hl, 3);
+    for (int k = 0; k < n; k++) { ctext(FONT_SERIF, i == 1 ? 38 : 28, cx, yy, hl[k], ink); yy += i == 1 ? 44 : 34; }
+    if (i + 1 < m->ntext) {
+      strip_codes(m->text[i + 1], b, sizeof b);
+      n = d2_wrap(FONT_SANS, 20, b, W - 120, hl, 3);
+      for (int k = 0; k < n; k++) { ctext(FONT_SANS, 20, cx, yy + 4, hl[k], ink2); yy += 26; }
+    }
+    yy += 14;
+    if (i + 2 < m->ntext) { d2_rect(x + 200, yy - 4, W - 400, 1, 0x80302820); yy += 12; }
+  }
+  /* szpalty tekstu (faktura) */
+  float colTop = yy + 4, colBot = y + Hh - 96;
+  for (int c = 0; c < 3; c++) {
+    float cx0 = x + 40 + c * ((W - 80) / 3), cw = (W - 80) / 3 - 18;
+    for (float ly = colTop; ly < colBot; ly += 9) {
+      unsigned hsh = (unsigned)(ly * 7 + c * 131 + T.day * 17);
+      float lw = cw * (0.72f + (hsh % 28) / 100.0f);
+      d2_rect(cx0, ly, lw, 3, 0x38302820);
+    }
+  }
+  /* przycisk */
+  float bw = 260, bh = 44, bx = cx - bw / 2, by = y + Hh - 72;
+  d2_rrect(bx, by, bw, bh, 6, m->cur == 0 ? 0xFF2A221A : 0xFF4A3E30);
+  ctext(FONT_BOLD, 21, cx, by + 10, m->opt[0], 0xFFF0E6D0);
+  zone((int)(bx / KS), (int)(by / KS), (int)(bw / KS), (int)(bh / KS), Z_MOPT, 0);
+}
+
 static void draw_modal(Modal *m) {
+  if (m->kind == MK_EVENT && T.nev && T.ev[0].id == EV_NEWS) { draw_news(m); return; }
   int w = 330;
   int lines = m->ntext;
   int vis = m->nopt > 12 ? 12 : m->nopt;

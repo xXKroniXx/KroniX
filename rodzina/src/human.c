@@ -451,7 +451,7 @@ void humans_portraits_build(void) {
     HumanPose p;
     memset(&p, 0, sizeof p);
     p.anim = AN_IDLE;
-    r_portrait_begin(&rt, v3(0.05f, 0.84f, 0.42f), v3(0, 0.82f, 0), 24.0f);
+    r_portrait_begin(&rt, v3(0.07f, 0.86f, 0.5f), v3(0, 0.825f, 0), 26.0f);
     human_draw(t, 0, 0, 0, 0.18f, &p, 0);
     r_portrait_end();
     HT[t].portrait = rt.tex;

@@ -200,6 +200,7 @@ void game_debug(const char *cmdline) {
   else if (!strcmp(t[0], "tycoon")) { if (!tycoon_active()) tycoon_start(10); tycoon_open(); }
   else if (!strcmp(t[0], "mission") && n >= 3) printf("mission: %d\n", tycoon_debug_mission(atoi(t[1]), atoi(t[2])));
   else if (!strcmp(t[0], "beat") && n >= 2) { printf("beat %s (tryb %d)\n", t[1], g_mode); tycoon_debug_beat(atoi(t[1])); }
+  else if (!strcmp(t[0], "ledger")) tycoon_open();
   else if (!strcmp(t[0], "endday")) { int k = n > 1 ? atoi(t[1]) : 1; for (int i = 0; i < k; i++) tycoon_end_day(); }
   else if (!strcmp(t[0], "mode") && n >= 2) game_set_mode(!strcmp(t[1], "world") ? MODE_WORLD : !strcmp(t[1], "menu") ? MODE_MENU : MODE_TITLE);
   else if (!strcmp(t[0], "pause")) ui_open_pause();
