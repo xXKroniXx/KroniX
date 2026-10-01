@@ -11,7 +11,7 @@ say - "{s}Chicago, październik 1932.{-} Polonia — dzielnica rzeźni, kominów
 say - "Od kiedy zamknęli rzeźnię Armoura, połowa ulicy żyje z długów. Druga połowa z tego, co da się ukraść."
 say - "Ty jesteś Tomek Kowalski. Dwadzieścia trzy lata, dwie pięści i matka, która martwi się za was oboje."
 say - "{y}Sterowanie:{-} WASD — ruch, mysz — rozglądanie się, E — rozmowa i drzwi, LPM — strzał, R — przeładowanie, Shift — bieg, Esc — menu."
-objective "Porozmawiaj z mamą"
+objective "Porozmawiaj z mamą" @mama
 quest glowne "Porozmawiaj z mamą."
 
 @script s_mama
@@ -34,7 +34,7 @@ goto start
 "Tylko uważaj na siebie. Masz w sobie za dużo ojca."
 :start
 set MISJA_PIEKARNIA 1
-objective "Idź do piekarni Wiśniewskiego (drzwi ze szklaną witryną)"
+objective "Idź do piekarni Wiśniewskiego (drzwi ze szklaną witryną)" @piekarz
 quest glowne "Ludzie Russo nękają Pana Wiśniewskiego. Idź do piekarni po drugiej stronie ulicy."
 end
 :juz
@@ -116,7 +116,7 @@ as piekarz
 "Tomku... Na litość boską. Russo tego nie zapomni."
 "Weź chleb. Weź wszystko."
 give chleb 2
-objective "Wyjdź na ulicę"
+objective "Wyjdź na ulicę" @vito_p
 quest glowne "Pomogłeś Wiśniewskiemu. Na ulicy ktoś na ciebie czeka."
 
 @script s_vito_polonia
@@ -151,7 +151,7 @@ goto koniec
 "Dobrze. Don nie lubi czekać."
 :koniec
 set DON_SZUKA 1
-objective "Idź do trattorii Bella Napoli w Małej Italii (na wschód)"
+objective "Idź do trattorii Bella Napoli w Małej Italii (na wschód)" @don
 quest glowne "Don Salvatore chce cię poznać. Trattoria Bella Napoli w Małej Italii — ulicą na wschód."
 end
 :juz
@@ -327,7 +327,7 @@ end
 @script s_haracz_check
 iflt HARACZ_N 3 nie
 give koperta
-objective "Wróć z haraczem do Dona (trattoria)"
+objective "Wróć z haraczem do Dona (trattoria)" @don
 quest glowne "Zebrałeś haracz. Zanieś kopertę Donowi."
 :nie
 
@@ -462,7 +462,7 @@ add ZAUFANIE 2
 weapon pistol 21
 set DON_POZNANY 1
 set MISJA_HARACZ 1
-objective "Zbierz haracz: Luigi, Signora Rosa, Paddy O'Hara (ulica przed trattorią)"
+objective "Zbierz haracz: Luigi, Signora Rosa, Paddy O'Hara (ulica przed trattorią)" @luigi
 quest glowne "Don Salvatore zlecił ci zebranie haraczu od Luigiego, Signory Rosy i Paddy'ego O'Hary."
 say - "{y}Wskazówka:{-} 1–4 albo kółko myszy zmienia broń. U Gina (sklep z narzędziami) kupisz amunicję i apteczki."
 end
@@ -503,7 +503,7 @@ if MISJA_DOKI doki_trwa
 "Gino pilnuje załadunku. Jedź z nim i dopilnuj, żeby nikt nie przeszkodził."
 "Stefek, mój kierowca, zawiezie cię. Czeka przy samochodzie na ulicy."
 set MISJA_DOKI 1
-objective "Jedź do doków (kierowca przy aucie na ulicy) i pomóż Ginowi"
+objective "Dostań się do doków i pomóż Ginowi (kierowca Stefek przy aucie albo sam — auto: E)" @gino_d
 quest glowne "Dopilnuj transportu whisky w dokach. Kierowca czeka przy aucie na ulicy."
 end
 :doki_trwa
@@ -522,7 +522,7 @@ goto szczur
 set MISJA_SZCZUR 1
 add ZAUFANIE 10
 cash 200
-objective "Znajdź szczura: popytaj Beppe (bar) i Lucię"
+objective "Znajdź szczura: popytaj Beppe (bar) i Lucię" @kelner
 quest glowne "Ktoś sypie. Popytaj w trattorii — kelner Beppe, Lucia."
 end
 :szczur_trwa
@@ -547,7 +547,7 @@ add ZAUFANIE 10
 "Potrzebujemy przyjaciół. Lee Wong z Chinatown nienawidzi Russo bardziej niż ja."
 "Jedź do niego. Herbaciarnia Złoty Smok. Bądź uprzejmy — Lee ceni maniery bardziej niż pieniądze."
 set MISJA_TRIADA 1
-objective "Jedź do Chinatown i porozmawiaj z Lee Wongiem (herbaciarnia)"
+objective "Jedź do Chinatown i porozmawiaj z Lee Wongiem (herbaciarnia)" @lee
 quest glowne "Zdobądź poparcie Triady. Lee Wong czeka w herbaciarni Złoty Smok w Chinatown."
 end
 :triada_trwa
@@ -567,7 +567,7 @@ add ZAUFANIE -5
 weapon tommy 100
 armor 50
 set MISJA_BROWAR 1
-objective "Jedź z Vito do browaru Russo w Levee (kierowca)"
+objective "Jedź z Vito do browaru Russo w Levee (kierowca)" @vito_b
 quest glowne "Uderz w browar Russo w Levee. Vito jedzie z tobą."
 say - "{y}Otrzymujesz Thompsona i kamizelkę kuloodporną.{-} Tommy strzela seriami — przytrzymaj LPM."
 end
@@ -584,7 +584,7 @@ say - "Tydzień później..."
 set MISJA_URODZINY 1
 music italia
 fade in
-objective "Urodziny Dona. Porozmawiaj z gośćmi (Victor Kane czeka w sali)"
+objective "Urodziny Dona. Porozmawiaj z gośćmi (Victor Kane czeka w sali)" @kane
 quest glowne "Urodziny Dona. Gość, Victor Kane, chce z tobą rozmawiać."
 end
 # ---------------------------------- urodziny
@@ -644,7 +644,7 @@ say - "Trzy dni później. Kościół św. Rocha."
 warp kosciol 7 11 up
 music pogrzeb
 fade in
-objective "Pogrzeb Dona. Porozmawiaj z Lucią i Vito"
+objective "Pogrzeb Dona. Porozmawiaj z Lucią i Vito" @vito_k
 quest glowne "Pogrzeb Dona Salvatore w kościele św. Rocha."
 end
 :kane
@@ -675,7 +675,7 @@ add REL_KAN -20
 "Szkoda. Ludzie, którzy nie lubią polityków, zwykle szybko ich potrzebują."
 :koniec
 set KANE_ROZMOWA 1
-objective "Porozmawiaj z Donem w gabinecie"
+objective "Porozmawiaj z Donem w gabinecie" @don
 end
 :juz
 "Proszę się bawić, panie Kowalski. Wieczór jest jeszcze młody."
@@ -713,7 +713,7 @@ end
 @script s_szczur_check
 iflt SZCZUR_TROP 2 nie
 set SZCZUR_KONFRONTACJA 1
-objective "Wszystko wskazuje na Stefka. Znajdź go przy samochodzie"
+objective "Wszystko wskazuje na Stefka. Znajdź go przy samochodzie" @stefek
 quest glowne "Stefek — kierowca Dona — rozmawia z policją. Porozmawiaj z nim przy samochodzie."
 :nie
 
@@ -750,7 +750,7 @@ add GORACZKA -10
 set STEFEK_OUT 1
 set SZCZUR_OK 1
 clear SZCZUR_KONFRONTACJA
-objective "Wróć do Dona"
+objective "Wróć do Dona" @don
 quest glowne "Sprawa szczura załatwiona. Wróć do Dona."
 
 # ====================================================================== DOKI
@@ -778,13 +778,13 @@ set DOKI_WALKA_OK 1
 as gino
 "Madonna... Wiedzieli. Wiedzieli dokładnie, kiedy przypłyniemy."
 "Jeden jeszcze dycha — tam, przy nabrzeżu. Zrób z nim, co uważasz."
-objective "Zdecyduj o losie rannego Irlandczyka (przy nabrzeżu)"
+objective "Zdecyduj o losie rannego Irlandczyka (przy nabrzeżu)" @mickey
 end
 :po
 ifnot MICKEY_DONE czeka
 set DOKI_OK 1
 "Whisky bezpieczna. Wracaj do Dona, ja dowiozę towar."
-objective "Wróć do Dona (kierowca czeka na ulicy w Małej Italii)"
+objective "Wróć do Dona w trattorii (Mała Italia)" @don
 quest glowne "Transport uratowany. Wróć do Dona."
 end
 :czeka
@@ -816,7 +816,7 @@ add REL_IRL -30
 add ZAUFANIE 5
 :koniec
 set MICKEY_DONE 1
-objective "Wróć do Gina"
+objective "Wróć do Gina" @gino_d
 
 @script s_dokowiec
 as dokowiec
@@ -881,7 +881,7 @@ goto koniec
 add REL_TRI 20
 :koniec
 set TRIADA_OK 1
-objective "Wróć do Dona"
+objective "Wróć do Dona" @don
 quest glowne "Rozmowa z Lee Wongiem zakończona. Wróć do Dona."
 end
 :juz
@@ -953,7 +953,7 @@ toast "Obiecałeś Lee Wongowi, że browar spłonie..."
 :koniec
 set BROWAR_OK 1
 set REL_RUS -80
-objective "Wróć do Dona"
+objective "Wróć do Dona" @don
 quest glowne "Browar Russo załatwiony. Wróć do Dona."
 
 @script s_robotnik_browar

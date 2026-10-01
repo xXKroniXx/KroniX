@@ -465,6 +465,17 @@ static void minimap(float x0, float y0, float sz) {
     if (!col) continue;
     d2_circle(cx + sx * ts, cy + sy * ts, e->hostile ? 4.5f : 3.5f, col);
   }
+  /* cel misji: na krawędzi minimapy, jeśli daleko */
+  float gx, gz;
+  if (world_marker_pos(&gx, &gz)) {
+    float wx = gx - W.px, wz = gz - W.pz;
+    float sx = -(wx * ca - wz * sa) * ts, sy = -(wx * sa + wz * ca) * ts;
+    float lim = sz / 2 - 12, l = fmaxf(fabsf(sx), fabsf(sy));
+    if (l > lim) { sx *= lim / l; sy *= lim / l; }
+    float p = 0.7f + 0.3f * sinf(g_time * 5);
+    d2_circle(cx + sx, cy + sy, 7.5f, WITH_A(0x000000, 160));
+    d2_circle(cx + sx, cy + sy, 5.5f, WITH_A(0xFFC040, (int)(255 * p)));
+  }
   d2_noclip();
   /* gracz */
   d2_line(cx, cy - 8, cx - 6, cy + 6, 3, UI_GOLD);
@@ -528,10 +539,19 @@ void combat_draw_hud(void) {
   d2_text_sh(FONT_BOLD, 24, UI_W - mw - 11, 30, b, 0xFF9AE08A);
   /* minimapa */
   minimap(UI_W - 196, 78, 168);
+  {
+    float gx, gz;
+    if (world_marker_pos(&gx, &gz)) {
+      float d = sqrtf((gx - W.px) * (gx - W.px) + (gz - W.pz) * (gz - W.pz)) * 1.9f;
+      char db[32];
+      snprintf(db, sizeof db, "\xe2\x97\x86 cel: %d m", (int)d);
+      d2_text_r(FONT_BOLD, 16, UI_W - 30, 252, db, 0xFFFFC040);
+    }
+  }
   int en = world_enemies_alive();
   if (en > 0) {
     snprintf(b, sizeof b, "Wrogowie: %d", en);
-    d2_text_r(FONT_BOLD, 18, UI_W - 30, 254, b, UI_RED);
+    d2_text_r(FONT_BOLD, 18, UI_W - 30, 276, b, UI_RED);
   }
   /* cel misji */
   if (H.objective[0]) {

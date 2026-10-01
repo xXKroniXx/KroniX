@@ -20,7 +20,27 @@ static void warn(const char *fmt, const char *a) {
 }
 
 /* ---------------------------------------------------------------- wyszukiwanie */
-int map_find(const char *id) { for (int i = 0; i < S.nmaps; i++) if (!strcmp(S.maps[i].id, id)) return i; return -1; }
+int region_find(const char *id) { for (int i = 0; i < S.nregions; i++) if (!strcmp(S.regions[i].id, id)) return i; return -1; }
+int map_find(const char *id) {
+  for (int i = 0; i < S.nmaps; i++) if (!strcmp(S.maps[i].id, id)) return i;
+  int r = region_find(id);
+  return r >= 0 ? S.regions[r].map : -1;
+}
+int map_resolve(const char *id, int *x, int *y) {
+  for (int i = 0; i < S.nmaps; i++) if (!strcmp(S.maps[i].id, id)) return i;
+  int r = region_find(id);
+  if (r < 0) return -1;
+  if (x) *x += S.regions[r].x;
+  if (y) *y += S.regions[r].y;
+  return S.regions[r].map;
+}
+int region_at(int map, float x, float z) {
+  for (int i = 0; i < S.nregions; i++) {
+    Region *g = &S.regions[i];
+    if (g->map == map && x >= g->x && z >= g->y && x < g->x + g->w && z < g->y + g->h) return i;
+  }
+  return -1;
+}
 int item_find(const char *id) { for (int i = 0; i < S.nitems; i++) if (!strcmp(S.items[i].id, id)) return i; return -1; }
 int enemy_find(const char *id) { for (int i = 0; i < S.nenemies; i++) if (!strcmp(S.enemies[i].id, id)) return i; return -1; }
 int script_find(const char *n) { for (int i = 0; i < S.nscripts; i++) if (!strcmp(S.scripts[i].name, n)) return i; return -1; }
@@ -294,7 +314,14 @@ static void parse_script_line(char *line) {
     if (k->i[0] < 0) err("nieznana broń '%s'", w);
     k->i[1] = ival(2, 0);
   } else if (!strcmp(c, "objective")) {
-    emit(OP_OBJECTIVE)->s[0] = sval(1) ? sval(1) : "";
+    Cmd *k = emit(OP_OBJECTIVE);
+    k->s[0] = sval(1) ? sval(1) : "";
+    /* opcjonalny znacznik celu: @id_npc albo @mapa X Y */
+    k->s[1] = NULL; k->i[0] = k->i[1] = 0;
+    if (sval(2) && sval(2)[0] == '@') {
+      k->s[1] = sval(2) + 1;
+      if (ntok > 4) { k->i[0] = ival(3, 0); k->i[1] = ival(4, 0); k->i[2] = 1; }
+    }
   } else if (!strcmp(c, "tycoon")) {
     Cmd *k = emit(OP_TYCOON);
     k->s[0] = sval(1) ? sval(1) : "start";
@@ -388,6 +415,22 @@ static void parse_map_line(char *line) {
     if (m->ambient < 0) { err("nieznany ambient '%s'", sval(1)); m->ambient = 0; }
   }
   else if (!strcmp(c, "district")) m->district = ival(1, 0);
+  else if (!strcmp(c, "region")) {
+    /* region ID X Y W H "NAZWA" MUZYKA DZIELNICA AMBIENT WEJŚCIE_X WEJŚCIE_Y KIERUNEK */
+    if (S.nregions >= MAX_REGIONS) { err("za dużo regionów", NULL); return; }
+    Region *g = &S.regions[S.nregions++];
+    memset(g, 0, sizeof *g);
+    snprintf(g->id, sizeof g->id, "%s", sval(1) ? sval(1) : "?");
+    g->map = (int)(m - S.maps);
+    g->x = ival(2, 0); g->y = ival(3, 0); g->w = ival(4, 1); g->h = ival(5, 1);
+    snprintf(g->name, sizeof g->name, "%s", sval(6) ? sval(6) : "");
+    snprintf(g->music, sizeof g->music, "%s", sval(7) ? sval(7) : "");
+    if (g->music[0] && !music_exists(g->music)) err("nieznana muzyka '%s'", g->music);
+    g->district = ival(8, 0);
+    static const char *AN[] = {"-", "street", "harbor", "room", "crowd", "office", "church", "warehouse"};
+    for (int k = 0; k < 8; k++) if (sval(9) && !strcmp(sval(9), AN[k])) g->ambient = k;
+    g->ex = ival(10, g->x); g->ey = ival(11, g->y); g->edir = dir_parse(sval(12));
+  }
   else if (!strcmp(c, "entry")) { m->ex = ival(1, 0); m->ey = ival(2, 0); m->edir = dir_parse(sval(3)); }
   else if (!strcmp(c, "tiles")) { sec = SEC_TILES; curMapRows = 0; }
   else if (!strcmp(c, "npc") || !strcmp(c, "obj") || !strcmp(c, "warp") || !strcmp(c, "event") || !strcmp(c, "mob")) {
@@ -616,7 +659,7 @@ int story_load(const char *text) {
     Cmd *c = &S.cmds[i];
     curLine = c->line;
     if (c->op == OP_WARP) {
-      c->i[0] = map_find(c->s[0]);
+      c->i[0] = map_resolve(c->s[0], &c->i[1], &c->i[2]);
       if (c->i[0] < 0) err("nieznana mapa '%s'", c->s[0]);
     }
   }
@@ -637,7 +680,7 @@ int story_load(const char *text) {
         e->enemies[0] = 0;
       }
       if (e->type == ENT_WARP) {
-        e->toMap = map_find(e->sprite);
+        e->toMap = map_resolve(e->sprite, &e->toX, &e->toY);
         if (e->toMap < 0) { char b[120]; snprintf(b, sizeof b, "%s z %s", e->sprite, where); err("nieznana mapa docelowa '%s'", b); }
         else {
           MapDef *t = &S.maps[e->toMap];

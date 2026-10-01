@@ -153,7 +153,7 @@ int load_game(void) {
     } else tycoon_load_line(line);
   }
   fclose(f);
-  int m = map_find(mapId);
+  int m = map_resolve(mapId, &mx, &my);
   if (!strncmp(mapId, "op_", 3) && S.hqMap[0]) { m = map_find(S.hqMap); mx = S.hqX; my = S.hqY; md = S.hqDir; } /* zapis z akcji: wracamy do kwatery */
   if (m < 0) return 0;
   if (H.hp <= 0) H.hp = H.mhp;
@@ -189,7 +189,7 @@ void game_debug(const char *cmdline) {
     if (S.startScript[0]) script_start(script_find(S.startScript), NULL);
   } else if (!strcmp(t[0], "warp") && n >= 4) {
     script_stop();
-    world_load_map(map_find(t[1]), atoi(t[2]), atoi(t[3]), n > 4 ? atoi(t[4]) : DIR_DOWN);
+    { int wx = atoi(t[2]), wy = atoi(t[3]); int wm = map_resolve(t[1], &wx, &wy); world_load_map(wm, wx, wy, n > 4 ? atoi(t[4]) : DIR_DOWN); }
     game_set_mode(MODE_WORLD);
     g_fade = 0;
   } else if (!strcmp(t[0], "look") && n >= 3) { W.yaw = (float)atof(t[1]); W.pitch = (float)atof(t[2]); }

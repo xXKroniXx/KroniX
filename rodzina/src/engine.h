@@ -99,9 +99,10 @@ void world_look(float dx, float dy);
 
 /* ------------------------------------------------------------------ dane fabuły */
 #define MAX_MAPS 32
-#define MAX_MAP_W 64
-#define MAX_MAP_H 64
-#define MAX_ENTS 96
+#define MAX_MAP_W 160
+#define MAX_MAP_H 120
+#define MAX_ENTS 192
+#define MAX_REGIONS 24
 #define MAX_ITEMS 64
 #define MAX_ENEMIES 32
 #define MAX_SPEAKERS 64
@@ -128,6 +129,9 @@ typedef struct {
   int ally; /* mob sojuszniczy */
   int pose; /* stała animacja NPC: AN_SIT / AN_DANCE / AN_PLAY (0 = zwykła) */
 } EntDef;
+
+/* region dużej mapy (dawne osobne mapy ulic) */
+typedef struct { char id[24], name[64], music[24]; int map, x, y, w, h, district, ambient, rain, ex, ey, edir; } Region;
 
 typedef struct {
   char id[24], name[48], music[24], bg[24];
@@ -161,6 +165,7 @@ typedef struct { char var[32]; char label[40]; } StatDef;
 typedef struct {
   char title[64];
   MapDef maps[MAX_MAPS]; int nmaps;
+  Region regions[MAX_REGIONS]; int nregions;
   ItemDef items[MAX_ITEMS]; int nitems;
   EnemyDef enemies[MAX_ENEMIES]; int nenemies;
   Speaker speakers[MAX_SPEAKERS]; int nspeakers;
@@ -184,6 +189,9 @@ enum { OP_END, OP_SAY, OP_AS, OP_MENU, OP_GOTO, OP_IF, OP_SET, OP_ADD, OP_GIVE, 
        OP_SAVE, OP_ENDING, OP_LEARN, OP_FACE, OP_WALK, OP_CALL, OP_TOAST, OP_CHANCE, OP_HURT, OP_EQUIP, OP_XP,
        OP_SPAWN, OP_WAITKILL, OP_WEAPON, OP_TYCOON, OP_OBJECTIVE, OP_KILLALL, OP_TRUST, OP_NOP };
 int map_find(const char *id);
+int map_resolve(const char *id, int *x, int *y); /* mapa albo region: dodaje przesunięcie regionu */
+int region_at(int map, float x, float z);          /* -1 = brak */
+int region_find(const char *id);
 int item_find(const char *id);
 int enemy_find(const char *id);
 int script_find(const char *name);
@@ -247,6 +255,8 @@ typedef struct {
   Ent ents[MAX_ENTS]; int n;
   float px, pz, yaw, pitch, bob, bobT;
   float ppx, ppz, pbob; /* poprzedni krok logiki (interpolacja rysowania) */
+  int region;          /* region dużej mapy, w którym jest gracz (-1 brak) */
+  char banner[64];     /* nazwa miejsca na banerze */
   int time, trans, tMap, tX, tY, tDir, grace;
   int bannerT;
   int hurtT, flashT;
@@ -255,6 +265,9 @@ typedef struct {
 extern World W;
 
 void world_audio(void);
+/* znacznik celu misji: mapa+kafel albo NPC (id); map<0 i id NULL = brak */
+void world_marker_set(int map, int x, int y, const char *npcId);
+int world_marker_pos(float *x, float *z); /* pozycja na bieżącej mapie (albo drzwi prowadzące do celu) */
 void world_load_map(int map, int tx, int ty, int dir);
 void world_update(void);
 void world_draw(void);

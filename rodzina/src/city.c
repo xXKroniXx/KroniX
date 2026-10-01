@@ -15,7 +15,7 @@ static const TDef TD[] = {
   {'G', K_BLOCK, L_SIDEWALK, L_BRICK}, {'a', K_BLOCK, L_SIDEWALK, L_BRICK}, {'D', K_BLOCK, L_SIDEWALK, L_BRICK},
   {'#', K_BLOCK, L_CONCRETE, L_STONE}, {'g', K_BLOCK, L_CONCRETE, L_STONE}, {'i', K_BLOCK, L_WOODFLOOR, L_WALLPAPER_GREEN},
   {'j', K_BLOCK, L_WOODFLOOR, L_WALLPAPER_RED}, {'M', K_BLOCK, L_CONCRETE, L_CORRUGATED}, {'Q', K_BLOCK, L_CONCRETE, L_PLASTER},
-  {'x', K_BLOCK, L_CONCRETE, L_ROOF}, {'z', K_BLOCK, L_WOODFLOOR, L_VELVET}, {'n', K_BLOCK, L_SIDEWALK, L_BRICK},
+  {'x', K_BLOCK, L_CONCRETE, L_ROOF}, {'H', K_BLOCK, L_SIDEWALK, L_STONE}, {'z', K_BLOCK, L_WOODFLOOR, L_VELVET}, {'n', K_BLOCK, L_SIDEWALK, L_BRICK},
   {'X', K_PROP, L_CONCRETE, 0, 0.55f}, {'k', K_PROP, L_CONCRETE, 0, 0.55f}, {'t', K_PROP, L_WOODFLOOR, 0, 0.42f},
   {'h', K_PROP, L_WOODFLOOR, 0, 0.28f}, {'b', K_PROP, L_WOODFLOOR, 0, 0.6f}, {'S', K_PROP, L_WOODFLOOR, 0, 1.4f},
   {'P', K_PROP, L_WOODFLOOR, 0, 0.6f}, {'V', K_PROP, L_CONCRETE, 0, 1.3f}, {'d', K_PROP, L_WOODFLOOR, 0, 0.45f},
@@ -70,7 +70,17 @@ typedef struct { float x, y, z, r, g, b, rad; int kind; float phase; } CLight;
 static CLight clights[400];
 static int nclights;
 static GMesh cityMesh;
-static MB mb;
+static MB mb, mbFar;
+#define CHS 16
+#define MAXCH 96
+typedef struct { GMesh m; float x0, z0, x1, z1; } Chunk;
+static Chunk chunks[MAXCH];
+static int nchunks;
+static void split_chunks(void);
+/* duże miasto budujemy raz: po wyjściu z wnętrza wraca gotowa geometria */
+typedef struct { MapDef *m; GMesh far; Chunk ch[MAXCH]; int nch; CLight l[400]; int nl; } CitySlot;
+static CitySlot bigSlot;
+static int curIsBig;
 static int interior;
 
 static void addlight(float x, float y, float z, float r, float g, float b, float rad, int kind) {
@@ -82,11 +92,13 @@ static void addlight(float x, float y, float z, float r, float g, float b, float
 static float bheight(int x, int z) {
   if (interior) return Mp->ceil;
   uint32_t h = H32(x / 5, z / 6, 7);
+  if (tile(x, z) == 'H') return (Mp->floors + 5 + (int)(H32(x / 4, z / 3, 8) % 6)) * 1.5f; /* wieżowce Loopu */
   return (Mp->floors + (int)(h % 3)) * 1.5f;
 }
 static int bmaterial(int x, int z, int c) {
   if (c == '#' || c == 'g') return L_STONE;
   if (c == 'M') return L_CORRUGATED;
+  if (c == 'H') return H32(x / 4, z / 3, 9) % 3 ? L_STONE : L_PLASTER;
   uint32_t h = H32(x / 5, z / 6, 11);
   int k = h % 6;
   return k < 3 ? L_BRICK : k < 5 ? L_BRICK_DARK : L_STONE;
@@ -263,6 +275,16 @@ static void exterior_face(const Face *f, int c, int tx, int tz, float h, float y
     if (c == 'M' || c == 'x' || c == 'W') { mb_paint(wc, wl); fquad(f, 0, 1, y, y + 1.5f, 0); continue; }
     uint32_t hh = H32(tx * 3 + (int)(f->nx * 2), tz * 3 + (int)(f->nz * 2), (int)(y * 2));
     int lit = Mp->night ? (hh % 100 < 38) : 0;
+    if (y >= 4.4f) {
+      /* wyższe piętra: płaska ściana + szyba (mniej geometrii, z ulicy różnica niewidoczna) */
+      mb_paint(wc, wl); fquad(f, 0, 1, y, y + 1.5f, 0);
+      if (lit) {
+        static const uint32_t WC[4] = {0xFFFFD49A, 0xFFFFC27A, 0xFFF0E0B0, 0xFFFFB070};
+        mb_paint(WC[hh % 4], L_WINDOW); P_.emis = 0.35f + (hh % 5) * 0.06f;
+      } else mb_paint(0xFF4A5868, L_WINDOW);
+      fquad_uv(f, 0.29f, 0.71f, y + 0.38f, y + 1.16f, 0.006f, 0, 0, 1, 1);
+      continue;
+    }
     window_unit(f, y, wl, wc, 0.42f, 0.78f, 0.38f, lit, 0);
   }
   cornice(f, h);
@@ -538,6 +560,13 @@ void city_build(MapDef *m) {
   Mp = m; Mw = m->w; Mh = m->h;
   interior = m->interior;
   tdef_init();
+  if (g_render && bigSlot.m == m) {
+    cityMesh = bigSlot.far;
+    memcpy(chunks, bigSlot.ch, sizeof(Chunk) * bigSlot.nch); nchunks = bigSlot.nch;
+    memcpy(clights, bigSlot.l, sizeof(CLight) * bigSlot.nl); nclights = bigSlot.nl;
+    curIsBig = 1;
+    return;
+  }
   nclights = 0;
   neonIdx = 0;
   if (!mb.v) mb_init(&mb);
@@ -634,10 +663,48 @@ void city_build(MapDef *m) {
   street_furniture();
   skyline();
   if (g_render) {
-    if (cityMesh.vao) gm_free(&cityMesh);
-    cityMesh = gm_upload(&mb);
+    if (cityMesh.vao && !curIsBig) gm_free(&cityMesh);
+    split_chunks();
+    cityMesh = gm_upload(&mbFar);
+    curIsBig = 0;
+    if (Mw * Mh > 4000) {
+      if (bigSlot.m && bigSlot.m != m) { gm_free(&bigSlot.far); for (int i = 0; i < bigSlot.nch; i++) gm_free(&bigSlot.ch[i].m); }
+      bigSlot.m = m; bigSlot.far = cityMesh;
+      memcpy(bigSlot.ch, chunks, sizeof(Chunk) * nchunks); bigSlot.nch = nchunks;
+      memcpy(bigSlot.l, clights, sizeof(CLight) * nclights); bigSlot.nl = nclights;
+      curIsBig = 1;
+    }
+    if (getenv("KX_STAT")) fprintf(stderr, "miasto: %d wierzchołków, %d kwartałów, %d świateł\n", mb.n, nchunks, nclights);
   }
   mb_paint(0xFFFFFFFF, L_WHITE);
+}
+
+/* ---------------------------------------------------------------- kwartały (rysowanie tylko w zasięgu wzroku) */
+static void split_chunks(void) {
+  if (!curIsBig) for (int i = 0; i < nchunks; i++) gm_free(&chunks[i].m);
+  nchunks = 0;
+  if (!mbFar.v) mb_init(&mbFar);
+  mb_reset(&mbFar);
+  int cw = (Mw + CHS - 1) / CHS, chh = (Mh + CHS - 1) / CHS;
+  if (interior || cw * chh > MAXCH || cw * chh <= 1) { mb_append_tf(&mbFar, &mb, m4_identity()); return; }
+  static MB parts[MAXCH];
+  for (int i = 0; i < cw * chh; i++) { if (!parts[i].v) mb_init(&parts[i]); mb_reset(&parts[i]); }
+  for (int t = 0; t + 2 < mb.n; t += 3) {
+    Vert *v = &mb.v[t];
+    float cx = (v[0].p[0] + v[1].p[0] + v[2].p[0]) / 3, cz = (v[0].p[2] + v[1].p[2] + v[2].p[2]) / 3;
+    int ix = (int)floorf(cx / CHS), iz = (int)floorf(cz / CHS);
+    MB *dst = (ix < 0 || iz < 0 || ix >= cw || iz >= chh) ? &mbFar : &parts[iz * cw + ix];
+    Vert *o = mb_push(dst, 3);
+    memcpy(o, v, sizeof(Vert) * 3);
+  }
+  for (int iz = 0; iz < chh; iz++)
+    for (int ix = 0; ix < cw; ix++) {
+      MB *p = &parts[iz * cw + ix];
+      if (!p->n) continue;
+      Chunk *c = &chunks[nchunks++];
+      c->m = gm_upload(p);
+      c->x0 = ix * CHS; c->z0 = iz * CHS; c->x1 = c->x0 + CHS; c->z1 = c->z0 + CHS;
+    }
 }
 
 /* ---------------------------------------------------------------- rysowanie */
@@ -657,5 +724,20 @@ void city_glows(void) {
     if (l->kind == 1) r_glow(l->x, l->y, l->z, 0.9f, l->r * 0.2f, l->g * 0.2f, l->b * 0.2f);
   }
 }
-void city_draw(void) { r_draw(&cityMesh, NULL, 0); }
+void city_draw(void) {
+  r_draw(&cityMesh, NULL, 0);
+  V3 c = g_camPos;
+  float fx = sinf(W.yaw), fz = cosf(W.yaw);
+  for (int i = 0; i < nchunks; i++) {
+    Chunk *k = &chunks[i];
+    float nx = c.x < k->x0 ? k->x0 : c.x > k->x1 ? k->x1 : c.x;
+    float nz = c.z < k->z0 ? k->z0 : c.z > k->z1 ? k->z1 : c.z;
+    float dx = nx - c.x, dz = nz - c.z;
+    if (dx * dx + dz * dz > 85.0f * 85.0f) continue;
+    /* za plecami kamery */
+    float mx = (k->x0 + k->x1) * 0.5f - c.x, mz = (k->z0 + k->z1) * 0.5f - c.z;
+    if (mx * fx + mz * fz < -CHS * 0.75f) continue;
+    r_draw(&k->m, NULL, 0);
+  }
+}
 int city_verts(void) { return cityMesh.n; }

@@ -434,7 +434,7 @@ void ui_shop_draw(void) {
 /* ---------------------------------------------------------------- tytuł */
 static Menu tm;
 static int titleT;
-static int titleMap = -1;
+static int titleMap = -1, titleReg = -1;
 void ui_title_enter(void) {
   menu_init(&tm);
   menu_add(&tm, "Nowa gra", 1);
@@ -445,9 +445,9 @@ void ui_title_enter(void) {
   if (save_exists()) tm.cur = 1;
   titleT = 0;
   script_stop();
-  titleMap = map_find("italia");
-  if (titleMap < 0) titleMap = map_find(S.startMap);
-  if (titleMap >= 0) world_load_map(titleMap, 1, 5, DIR_RIGHT);
+  titleReg = region_find("italia");
+  titleMap = titleReg >= 0 ? S.regions[titleReg].map : map_find(S.startMap);
+  if (titleMap >= 0) world_load_map(titleMap, titleReg >= 0 ? S.regions[titleReg].x + 1 : 1, titleReg >= 0 ? S.regions[titleReg].y + 5 : 5, DIR_RIGHT);
   W.bannerT = 0;
   game_set_mode(MODE_TITLE);
   music_play("tytul");
@@ -460,12 +460,14 @@ void ui_title_update(void) {
   MapDef *m = titleMap >= 0 ? &S.maps[titleMap] : NULL;
   if (m) {
     float t = titleT / 60.0f;
-    float len = m->w - 6.0f;
+    int rx = 0, rz = 0, rw = m->w, rh = m->h;
+    if (titleReg >= 0) { Region *g = &S.regions[titleReg]; rx = g->x; rz = g->y; rw = g->w; rh = g->h; }
+    float len = rw - 6.0f;
     float u = fmodf(t * 0.35f, len * 2);
     if (u > len) u = len * 2 - u;
     W.ppx = W.px; W.ppz = W.pz; W.pbob = W.bob = 0;
-    W.px = 3 + u;
-    W.pz = m->h * 0.5f + sinf(t * 0.2f) * 0.6f;
+    W.px = rx + 3 + u;
+    W.pz = rz + rh * 0.5f + sinf(t * 0.2f) * 0.6f;
     W.yaw = 1.5708f + sinf(t * 0.13f) * 0.5f;
     W.pitch = 0.08f + sinf(t * 0.17f) * 0.05f;
   }

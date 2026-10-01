@@ -38,7 +38,7 @@ debug warp italia 30 7
 choose 0
 debug script s_kierowca
 untilidle
-expect map 7
+expect map 1
 debug script s_gino_doki
 untilidle
 expect DOKI_WALKA_OK 1

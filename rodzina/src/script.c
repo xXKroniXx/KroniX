@@ -202,7 +202,12 @@ static void exec(void) {
         break;
       case OP_TOAST: ui_toast(c->s[0]); break;
       case OP_CHANCE: if (rand() % 100 < c->i[0]) V.pc = c->i[1]; break;
-      case OP_SPAWN: world_spawn(c->s[0], c->i[0], c->i[1], c->i[2]); break;
+      case OP_SPAWN: {
+        /* współrzędne względem dzielnicy (regionu), w której jest gracz */
+        int ox = W.region >= 0 ? S.regions[W.region].x : 0, oy = W.region >= 0 ? S.regions[W.region].y : 0;
+        world_spawn(c->s[0], c->i[0] + ox, c->i[1] + oy, c->i[2]);
+        break;
+      }
       case OP_WAITKILL: V.state = VS_KILL; break;
       case OP_KILLALL: world_kill_all(); break;
       case OP_WEAPON:
@@ -218,6 +223,8 @@ static void exec(void) {
         break;
       case OP_OBJECTIVE:
         snprintf(H.objective, sizeof H.objective, "%s", c->s[0]);
+        if (c->s[1] && c->i[2]) { int x = c->i[0], y = c->i[1]; int mm = map_resolve(c->s[1], &x, &y); world_marker_set(mm, x, y, NULL); }
+        else world_marker_set(-1, 0, 0, c->s[1]);
         if (c->s[0][0]) ui_toast("Nowy cel");
         break;
       case OP_TYCOON:

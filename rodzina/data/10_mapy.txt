@@ -18,38 +18,171 @@ iiiiDiiiii
 endtiles
 npc mama 7 3 mama left s_mama
 obj zdjecie 3 3 papers down s_zdjecie
-warp 4 6 polonia 5 2 down
+warp 4 6 miasto 17 48 down
 
-@map polonia
-name "Polonia — Back of the Yards"
-music polonia
+@map miasto
+name "Chicago"
+music italia
 night 120
 rain 1
-district 2
-entry 31 5 left
+floors 3
+ambient street
+region polonia 12 46 34 11 "Polonia — Back of the Yards" polonia 2 street 43 51 left
+region italia 46 46 36 11 "Mała Italia" italia 1 street 72 52 left
+region doki 110 8 30 14 "Doki nad rzeką" doki 3 harbor 111 14 right
+region chinatown 89 84 30 11 "Chinatown" chiny 5 street 91 89 right
+region loop 89 40 40 21 "Śródmieście — Loop" noc 4 street 93 50 right
+region northside 3 8 107 12 "North Side — Grand Avenue" noc 6 street 13 14 right
+region levee 3 84 86 10 "Levee — Cermak Road" akcja 8 street 53 89 right
+region cicero 0 12 12 82 "Ashland Avenue (do Cicero)" noc 7 street 6 52 down
+region halsted 82 12 7 82 "Halsted Street" noc 0 street 85 52 down
+region michigan 129 22 21 80 "Michigan Avenue nad jeziorem" noc 0 street 132 62 down
 tiles
-RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
-RRRRwDwRRRRRGGaDaGGRRRRRRRwwDwwRRR
-R,,,,,,,,,,,L,,,,,,,,,,,,L,,,,,,,R
-R,,,,,,,,,,,,,,,,,,,,,,,,,,,,,Xk,R
-R........c..............c.........
-R---------------------------------
-R.....c..........C................
-R,k,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,R
-R,,T,,,,,,,,L,,,,,,,,T,,,,,,L,,,,R
-RRRRRRRRWDWRRRRRRRRRRwwDwwRRRRRRRR
-RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RwwwwWWWWWwwwwwwwwwwRRRRRgggggwwwwwRRRRRWWWWWgggggggggg#####gggggnnnnn#####wwwwwWWWWW#####WWWWW#####WWWWWWWWWWWWWWWwwwwwwwwww#####WWWWWRRRRRgggggRRRRR
+RwwwwWWWWWwwwwwwwwwwRRRRRgggggwwwwwRRRRRWWWWWgggggggggg#####gggggnnnnn#####wwwwwWWWWW#####WWWWW#####WWWWWWWWWWWWWWWwwwwwwwwww#####WWWWWRRRRRgggggRRRRR
+RwwwwWWWWWwwwwwwwwwwRRRRRgggggwwwwwRRRRRWWWWWgggggggggg#####gggggnnnnn#####wwwwwWWWWW#####WWWWW#####WWWWWWWWWWWWWWWwwwwwwwwww#####WWWWWRRRRRgggggRRRRR
+RwwwwWWWWWwwwwwwwwwwRRRRRgggggwwwwwRRRRRWWWWWgggggggggg#####gggggnnnnn#####wwwwwWWWWW#####WWWWW#####WWWWWWWWWWWWWWWwwwwwwwwww#####WWWWWRRRRRgggggRRRRR
+RwwwwWWWWWwwwwwwwwwwRRRRRgggggwwwwwRRRRRWWWWWgggggggggg#####gggggnnnnn#####wwwwwWWWWW#####WWWWW#####WWWWWWWWWWWWWWWwwwwwwwwww#####WWWWWRRRRRgggggRRRRR
+RRRRRnnnnnRRRRRgggggWWWWWwwwwwWWWWWwwwwwWWWWWRRRRRgggggRRRRRWWWWWWWWWWRRRRR#####wwwwwRRRRRwwwwwRRRRRRRRRR#####WWWWWWWWWWgggggRRRRRRRRRRgggggRRRRRWWWWW
+RRRRRnnnnnRRRRRgggggWWWWWwwwwwWWWWWwwwwwWWWWWRRRRRgggggRRRRRWWWWWWWWWWRRRRR#####wwwwwRRRRRwwwwwRRRRRRRRRR#####WWWWWWWWWWgggggRRRRRRRRRRgggggRRRRRWWWWW
+RRRRRnnnnnRRRRRgggggWWWWWwwwwwWWWWWwwwwwWWWWWRRRRRgggggRRRRRWWWWWWWWWWRRRRR#####wwwwwRRRRRwwwwwRRRRRRRRRR#####MMMMMMMMMMMMMMMMMMMMMM==~~~~T~"~~~~~~~~~
+RRRRRnnnnnRRRRRgggggWWWWWwwwwwWWWWWwwwwwWWWWWRRRRRgggggRRRRRWWWWWWWWWWRRRRR#####wwwwwRRRRRwwwwwRRRRRRRRRR#####Mooooooooooooooooooooo==~~~~~~"~~~~~~~~~
+RRRRRnnnnnRRRRRgggggWWWWWwwwwwWWWWWwwwwwWWWWWRRRRRgggggRRRRRWWWWWWWWWWRRRRR#####wwwwwRRRRRwwwwwRRRRRRRRRR#####MoXXoookkooooooXXooook==~~~~~~"~~~~~~~~~
+RRRRRnnnnnRRRRRgggggWWWWWwwwwwWWWWWwwwwwWWWWWRRRRRgggggRRRRRWWWWWWWWWWRRRRR#####wwwwwRRRRRwwwwwRRRRRRRRRR#####MoXXoooooooooooXoookoo==~~~m~~"~~~~~~~~~
+Rww,,...L,,,,,,,,,,,,,,,,,,,,,,L,,,,,,,,,,,,,,,,,,,,,,L,,,,,,,,,,,,,,,,,,,,,,L,,,,,,...,,,,,,,,,,,,,L,,,,,,,,,MoooooooooooXooooooooo==~~~~~~"~~~~~~~~~
+Rww,,.|.,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,.|.,,,,,,,,,,,,,,,,,,,,,,,MoooLoooooooooooooLooo======T="~~~~~~~~~
+Rww...|................c........................................c....................|...................c....ooooooooCCoooooooooooo========"~~~~~~~~~
+Rww.-...-.--.--.--.--.--.--.--.--.--.--.--.--.--.--.--.--.--.--.--.--.--.--.--.--.--....--.--.--.--.--.--.--.-oooooooooooooooooooooo========"~~~~~~~~~
+Rww...|...............................c........................................c.....|........................Mooooooooooooooooooooo==~~~~~~"~~~~~~~~~
+Rww,,.|.,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,.|.,,,,,,,,,,,,,,,,,,,,,,,MoooooooooooooooXXoooo==~~m~~~"~~~~~~~~~
+Rgg,,...,,,,L,,,,,,,,,,,,,,,,,,,,,,L,,,,,,,,,,,,,,,,,,,,,,L,,,,,,,,,,,,,,,,,,,,,,L,,...,,,,,,,,,,,,,,,,,L,,,,,MoocoooooXXoooooXooooo==~~~~T~"~~~~~~~~~
+Rgg,,.|.,,WWWWWRRRR,.|.,RgggggWWWWWggggg#####WWWWWgggggnnnnn,.|.,#####gggggRRRRR##,,.|.,,wRRRRRRRRRRwwwwwwwwwwMooookkooooookooooooXo==~~~~~~"~~~~~~~~~
+Rgg,,.|.,,WWWWWRRRR,.|.,RgggggWWWWWggggg#####WWWWWgggggnnnnn,.|.,#####gggggRRRRR##,,.|.,,wRRRRRRRRRRwwwwwwwwwwMoooooooooooLooooooooo==~~~~~~"~~~~~~~~~
+Rgg,,...,,WWWWWRRRR,...,RgggggWWWWWggggg#####WWWWWgggggnnnnnL...,#####gggggRRRRR##,,...,,wRRRRRRRRRRwwwwwwwwwwMMMMMMMMMMMMMMMMMMMMMM==~~~~~~"~~~~~~~~~
+Rgg,,.|.,,WWWWWRRRR,.|.,RgggggWWWWWggggg#####WWWWWgggggnnnnn,.|.,#####gggggRRRRR##,,.|.,,wRRRRRRRRRRwwwwwwwwwwRRRRRRRRRRgggggwwwww#####R"""""~~~~~~~~~
+Rgg,,.|.,,WWWWWRRRR,.|.LRgggggWWWWWggggg#####WWWWWgggggnnnnn,.|.,#####gggggRRRRR##,,.|.,,wRRRRRRRRRRwwwwwwwwwwRRRRRRRRRRgggggwwwww#####R""T""~~~~~~~~~
+RWW,,...,,RRRRRwwww,...,RgggggRRRRRWWWWW#####RRRRRRRRRRWWWWW,...,WWWWWwwwwwwwwwwRR,,...,,gnnnnnwwwwwwwwwwgggggWWWWWgggggwwwww####,,...,,"""""~~~~~~~~~
+RWW,,.|.,LRRRRRwwww,.|.,RgggggRRRRRWWWWW#####RRRRRRRRRRWWWWW,.|.,WWWWWwwwwwwwwwwRR,,.|.,,gnnnnnwwwwwwwwwwgggggWWWWWgggggwwwww####,,.|.,,"""""~~~~~~~~~
+RWW,,.|.,,RRRRRwwww,.|.,RgggggRRRRRWWWWW#####RRRRRRRRRRWWWWW,.|.,WWWWWwwwwwwwwwwRR,,.|.,,gnnnnnwwwwwwwwwwgggggWWWWWgggggwwwww####,,.|.,,"""""~~~~~~~~~
+RWW,,...,,RRRRRwwww,...,RgggggRRRRRWWWWW#####RRRRRRRRRRWWWWW,...LWWWWWwwwwwwwwwwRR,,...,,gnnnnnwwwwwwwwwwgggggWWWWWgggggwwwww####,,...,,"""""~~~~~~~~~
+RWW,,c|.,,RRRRRwwww,.|.,RgggggRRRRRWWWWW#####RRRRRRRRRRWWWWW,.|.,WWWWWwwwwwwwwwwRR,,.|.,,gnnnnnwwwwwwwwwwgggggWWWWWgggggwwwww####,,.|.,,""T""~~~~~~~~~
+RWW,,.|.,,RRRRRwwww,.|.,RgggggRRRRRWWWWW#####RRRRRRRRRRWWWWW,.|.,WWWWWwwwwwwwwwwRR,,.|.,,gnnnnnwwwwwwwwwwgggggWWWWWgggggwwwww####,,.|.,,"""""~~~~~~~~~
+RRR,,...,,RRRRRRRRR,c..,RRRRRRRRRRRRRRRRgggggWWWWWRRRRRRRRRR,c..,wwwwwRRRRRWWWWWnn,,...,,wnnnnnRRRRRRRRRRWWWWWwwwwwRRRRRRRRRRnnnn,,...,,"""""~~~~~~~~~
+RRR,,.|c,,RRRRRRRRR,.|.,RRRRRRRRRRRRRRRRgggggWWWWWRRRRRRRRRR,.|.,wwwwwRRRRRWWWWWnnL,.|.,,wnnnnnRRRRRRRRRRWWWWWwwwwwRRRRRRRRRRnnnn,,.|.,,"""""~~~~~~~~~
+RRR,,.|.,,RRRRRRRRR,.|.,RRRRRRRRRRRRRRRRgggggWWWWWRRRRRRRRRR,.|.,wwwwwRRRRRWWWWWnn,,.|.,,wnnnnnRRRRRRRRRRWWWWWwwwwwRRRRRRRRRRnnnn,,.|.,,"""""~~~~~~~~~
+RRR,,...,,RRRRRRRRR,..c,RRRRRRRRRRRRRRRRgggggWWWWWRRRRRRRRRR,..c,wwwwwRRRRRWWWWWnn,,...,,wnnnnnRRRRRRRRRRWWWWWwwwwwRRRRRRRRRRnnnn,,...,,""T""~~~~~~~~~
+RRR,,.|.,,RRRRRRRRR,.|.,RRRRRRRRRRRRRRRRgggggWWWWWRRRRRRRRRR,.|.,wwwwwRRRRRWWWWWnn,,.|.,,wnnnnnRRRRRRRRRRWWWWWwwwwwRRRRRRRRRRnnnn,,.|.,,"""""~~~~~~~~~
+RRR,,.|.,,RRRRRRRRR,.|.,RRRRRRRRRRRRRRRRgggggWWWWWRRRRRRRRRR,.|.,wwwwwRRRRRWWWWWnn,,.|.,,wnnnnnRRRRRRRRRRWWWWWwwwwwRRRRRRRRRRnnnn,,.|.,,"""""~~~~~~~~~
+RRR,,...,,nnnnnRRRR,...,WWWWWWgggggwwwwwRRRRRRRRRR#####RRRRR,...,nnnnngggggRRRRRWW,,...,,WWWWWWnnnnn#####gggggwwwwwnnnnngggggRRRR,,...,,"""""~~~~~~~~~
+RRR,,.|.,,nnnnnRRRR,.|.,WWWWWWgggggwwwwwRRRRRRRRRR#####RRRRR,.|.,nnnnngggggRRRRRWW,,.|.,,WWWWWWnnnnn#####gggggwwwwwnnnnngggggRRRR,,.|.,,"""""~~~~~~~~~
+RRR,,.|.,,nnnnnRRRR,.|.,WWWWWWgggggwwwwwRRRRRRRRRR#####RRRRR,.|.,nnnnngggggRRRRRWW,,.|.,,WWWWWWnnnnn#####gggggwwwwwnnnnngggggRRRR,,.|.,,""T""~~~~~~~~~
+RRRL,...,,nnnnnRRRR,...,WWWWWWgggggwwwwwRRRRRRRRRR#####RRRRR,...,nnnnngggggRRRRRWW,,...,,WWWWWWnnnnn#####gggggwwwwwnnnnngggggRRRR,,...,,"""""~~~~~~~~~
+RRR,,.|.,,nnnnnRRRRL.|.,WWWWWWgggggwwwwwRRRRRRRRRR#####RRRRR,.|.,nnnnngggggRRRRRWW,,.|.,LHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH,,.|.,,"""""~~~~~~~~~
+RRR,,.|.,,nnnnnRRRR,.|.,WWWWWWgggggwwwwwRRRRRRRRRR#####RRRRR,.|.,nnnnngggggRRRRRWW,,.|.,,HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH,,.|.,,"""""~~~~~~~~~
+RWW,,...,,gggggnnnn,...,nnnnnngggggwwwwwWWWWWRRRRRWWWWWWWWWW,...,RRRRRWWWWWwwwwwgg,,...,,HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH,,...,,"""""~~~~~~~~~
+RWW,,.|.,,gggggnnnn,.|.,nnnnnngggggwwwwwWWWWWRRRRRWWWWWWWWWW,.|.,RRRRRWWWWWwwwwwgg,,.|.,,HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH,,.|.,,""T""~~~~~~~~~
+RWW,,.|.,,gggggnnnn,.|.,nnnnnngggggwwwwwWWWWWRRRRRWWWWWWWWWWL.|.,RRRRRWWWWWwwwwwgg,,c|.,,HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHL,.|.,,"""""~~~~~~~~~
+RWW,,...,,gggggnnnn,...,nnnnnngggggwwwwwWWWWWRRRRRWWWWWWWWWW,...,RRRRRWWWWWwwwwwgg,,...,,HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH,,...,,"""""~~~~~~~~~
+RWW,,.|.,,ggRRRRRRR,.|.,RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR,.|.,RRRRRRRRRRRRRRRRR,,.|.,,HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH,,.|.,,"""""~~~~~~~~~
+RWW,,.|.,,ggRRRRwDw,.|.,GGaDaGGRRRRRRRwwDwwRRRRRRwwwGaDaGwww,.|.,gggDgggRRRRwGDGwR,,.|c,,HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH,,.|.,,"""""~~~~~~~~~
+Rnn,,...,,,,,,,,,,,,,,,,L,,,,,,,,,,,,L,,,,,,,RR,,,,,,,,,,,tt,,,,,,,,,,,,,,,,,,,,,,,,...,,,,,,,,,,,,,,L,,,,,,,,,,,,,,,,,,,,,,L,,,,,,...,,""T""~~~~~~~~~
+Rnn,,.|.,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,Xk,RR,,,L,,,,,,,,,,,,L,,,,,,,,,,,,L,,,,,,,.|.,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,.|.,,"""""~~~~~~~~~
+Rnn,,.|.,,...........c..............c...................c..........c..............,,.|.,,........................................,,.|.,,"""""~~~~~~~~~
+Rnn,,...,,------------------------------------------------------------------------,,...,,-.--.--.--.--.--.--.--.--.--.--.--.--.--,,...,,"""""~~~~~~~~~
+Rnn,,.|.,,........c..........C..............................c.................C...,,.|.,,..............c.........................,,.|.,,"""""~~~~~~~~~
+Rnn,,.|.,,...,k,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,RR,,,,,,,,,,,,,L,,,,,,,,,,,,,,,,,,,,.,,.|.,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,c|.,,""T""~~~~~~~~~
+RWW,,...,,,,,,,T,,,,,,,,L,,,,,,,,T,,,,,,L,,,,RR,T,,,,,,,,,,,,,,,,T,,L,,,,,,,,,,,T,,,...,,,,,,,,,,,,,,,,,,L,,,,,,,,,,,,,,,,,,,,,,L,,...,,"""""~~~~~~~~~
+RWW,,.|.,,WWRRRRRRR,.|.,RRRRRRRRRwwDwwRRRRRRRRRRRRRwwGDGwwRR,.|.,RRRRRwwaDawwRRRRR,,.|.,,HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH,,.|.,,"""""~~~~~~~~~
+RWW,,.|.,,WWRRRRRRR,.|.,RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR,.|.,RRRRRRRRRRRRRRRRR,,.|.,,HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH,,.|c,,"""""~~~~~~~~~
+RWW,,...,,WWWWWWWWW,...,nRRRRRRRRRRwwwwwRRRRR##########nnnnn,...,RRRRRwwwwwWWWWWWW,,...,,HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH,,...,,"""""~~~~~~~~~
+RWW,,.|.,,WWWWWWWWW,.|.,nRRRRRRRRRRwwwwwRRRRR##########nnnnn,.|.,RRRRRwwwwwWWWWWWW,,.|.,,HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH,,.|.,,""T""~~~~~~~~~
+RWW,,.|.,,WWWWWWWWW,.|.,nRRRRRRRRRRwwwwwRRRRR##########nnnnn,.|.,RRRRRwwwwwWWWWWWW,,.|.,,HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH,,.|.,,"""""~~~~~~~~~
+R##,,...,,#########,...,gRRRRR#####RRRRRgggggwwwwwwwwwwWWWWW,...,RRRRRnnnnngggggnn,,...,,HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH,,...,,"""""~~~~~~~~~
+R##,,.|.,,#########,.|.,gRRRRR#####RRRRRgggggwwwwwwwwwwWWWWW,.|.,RRRRRnnnnngggggnn,,.|.,,nRRRRRWWWWWRRRRRRRRRRnnnnn#####nnnnnnnnn,,.|.,,"""""~~~~~~~~~
+R##L,.|.,,#########,.|.,gRRRRR#####RRRRRgggggwwwwwwwwwwWWWWW,.|.,RRRRRnnnnngggggnn,,.|.,,nRRRRRWWWWWRRRRRRRRRRnnnnn#####nnnnnnnnn,,.|.,,"""""~~~~~~~~~
+R##,,...,,#########L...,gRRRRR#####RRRRRgggggwwwwwwwwwwWWWWW,...,RRRRRnnnnngggggnn,,...,LnRRRRRWWWWWRRRRRRRRRRnnnnn#####nnnnnnnnn,,...,,""T""~~~~~~~~~
+R##,,.|.,,#########,.|.,gRRRRR#####RRRRRgggggwwwwwwwwwwWWWWW,.|.,RRRRRnnnnngggggnn,,.|.,,nRRRRRWWWWWRRRRRRRRRRnnnnn#####nnnnnnnnn,,.|.,,"""""~~~~~~~~~
+R##,,.|.,,#########,.|.,gRRRRR#####RRRRRgggggwwwwwwwwwwWWWWW,.|.,RRRRRnnnnngggggnn,,.|.,,nRRRRRWWWWWRRRRRRRRRRnnnnn#####nnnnnnnnn,,.|.,,"""""~~~~~~~~~
+Rgg,,...,,ggggg####,...,g#####WWWWWgggggRRRRRgggggWWWWW#####,...,gggggRRRRRwwwwwgg,,...,,RWWWWWRRRRR#####gggggRRRRRRRRRRnnnnngggg,,...,,"""""~~~~~~~~~
+Rgg,,.|.,,ggggg####,.|.,g#####WWWWWgggggRRRRRgggggWWWWW#####L.|.,gggggRRRRRwwwwwgg,,.|.,,RWWWWWRRRRR#####gggggRRRRRRRRRRnnnnnggggL,.|.,,"""""~~~~~~~~~
+Rgg,,.|.,,ggggg####,.|.,g#####WWWWWgggggRRRRRgggggWWWWW#####,.|.,gggggRRRRRwwwwwgg,,.|.,,RWWWWWRRRRR#####gggggRRRRRRRRRRnnnnngggg,,.|.,,""T""~~~~~~~~~
+Rgg,,c..,,ggggg####,...Lg#####WWWWWgggggRRRRRgggggWWWWW#####,...,gggggRRRRRwwwwwgg,,...,,RWWWWWRRRRR#####gggggRRRRRRRRRRnnnnngggg,,...,,"""""~~~~~~~~~
+Rgg,,.|.,,ggggg####,.|.,g#####WWWWWgggggRRRRRgggggWWWWW#####,.|.,gggggRRRRRwwwwwgg,,.|.,,RWWWWWRRRRR#####gggggRRRRRRRRRRnnnnngggg,,.|.,,"""""~~~~~~~~~
+Rgg,,.|.,Lggggg####,c|.,g#####WWWWWgggggRRRRRgggggWWWWW#####,c|.,gggggRRRRRwwwwwgg,,.|.,,RWWWWWRRRRR#####gggggRRRRRRRRRRnnnnngggg,,.|.,,"""""~~~~~~~~~
+RWW,,..c,,gggggRRRR,...,wgggggwwwwwWWWWWWWWWWWWWWWWWWWWWWWWW,...,RRRRRgggggRRRRRRR,,...,,nRRRRR#####RRRRR#####wwwwwwwwww#####WWWW,,...,,"""""~~~~~~~~~
+RWW,,.|.,,gggggRRRR,.|.,wgggggwwwwwWWWWWWWWWWWWWWWWWWWWWWWWW,.|.LRRRRRgggggRRRRRRR,,.|.,,nRRRRR#####RRRRR#####wwwwwwwwww#####WWWW,,.|.,,""T""~~~~~~~~~
+RWW,,.|.,,gggggRRRR,.|c,wgggggwwwwwWWWWWWWWWWWWWWWWWWWWWWWWW,.|c,RRRRRgggggRRRRRRR,,.|.,,nRRRRR#####RRRRR#####wwwwwwwwww#####WWWW,,.|.,,"""""~~~~~~~~~
+RWW,,...,,gggggRRRR,...,wgggggwwwwwWWWWWWWWWWWWWWWWWWWWWWWWW,...,RRRRRgggggRRRRRRR,,...,,nRRRRR#####RRRRR#####wwwwwwwwww#####WWWW,,...,,"""""~~~~~~~~~
+RWW,,.|.,,gggggRRRR,.|.,wgggggwwwwwWWWWWWWWWWWWWWWWWWWWWWWWW,.|.,RRRRRgggggRRRRRRR,,.|.,,nRRRRR#####RRRRR#####wwwwwwwwww#####WWWW,,.|.,,"""""~~~~~~~~~
+RWW,,.|.,,gggggRRRR,.|.,wgggggwwwwwWWWWWWWWWWWWWWWWWWWWWWWWW,.|.,RRRRRgggggRRRRRRRL,.|.,,nRRRRR#####RRRRR#####wwwwwwwwww#####WWWW,,.|.,,"""""~~~~~~~~~
+Rnn,,...,,WWWWWwwww,...,nWWWWWWWWWWRRRRRggggg##########wwwww,...,nnnnnwwwww#####RR,,...,,wWWWWWnnnnnWWWWWRRRRRWWWWWWWWWWwwwwwgggg,,...,,""T""~~~~~~~~~
+Rnn,,.|.,,WWWWWwwww,.|.,nWWWWWWWWWWRRRRRggggg##########wwwww,.|.,nnnnnwwwww#####RR,,.|.,,wWWWWWnnnnnWWWWWRRRRRWWWWWWWWWWwwwwwgggg,,.|.,,"""""~~~~~~~~~
+Rnn,,.|.,,WWWWWwwww,.|.,nWWWWWWWWWWRRRRRggggg##########wwwww,.|.,nnnnnwwwww#####RR,,.|.,,wWWWWWnnnnnWWWWWRRRRRWWWWWWWWWWwwwwwgggg,,.|.,,"""""~~~~~~~~~
+Rnn,,...,,WWWWWwwww,...,nWWWWWWWWWWRRRRRggggg##########wwwww,...,nnnnnwwwww#####RR,,...,,wWWWWWnnnnnWWWWWRRRRRWWWWWWWWWWwwwwwgggg,,...,,"""""~~~~~~~~~
+Rnn,,.|.,,WWWWWwwww,.|.,nWWWWWWWWWWRRRRRggggg##########wwwww,.|.,nnnnnwwwww#####RR,,.|.,,wWWWWWnnnnnWWWWWRRRRRWWWWWWWWWWwwwwwgggg,,.|.,,"""""~~~~~~~~~
+Rnn,,.|.,,WWWWWwwww,.|.,nWWWWWWWWWWRRRRRggggg##########wwwww,.|.,nnnnnwwwww#####RR,,.|.,,wWWWWWnnnnnWWWWWRRRRRWWWWWWWWWWwwwwwgggg,,.|.,,""T""~~~~~~~~~
+RWW,,...,,RRRRRRRRR,...,RWWWWWwwwww#####RRRRR#####RRRRRWWWWW,...,#####RRRRR#####gg,,...,,RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRWnnnnnWWWW,,...,,"""""~~~~~~~~~
+RWWL,.|.,,RRRRRRRRR,.|.,RWWWWWwwwww#####RRRRR#####RRRRRWWWWWD.|.,#####RRRRR#####gg,,c|.,,RRaGaRRRaaDaaRRRRGGaDaGGRRRRRRWnnnnnWWWW,,.|.,,"""""~~~~~~~~~
+RWW,,.|.,,,,,,,,,,,,.|.,,,,,,,,,,,,,,,,,,,L,,,,,,,,,,,,,,,,,,.|.,L,,,,,,,,,,,,,,,,,,.|.,LR,,L,,,,,L,,,,,L,,,,,L,,,,,L,,,,,,,,,,,,,,.|.,,"""""~~~~~~~~~
+RWW,,...,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,...,,R,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,...,,"""""~~~~~~~~~
+RWW.c.|......................................c.......................................|.................c............................|.,,""T""~~~~~~~~~
+RWW.-.|.-.--.--.--.--.--.--.--.--.--.--.--.--.--.--.--.--.--.--.--.--.--.--.--.--.--....--------------------------------.--.--.--.--|.,,"""""~~~~~~~~~
+RWW................c........................................c..................................................c......................,,"""""~~~~~~~~~
+RWW,,.|.,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,.|.,,R,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,.|.,,"""""~~~~~~~~~
+RWW,,.|.,,,,,,,,,,,,,,,L,,,,,,,,,,,,,,,,,,,,,,L,,,,,,,,,,,,,,,,,,,,,,L,,,,,,,,,,,,,,.|.,,R,,,,,L,,,,,,L,,,,,,,,,,L,,,,,,,,,,,,,,,,,.|.,,"""""~~~~~~~~~
+RWWWWRRRRRgggggWWWWW#####nnnnnnnnnnRRRRRRRRRR#####RRRRRWWWWWRRRRRnnnnnRRRRRRRRRRgggggWWWWRRRRGaGaGRRRRRRaGGGaRRRRRRRRRRRRRRRR#####RRRRRW""T""~~~~~~~~~
+RWWWWRRRRRgggggWWWWW#####nnnnnnnnnnRRRRRRRRRR#####RRRRRWWWWWRRRRRnnnnnRRRRRRRRRRgggggWWWWRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR#####RRRRRW"""""~~~~~~~~~
+RWWWWRRRRRgggggWWWWW#####nnnnnnnnnnRRRRRRRRRR#####RRRRRWWWWWRRRRRnnnnnRRRRRRRRRRgggggWWWWWgggggRRRRRRRRRRwwwwwWWWWWRRRRRRRRRR#####RRRRRW"""""~~~~~~~~~
+RRRRRRRRRRRRRRRRRRRRgggggnnnnnwwwwwggggg#####WWWWWwwwwwRRRRRRRRRRWWWWWWWWWWRRRRRWWWWWWWWWWWWWWWnnnnnWWWWW#####gggggRRRRRRRRRR#####RRRRRR"""""~~~~~~~~~
+RRRRRRRRRRRRRRRRRRRRgggggnnnnnwwwwwggggg#####WWWWWwwwwwRRRRRRRRRRWWWWWWWWWWRRRRRWWWWWWWWWWWWWWWnnnnnWWWWW#####gggggRRRRRRRRRR#####RRRRRR"""""~~~~~~~~~
+RRRRRRRRRRRRRRRRRRRRgggggnnnnnwwwwwggggg#####WWWWWwwwwwRRRRRRRRRRWWWWWWWWWWRRRRRWWWWWWWWWWWWWWWnnnnnWWWWW#####gggggRRRRRRRRRR#####RRRRRR""T""~~~~~~~~~
+RRRRRRRRRRRRRRRRRRRRgggggnnnnnwwwwwggggg#####WWWWWwwwwwRRRRRRRRRRWWWWWWWWWWRRRRRWWWWWWWWWWWWWWWnnnnnWWWWW#####gggggRRRRRRRRRR#####RRRRRR"""""~~~~~~~~~
+RRRRRRRRRRRRRRRRRRRRgggggnnnnnwwwwwggggg#####WWWWWwwwwwRRRRRRRRRRWWWWWWWWWWRRRRRWWWWWWWWWWWWWWWnnnnnWWWWW#####gggggRRRRRRRRRR#####RRRRRR"""""~~~~~~~~~
+RRRRRRRRRRRRRRRRRRRRgggggnnnnnwwwwwggggg#####WWWWWwwwwwRRRRRRRRRRWWWWWWWWWWRRRRRWWWWWWWWWWWWWWWnnnnnWWWWW#####gggggRRRRRRRRRR#####RRRRRR"""""~~~~~~~~~
+RWWWWnnnnnWWWWWgggggnnnnnRRRRRRRRRRRRRRRWWWWWnnnnnRRRRR##########wwwwwgggggRRRRRWWWWWwwwwwgggggWWWWWRRRRRnnnnnRRRRRRRRRR#####wwwwwwwwww##########WWWWW
+RWWWWnnnnnWWWWWgggggnnnnnRRRRRRRRRRRRRRRWWWWWnnnnnRRRRR##########wwwwwgggggRRRRRWWWWWwwwwwgggggWWWWWRRRRRnnnnnRRRRRRRRRR#####wwwwwwwwww##########WWWWW
+RWWWWnnnnnWWWWWgggggnnnnnRRRRRRRRRRRRRRRWWWWWnnnnnRRRRR##########wwwwwgggggRRRRRWWWWWwwwwwgggggWWWWWRRRRRnnnnnRRRRRRRRRR#####wwwwwwwwww##########WWWWW
+RWWWWnnnnnWWWWWgggggnnnnnRRRRRRRRRRRRRRRWWWWWnnnnnRRRRR##########wwwwwgggggRRRRRWWWWWwwwwwgggggWWWWWRRRRRnnnnnRRRRRRRRRR#####wwwwwwwwww##########WWWWW
+RWWWWnnnnnWWWWWgggggnnnnnRRRRRRRRRRRRRRRWWWWWnnnnnRRRRR##########wwwwwgggggRRRRRWWWWWwwwwwgggggWWWWWRRRRRnnnnnRRRRRRRRRR#####wwwwwwwwww##########WWWWW
+RWWWWnnnnnWWWWWgggggnnnnnRRRRRRRRRRRRRRRWWWWWnnnnnRRRRR##########wwwwwgggggRRRRRWWWWWwwwwwgggggWWWWWRRRRRnnnnnRRRRRRRRRR#####wwwwwwwwww##########WWWWW
+RWWWWRRRRRRRRRRnnnnnnnnnnRRRRRWWWWWWWWWWnnnnnnnnnnRRRRRRRRRRRRRRRgggggWWWWWWWWWWnnnnngggggnnnnnRRRRRgggggWWWWWwwwwwWWWWWWWWWWWWWWWRRRRRwwwwwnnnnnWWWWW
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
 endtiles
-warp 5 1 dom 4 5 up
-warp 15 1 piekarnia 5 5 up
-warp 33 4 italia 1 5 right
-warp 33 5 italia 1 5 right
-warp 33 6 italia 1 5 right
-npc bronek 26 3 bronek down s_bronek
-npc menel 4 7 menel up s_menel wander
-npc robotnik 18 7 robotnik up s_robotnik wander
-npc zoska 9 8 zoska up s_zoska
-npc vito_p 16 3 vito down s_vito_polonia if PIEKARNIA_OK ifnot DON_POZNANY
+warp 17 47 dom 4 5 up
+warp 27 47 piekarnia 5 5 up
+npc bronek 38 49 bronek down s_bronek
+npc menel 16 53 menel up s_menel wander
+npc robotnik 30 53 robotnik up s_robotnik wander
+npc zoska 21 54 zoska up s_zoska
+npc vito_p 28 49 vito down s_vito_polonia if PIEKARNIA_OK ifnot DON_POZNANY
+warp 54 47 trattoria 6 8 up
+warp 68 47 kosciol 7 11 up
+warp 78 47 sklep 4 5 up
+npc vito 55 48 vito down s_vito if DON_POZNANY ifnot DON_NIE_ZYJE
+npc luigi 54 54 pan up s_luigi
+npc rosa 58 53 pani up s_rosa
+npc paddy 73 54 paddy up s_paddy
+npc stefek 77 53 stefek up s_kierowca if DON_POZNANY ifnot STEFEK_OUT
+npc kierowca2 77 53 mafioso up s_kierowca if STEFEK_OUT
+npc gliniarz 66 48 gliniarz down s_gliniarz wander
+npc pani2 71 53 pani up s_przechodzien wander
+npc parada1 61 49 flapper down - dance if _S_K_BALBO
+npc parada2 62 49 pan down - dance if _S_K_BALBO
+npc parada3 64 53 pani up - dance if _S_K_BALBO
+npc parada4 65 53 pan up - dance if _S_K_BALBO
+npc parada5 57 49 muzyk down - play if _S_K_BALBO
+npc parada6 58 49 muzyk down - play if _S_K_BALBO
+npc ksiadz_p 62 53 ksiadz up - if _S_K_BALBO
+npc babcia_p 61 48 mama down - if _S_K_BALBO
+warp 99 85 herbaciarnia 6 7 up
+npc straz_t 100 86 triada down s_straz_triady
+npc chinka 107 91 pani up s_przechodzien wander
+npc sprzedawca 109 86 triada down s_sprzedawca
+npc gino_d 122 14 gino left s_gino_doki if MISJA_DOKI ifnot DOKI_OK
+npc dokowiec 130 15 dokowiec left s_dokowiec wander
+npc mickey 128 15 mickey left s_mickey if DOKI_WALKA_OK ifnot MICKEY_DONE
+warp 60 85 browar 13 14 up
 
 @map piekarnia
 ambient room
@@ -68,52 +201,10 @@ Q__________Q
 Q__________Q
 QQQQQDQQQQQQ
 endtiles
-warp 5 7 polonia 15 2 down
+warp 5 7 miasto 27 48 down
 npc piekarz 3 2 piekarz down s_piekarz
 npc zb1 4 3 sal down s_zbiry_piek if MISJA_PIEKARNIA ifnot PIEKARNIA_OK
 npc zb2 6 3 enzo down s_zbiry_piek if MISJA_PIEKARNIA ifnot PIEKARNIA_OK
-
-@map italia
-name "Mała Italia"
-music italia
-night 120
-district 1
-entry 26 6 left
-tiles
-RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
-RRRwwwGaDaGwwwRRRRRgggDgggRRRRwGDGwR
-R,,,,,,,,,,,tt,,,,,,,,,,,,,,,,,,,,,R
-R,,,L,,,,,,,,,,,,L,,,,,,,,,,,,L,,,,R
-..........c..........c.............R
------------------------------------R
-..............c.................C..R
-R,,,,,,,,,,,,,L,,,,,,,,,,,,,,,,,,,,R
-R,T,,,,,,,,,,,,,,,,T,,L,,,,,,,,,,,TR
-RRRRRwwGDGwwRRRRRRRRRRRRwwaDawwRRRRR
-RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
-endtiles
-warp 0 4 polonia 32 5 left
-warp 0 5 polonia 32 5 left
-warp 0 6 polonia 32 5 left
-warp 8 1 trattoria 6 8 up
-warp 22 1 kosciol 7 11 up
-warp 32 1 sklep 4 5 up
-npc vito 9 2 vito down s_vito if DON_POZNANY ifnot DON_NIE_ZYJE
-npc luigi 8 8 pan up s_luigi
-npc rosa 12 7 pani up s_rosa
-npc paddy 27 8 paddy up s_paddy
-npc stefek 31 7 stefek up s_kierowca if DON_POZNANY ifnot STEFEK_OUT
-npc kierowca2 31 7 mafioso up s_kierowca if STEFEK_OUT
-npc gliniarz 20 2 gliniarz down s_gliniarz wander
-npc pani2 25 7 pani up s_przechodzien wander
-npc parada1 15 3 flapper down - dance if _S_K_BALBO
-npc parada2 16 3 pan down - dance if _S_K_BALBO
-npc parada3 18 7 pani up - dance if _S_K_BALBO
-npc parada4 19 7 pan up - dance if _S_K_BALBO
-npc parada5 11 3 muzyk down - play if _S_K_BALBO
-npc parada6 12 3 muzyk down - play if _S_K_BALBO
-npc ksiadz_p 16 7 ksiadz up - if _S_K_BALBO
-npc babcia_p 15 2 mama down - if _S_K_BALBO
 
 @map sklep
 name "Sklep z narzędziami Gina"
@@ -130,7 +221,7 @@ i________i
 i________i
 iiiiDiiiii
 endtiles
-warp 4 6 italia 32 2 down
+warp 4 6 miasto 78 48 down
 npc gino 4 2 gino down s_gino
 
 @map trattoria
@@ -151,7 +242,7 @@ jPqqqqqtqqqtqqjrrrrfrj
 jqqqqqqqqqqqqqjjjjjjjj
 jjjjjjDjjjjjjjjjjjjjjj
 endtiles
-warp 6 9 italia 8 2 down
+warp 6 9 miasto 54 48 down
 npc don 18 2 don down s_don ifnot DON_NIE_ZYJE
 npc kelner 2 2 kelner down s_kelner
 npc lucia 10 6 lucia left s_lucia ifnot _S_K_LUCIA_KSIEGI ifnot _S_K_ZAMACH
@@ -193,71 +284,13 @@ g_____________g
 #_____________#
 #######D#######
 endtiles
-warp 7 12 italia 22 2 down
+warp 7 12 miasto 68 48 down
 npc ksiadz 7 2 ksiadz down s_ksiadz
 npc lucia_k 5 4 lucia down s_lucia_pogrzeb if MISJA_POGRZEB ifnot POGRZEB_OK
 npc vito_k 9 4 vito down s_vito_pogrzeb if MISJA_POGRZEB ifnot POGRZEB_OK
 npc enzo_k 11 8 enzo up s_enzo if MISJA_POGRZEB ifnot POGRZEB_OK
 npc babcia 3 6 mama down s_babcia
 npc lucia_c 7 4 lucia down - if _S_K_LUCIA
-
-@map doki
-ambient harbor
-name "Doki nad rzeką"
-music doki
-night 120
-rain 1
-district 3
-floors 2
-entry 1 6 right
-tiles
-MMMMMMMMMMMMMMMMMMMMMM==~~~~~~
-Mooooooooooooooooooooo==~~~~~~
-MoXXoookkooooooXXooook==~~~~~~
-MoXXoooooooooooXoookoo==~~~m~~
-MoooooooooooXooooooooo==~~~~~~
-MoooLoooooooooooooLooo========
-ooooooooCCoooooooooooo========
-oooooooooooooooooooooo========
-Mooooooooooooooooooooo==~~~~~~
-MoooooooooooooooXXoooo==~~m~~~
-MoocoooooXXoooooXooooo==~~~~~~
-MooookkooooookooooooXo==~~~~~~
-MoooooooooooLooooooooo==~~~~~~
-MMMMMMMMMMMMMMMMMMMMMM==~~~~~~
-endtiles
-warp 0 6 italia 30 6 left
-warp 0 7 italia 30 6 left
-npc gino_d 12 6 gino left s_gino_doki if MISJA_DOKI ifnot DOKI_OK
-npc dokowiec 20 7 dokowiec left s_dokowiec wander
-npc mickey 18 7 mickey left s_mickey if DOKI_WALKA_OK ifnot MICKEY_DONE
-
-@map chinatown
-name "Chinatown"
-music chiny
-night 120
-district 5
-entry 2 5 right
-tiles
-RRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
-RRaGaRRRaaDaaRRRRGGaDaGGRRRRRR
-R,,L,,,,,L,,,,,L,,,,,L,,,,,L,R
-R,,,,,,,,,,,,,,,,,,,,,,,,,,,,R
-..............c..............R
------------------------------R
-......................c......R
-R,,,,,,,,,,,,,,,,,,,,,,,,,,,,R
-R,,,,,L,,,,,,L,,,,,,,,,,L,,,,R
-RRRRGaGaGRRRRRRaGGGaRRRRRRRRRR
-RRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
-endtiles
-warp 0 4 italia 30 6 left
-warp 0 5 italia 30 6 left
-warp 0 6 italia 30 6 left
-warp 10 1 herbaciarnia 6 7 up
-npc straz_t 11 2 triada down s_straz_triady
-npc chinka 18 7 pani up s_przechodzien wander
-npc sprzedawca 20 2 triada down s_sprzedawca
 
 @map herbaciarnia
 ambient crowd
@@ -276,7 +309,7 @@ z_t__________z
 z____________z
 zzzzzzDzzzzzzz
 endtiles
-warp 6 8 chinatown 10 2 down
+warp 6 8 miasto 99 86 down
 npc lee 7 1 lee down s_lee ifnot _S_K_LEE
 npc lee_k 7 4 lee down - sit if _S_K_LEE
 npc tri1 4 2 triada down s_straz_triady
@@ -308,8 +341,8 @@ MooooooooooooookooookooooooM
 MooooooooooooooooooooooooooM
 MMMMMMMMMMMMMooMMMMMMMMMMMMM
 endtiles
-warp 13 15 italia 30 6 left
-warp 14 15 italia 30 6 left
+warp 13 15 miasto 60 87 left
+warp 14 15 miasto 60 87 left
 npc vito_b 12 13 vito up s_vito_browar if MISJA_BROWAR ifnot BROWAR_OK
 npc robotnik_b 21 12 robotnik left s_robotnik_browar if BROWAR_OK
 

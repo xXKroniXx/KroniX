@@ -66,6 +66,55 @@ Ent *world_find_ent(const char *id) {
   return NULL;
 }
 
+/* ---------------------------------------------------------------- znacznik celu */
+void world_marker_set(int map, int x, int y, const char *npcId) {
+  int t = 0, mx = 0, my = 0, mm = -1;
+  if (npcId) {
+    /* NPC: najpierw widoczny wariant (spełnione warunki), potem dowolny */
+    for (int pass = 0; pass < 2 && mm < 0; pass++)
+      for (int i = 0; i < S.nmaps && mm < 0; i++)
+        for (int k = 0; k < S.maps[i].nents; k++) {
+          EntDef *d = &S.maps[i].ents[k];
+          if (strcmp(d->id, npcId) || (pass == 0 && !ent_cond(d))) continue;
+          mm = i; mx = d->x; my = d->y; t = 2;
+          break;
+        }
+    if (mm < 0) fprintf(stderr, "znacznik: brak NPC '%s'\n", npcId);
+  } else if (map >= 0) { mm = map; mx = x; my = y; t = 1; }
+  H.vars[var_find("_CEL_T", 1)] = t;
+  H.vars[var_find("_CEL_M", 1)] = mm;
+  H.vars[var_find("_CEL_X", 1)] = mx;
+  H.vars[var_find("_CEL_Y", 1)] = my;
+  H.vars[var_find("_CEL_E", 1)] = 0;
+  if (npcId) for (int i = 0; i < S.nmaps; i++) for (int k = 0; k < S.maps[i].nents; k++)
+    if (!strcmp(S.maps[i].ents[k].id, npcId)) { H.vars[var_find("_CEL_E", 1)] = i * 1000 + k + 1; i = S.nmaps; break; }
+}
+
+int world_marker_pos(float *x, float *z) {
+  int t = H.vars[var_find("_CEL_T", 1)];
+  if (!t) return 0;
+  int mm = H.vars[var_find("_CEL_M", 1)];
+  float tx = H.vars[var_find("_CEL_X", 1)] + 0.5f, tz = H.vars[var_find("_CEL_Y", 1)] + 0.5f;
+  if (mm == W.map) {
+    if (t == 2) { /* żywy NPC na tej mapie */
+      int e = H.vars[var_find("_CEL_E", 1)] - 1;
+      if (e >= 0) for (int i = 0; i < W.n; i++) if (W.ents[i].d == &S.maps[e / 1000].ents[e % 1000]) { tx = W.ents[i].x; tz = W.ents[i].z; break; }
+    }
+    *x = tx; *z = tz;
+    return 1;
+  }
+  /* cel na innej mapie: drzwi prowadzące do niej, a z wnętrza — wyjście */
+  float best = 1e9f;
+  int found = 0;
+  for (int i = 0; i < W.n; i++) {
+    Ent *e = &W.ents[i];
+    if (e->d->type != ENT_WARP || e->d->toMap < 0 || !e->vis) continue;
+    float d = (e->d->toMap == mm ? 0 : 1000) + fabsf(e->x - W.px) + fabsf(e->z - W.pz);
+    if (d < best) { best = d; *x = e->x; *z = e->z; found = 1; }
+  }
+  return found;
+}
+
 static float dir_angle(int dir) {
   return dir == DIR_DOWN ? 0.0f : dir == DIR_UP ? PI_F : dir == DIR_RIGHT ? PI_F * 0.5f : -PI_F * 0.5f;
 }
@@ -76,8 +125,10 @@ static int nspawn;
 /* muzyka i tło dźwiękowe bieżącej mapy */
 void world_audio(void) {
   MapDef *m = M();
-  if (m->music[0]) music_play(m->music);
-  int amb = m->ambient ? m->ambient : m->interior ? AMB_ROOM : AMB_STREET;
+  Region *g = W.region >= 0 ? &S.regions[W.region] : NULL;
+  if (g && g->music[0]) music_play(g->music);
+  else if (m->music[0]) music_play(m->music);
+  int amb = g && g->ambient ? g->ambient : m->ambient ? m->ambient : m->interior ? AMB_ROOM : AMB_STREET;
   float space = amb == AMB_CHURCH || amb == AMB_WAREHOUSE ? 2 : m->interior ? 1 : 0;
   audio_ambience(amb, m->rain ? 1.0f : 0.0f, space);
 }
@@ -103,6 +154,8 @@ void world_load_map(int map, int tx, int ty, int dir) {
   }
   W.px = tx + 0.5f; W.pz = ty + 0.5f;
   W.ppx = W.px; W.ppz = W.pz; W.pbob = W.bob = 0;
+  W.region = region_at(W.map, W.px, W.pz);
+  snprintf(W.banner, sizeof W.banner, "%s", W.region >= 0 ? S.regions[W.region].name : m->name);
   W.yaw = dir_angle(dir); W.pitch = 0;
   W.grace = 30;
   W.bannerT = 170;
@@ -337,6 +390,16 @@ void world_update(void) {
   if (W.grace > 0) W.grace--;
   if (W.bannerT > 0) W.bannerT--;
   if (W.hurtT > 0) W.hurtT--;
+  /* wjazd do innej dzielnicy na dużej mapie: baner, muzyka, tło */
+  if (S.nregions && !W.trans) {
+    int r = region_at(W.map, W.px, W.pz);
+    if (r >= 0 && r != W.region) {
+      W.region = r;
+      snprintf(W.banner, sizeof W.banner, "%s", S.regions[r].name);
+      W.bannerT = 170;
+      world_audio();
+    }
+  }
   if (W.trans == 1) {
     g_fade += 24;
     if (g_fade >= 255) { g_fade = 255; world_load_map(W.tMap, W.tX, W.tY, W.tDir); W.trans = 2; lastTileX = W.tX; lastTileZ = W.tY; }
@@ -470,6 +533,14 @@ void world_draw(void) {
     if (e->d->type == ENT_WARP || e->d->type == ENT_EVENT) continue;
     draw_ent(e);
   }
+  /* słup światła nad celem misji */
+  {
+    float mx, mz;
+    if (world_marker_pos(&mx, &mz) && !M()->interior) {
+      float p = 0.75f + 0.25f * sinf(g_time * 3.0f);
+      for (int k = 0; k < 9; k++) r_glow(mx, 0.4f + k * 0.7f, mz, 0.55f - k * 0.03f, 0.9f * p, 0.62f * p, 0.18f * p);
+    }
+  }
   combat_draw_world();
   city_glows();
   r_glow_flush();
@@ -482,7 +553,6 @@ void world_draw(void) {
 
 /* nakładki UI świata: podpowiedź interakcji, nazwa lokacji, HUD */
 void world_draw_ui(void) {
-  MapDef *m = M();
   if (!script_blocking()) combat_draw_hud();
   if (!script_blocking() && !W.trans && g_mode == MODE_WORLD) {
     Ent *t = look_target(NULL);
@@ -507,14 +577,14 @@ void world_draw_ui(void) {
       d2_text_sh(FONT_BOLD, 20, x + 46, y + 8, b, UI_CREAM);
     }
   }
-  if (W.bannerT > 0 && m->name[0]) {
+  if (W.bannerT > 0 && W.banner[0]) {
     float a = W.bannerT > 140 ? (170 - W.bannerT) / 30.0f : W.bannerT < 40 ? W.bannerT / 40.0f : 1.0f;
     int ia = (int)(a * 255);
-    float w = d2_text_w(FONT_SERIF, 46, m->name);
+    float w = d2_text_w(FONT_SERIF, 46, W.banner);
     float x = (UI_W - w) / 2;
     d2_grad(x - 120, 92, w + 240, 76, WITH_A(0x000000, ia * 0), WITH_A(0x000000, ia * 0));
     d2_rect(UI_W / 2 - (w / 2 + 60) * a, 100, (w + 120) * a, 1.5f, WITH_A(UI_GOLD, ia));
     d2_rect(UI_W / 2 - (w / 2 + 60) * a, 160, (w + 120) * a, 1.5f, WITH_A(UI_GOLD, ia));
-    d2_text_sh(FONT_SERIF, 46, x, 106, m->name, WITH_A(UI_CREAM, ia));
+    d2_text_sh(FONT_SERIF, 46, x, 106, W.banner, WITH_A(UI_CREAM, ia));
   }
 }

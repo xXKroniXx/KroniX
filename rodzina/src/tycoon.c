@@ -1213,6 +1213,22 @@ static const char *enemy_for(int f, int boss) {
   return b;
 }
 
+/* wejście do miejsca: region dużej mapy albo osobna mapa */
+static void map_entry(int map, int *x, int *y, int *dir);
+static int place_find(const char *name, int *x, int *y, int *dir) {
+  int r = region_find(name);
+  if (r >= 0) { *x = S.regions[r].ex; *y = S.regions[r].ey; *dir = S.regions[r].edir; return S.regions[r].map; }
+  int mp = map_find(name);
+  if (mp >= 0) map_entry(mp, x, y, dir);
+  return mp;
+}
+static int district_place(int d, int *x, int *y, int *dir) {
+  for (int i = 0; i < S.nregions; i++)
+    if (S.regions[i].district == d + 1) { *x = S.regions[i].ex; *y = S.regions[i].ey; *dir = S.regions[i].edir; return S.regions[i].map; }
+  for (int i = 0; i < S.nmaps; i++) if (S.maps[i].district == d + 1) { map_entry(i, x, y, dir); return i; }
+  return -1;
+}
+
 static void map_entry(int map, int *x, int *y, int *dir) {
   MapDef *m = &S.maps[map];
   *dir = m->edir;
@@ -1486,16 +1502,21 @@ static void scene_clear(void) {
   sceneVar[0] = 0;
 }
 
+static void scene_start_at(int mp, int x, int y, int dir, const char *script);
 static void scene_start(const char *map, int x, int y, int dir, const char *script) {
-  int mp = map ? map_find(map) : map_find(S.hqMap);
+  if (!map) { scene_start_at(map_find(S.hqMap), S.hqX, S.hqY, S.hqDir, script); return; }
+  int mp;
+  if (x == 0 && y == 0) mp = place_find(map, &x, &y, &dir);
+  else mp = map_resolve(map, &x, &y);
+  scene_start_at(mp, x, y, dir, script);
+}
+static void scene_start_at(int mp, int x, int y, int dir, const char *script) {
   int sc = script_find(script);
   if (mp < 0 || sc < 0 || g_autoplay) return;
   scene_clear();
   snprintf(sceneVar, sizeof sceneVar, "_S_%s", script);
   for (char *c = sceneVar; *c; c++) *c = (char)toupper((unsigned char)*c);
   var_set(sceneVar, 1);
-  if (!map) { x = S.hqX; y = S.hqY; dir = S.hqDir; }
-  else if (x == 0 && y == 0) map_entry(mp, &x, &y, &dir);
   export_vars();
   md = 0;
   world_load_map(mp, x, y, dir);
@@ -1661,9 +1682,8 @@ static void visit_start(int i) {
   var_set("_WIZ_ZARZADCA", T.biz[i].manager >= 0);
   var_set("_WIZ_DZIS", T.visitDay == T.day + 1);
   T.visitDay = T.day + 1;
-  int mp = map_find(m), x, y, d;
-  map_entry(mp, &x, &y, &d);
-  if (script_find(sc) >= 0) scene_start(m, x, y, d, sc);
+  int x, y, d, mp = place_find(m, &x, &y, &d);
+  if (script_find(sc) >= 0) scene_start_at(mp, x, y, d, sc);
   else { export_vars(); md = 0; world_load_map(mp, x, y, d); game_set_mode(MODE_WORLD); g_fade = 255; g_autofade = 1; }
 }
 
@@ -1742,8 +1762,7 @@ static void open_dist(int d) {
   mopt(m, T.d[d].fort < 3 && T.d[d].infl[0] > 0, 1, b, "Wzmocnij ochronę ($%d)", fort_cost(d));
   mopt(m, op_target_valid(OP_HARACZ, d), 2, OT[OP_HARACZ].desc, "Akcja: haracz");
   mopt(m, op_target_valid(OP_ATAK, d), 3, OT[OP_ATAK].desc, "Akcja: atak na dzielnicę");
-  int mp = -1;
-  for (int i = 0; i < S.nmaps; i++) if (S.maps[i].district == d + 1) { mp = i; break; }
+  int qx, qy, qd, mp = district_place(d, &qx, &qy, &qd);
   mopt(m, mp >= 0 && !MS.active, 4, mp >= 0 ? "Pojedź tam samochodem (świat 3D)." : "Do tej dzielnicy nie ma dojazdu.", "Jedź tam");
   mopt(m, 1, 9, NULL, "Wróć");
 }
@@ -1959,9 +1978,8 @@ static void mactivate(void) {
       else if (v == 2) open_team(OP_HARACZ, a);
       else if (v == 3) open_team(OP_ATAK, a);
       else if (v == 4) {
-        int mp = -1;
-        for (int i = 0; i < S.nmaps; i++) if (S.maps[i].district == a + 1) { mp = i; break; }
-        if (mp >= 0) { int x, y, d; map_entry(mp, &x, &y, &d); md = 0; world_load_map(mp, x, y, d); game_set_mode(MODE_WORLD); g_fade = 255; g_autofade = 1; }
+        int x, y, d, mp = district_place(a, &x, &y, &d);
+        if (mp >= 0) { md = 0; world_load_map(mp, x, y, d); game_set_mode(MODE_WORLD); g_fade = 255; g_autofade = 1; }
       } else mclose();
       break;
     case MK_PICKDIST: if (v < 0) mclose(); else { mclose(); open_build(v); } break;
