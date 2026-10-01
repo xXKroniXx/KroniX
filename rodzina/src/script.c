@@ -12,10 +12,11 @@ static struct {
   int speaker;
   Ent *self;
   int wait;
-  char lines[32][160];
+  char lines[32][256];
   int nlines, page, shown, pageChars, hasText;
   char name[40];
-  Sprite *portrait;
+  unsigned portrait;
+  float barT; /* animacja pasów kinowych */
   int mFirst, mCount, mCur;
   Ent *walkE;
   float walkX, walkZ;
@@ -23,13 +24,15 @@ static struct {
   int steps;
 } V;
 
-#define DLG_X 8
-#define DLG_H 64
-#define DLG_Y (SCREEN_H - DLG_H - 6)
-#define DLG_W (SCREEN_W - 16)
+#define DLG_X 150.0f
+#define DLG_W 980.0f
+#define DLG_Y 528.0f
+#define DLG_H 162.0f
 #define DLG_LINES 3
+#define DLG_FS 23.0f
 
 int script_running(void) { return V.state != VS_IDLE; }
+Ent *script_self(void) { return V.state != VS_IDLE ? V.self : NULL; }
 int script_blocking(void) {
   return V.state == VS_SAY || V.state == VS_MENU || V.state == VS_FADE || V.state == VS_WALK || V.state == VS_WAIT || V.state == VS_RUN;
 }
@@ -50,6 +53,8 @@ void script_start(int idx, Ent *self) {
   V.state = VS_RUN;
 }
 
+static int menu_hit(int mx, int my);
+static int opt_enabled(int i);
 static int vis_len(const char *s) {
   int n = 0;
   const char *p = s;
@@ -69,13 +74,14 @@ static void page_setup(void) {
 
 static void say(const char *text, int sp) {
   V.name[0] = 0;
-  V.portrait = NULL;
+  V.portrait = 0;
   if (sp >= 0 && sp < S.nspeakers) {
     snprintf(V.name, sizeof V.name, "%s", S.speakers[sp].name);
-    if (S.speakers[sp].sprite[0] && strcmp(S.speakers[sp].sprite, "-")) V.portrait = art_portrait(S.speakers[sp].sprite);
+    if (S.speakers[sp].sprite[0] && strcmp(S.speakers[sp].sprite, "-")) V.portrait = human_portrait(human_find(S.speakers[sp].sprite));
   }
-  int width = V.portrait ? DLG_W - 66 : DLG_W - 18;
-  V.nlines = text_wrap(text, width, V.lines, 32);
+  float width = V.portrait ? DLG_W - 230 : DLG_W - 70;
+  V.nlines = g_render ? d2_wrap(FONT_SANS, DLG_FS, text, width, V.lines, 32) : 1;
+  if (!g_render) snprintf(V.lines[0], 256, "%s", text);
   if (V.nlines == 0) { V.nlines = 1; V.lines[0][0] = 0; }
   V.page = 0;
   V.hasText = 1;
@@ -278,7 +284,17 @@ void script_update(void) {
       } else {
         if (in.rep[BTN_UP]) { V.mCur = (V.mCur + V.mCount - 1) % V.mCount; sfx_play(SFX_BLIP); }
         if (in.rep[BTN_DOWN]) { V.mCur = (V.mCur + 1) % V.mCount; sfx_play(SFX_BLIP); }
-        if (in.pressed[BTN_A]) {
+        for (int k = 0; k < 4 && k < V.mCount; k++)
+          if (in.pressed[BTN_W1 + k]) { V.mCur = k; if (opt_enabled(k)) { chosen = k; sfx_play(SFX_OK); } }
+        int hov = menu_hit(in.mx, in.my);
+        static int lmx, lmy;
+        if (hov >= 0 && (in.mx != lmx || in.my != lmy)) V.mCur = hov;
+        lmx = in.mx; lmy = in.my;
+        if (in.click && hov >= 0) {
+          V.mCur = hov;
+          if (opt_enabled(V.mCur)) { chosen = V.mCur; sfx_play(SFX_OK); }
+          else sfx_play(SFX_CANCEL);
+        } else if (in.pressed[BTN_A]) {
           if (opt_enabled(V.mCur)) { chosen = V.mCur; sfx_play(SFX_OK); }
           else sfx_play(SFX_CANCEL);
         }
@@ -335,50 +351,81 @@ void script_update(void) {
 }
 
 /* ---------------------------------------------------------------- rysowanie */
+static void menu_layout(float *x, float *y, float *w, float *rowH) {
+  *rowH = 46;
+  *w = 620;
+  *x = (UI_W - *w) / 2;
+  float h = V.mCount * *rowH;
+  *y = (V.hasText ? DLG_Y - 24 : UI_H - 80) - h;
+}
+static int menu_hit(int mx, int my) {
+  if (V.state != VS_MENU || mx < 0) return -1;
+  float x, y, w, rh;
+  menu_layout(&x, &y, &w, &rh);
+  for (int i = 0; i < V.mCount; i++)
+    if (mx >= x && mx < x + w && my >= y + i * rh && my < y + i * rh + rh - 6) return i;
+  return -1;
+}
+
 static void draw_dialog(int full) {
-  gfx_window(DLG_X, DLG_Y, DLG_W, DLG_H);
-  int tx = DLG_X + 9, ty = DLG_Y + 8;
+  float x = DLG_X, y = DLG_Y, w = DLG_W, h = DLG_H;
+  d2_shadow(x, y, w, h, 14, 24, 0xB0000000);
+  d2_grad(x, y, w, h, 0xF0181419, 0xF00E0B0E);
+  d2_rrect_line(x, y, w, h, 14, 1.5f, 0x80E8B84A);
+  d2_rect(x + 30, y, w - 60, 2, UI_GOLD);
+  float tx = x + 34, ty = y + 22;
   if (V.portrait) {
-    gfx_rect(DLG_X + 7, DLG_Y + 7, 50, 50, pal('i'));
-    gfx_rect(DLG_X + 8, DLG_Y + 8, 48, 48, RGB(0x3a, 0x34, 0x4c));
-    gfx_blit_scaled(V.portrait, DLG_X + 9, DLG_Y + 9, 46, 46, 0, 255);
-    tx = DLG_X + 64;
+    float px = x + 22, py = y - 46, ps = 186;
+    d2_shadow(px, py, ps, ps, 12, 16, 0xA0000000);
+    d2_rrect(px, py, ps, ps, 12, 0xFF2A2430);
+    d2_grad(px + 4, py + 4, ps - 8, ps - 8, 0xFF4A3A42, 0xFF1A1418);
+    d2_image(V.portrait, px + 4, py + 4, ps - 8, ps - 8, 0, 1, 1, 0, 0xFFFFFFFF);
+    d2_rrect_line(px, py, ps, ps, 12, 2, UI_GOLD);
+    tx = x + 230;
   }
-  if (V.name[0]) { text_draw_sh(tx, ty - 2, V.name, pal('y')); ty += 11; }
+  if (V.name[0]) {
+    d2_text_sh(FONT_SERIF, 27, tx, ty - 6, V.name, UI_GOLD);
+    ty += 30;
+  }
   int remain = full ? 99999 : V.shown;
   for (int i = V.page * DLG_LINES; i < V.nlines && i < (V.page + 1) * DLG_LINES; i++) {
     int L = vis_len(V.lines[i]);
-    text_draw_n(tx, ty, V.lines[i], pal('w'), remain);
+    d2_text_n(FONT_SANS, DLG_FS, tx, ty, V.lines[i], UI_CREAM, remain);
     remain -= L;
     if (remain <= 0) break;
-    ty += LINE_H;
+    ty += 32;
   }
   if (!full && V.shown >= V.pageChars && (g_frame / 20) % 2)
-    text_draw(DLG_X + DLG_W - 13, DLG_Y + DLG_H - 13, (V.page + 1) * DLG_LINES < V.nlines ? "\xe2\x96\xbc" : "\xe2\x96\xb6", pal('y'));
+    d2_text(FONT_SANS, 22, x + w - 44, y + h - 40, (V.page + 1) * DLG_LINES < V.nlines ? "\xe2\x96\xbc" : "\xe2\x96\xb6", UI_GOLD);
 }
 
 void script_draw(void) {
+  int active = V.state == VS_SAY || V.state == VS_MENU;
+  V.barT += active ? 0.08f : -0.08f;
+  if (V.barT < 0) V.barT = 0;
+  if (V.barT > 1) V.barT = 1;
+  if (V.barT > 0) {
+    float bh = 70 * (1 - (1 - V.barT) * (1 - V.barT));
+    d2_rect(-200, 0, UI_W + 400, bh, 0xFF000000);
+    d2_rect(-200, UI_H - bh, UI_W + 400, bh + 200, 0xFF000000);
+  }
   if (V.state == VS_SAY) draw_dialog(0);
   if (V.state == VS_MENU) {
     if (V.hasText) draw_dialog(1);
-    int w = 80;
+    float x, y, w, rh;
+    menu_layout(&x, &y, &w, &rh);
     for (int i = 0; i < V.mCount; i++) {
-      int tw = text_width(S.opts[V.mFirst + i].text) + 24;
-      if (tw > w) w = tw;
-    }
-    if (w > SCREEN_W - 16) w = SCREEN_W - 16;
-    int h = V.mCount * 13 + 8;
-    int x = SCREEN_W - w - 8;
-    int y = (V.hasText ? DLG_Y : SCREEN_H - 8) - h - 2;
-    gfx_window(x, y, w, h);
-    for (int i = 0; i < V.mCount; i++) {
-      int en = opt_enabled(i);
-      u32 col = !en ? pal('d') : (i == V.mCur ? pal('y') : pal('w'));
-      if (i == V.mCur) {
-        gfx_rect_a(x + 3, y + 4 + i * 13, w - 6, 13, pal('b'), 90);
-        text_draw(x + 6, y + 5 + i * 13, "\xe2\x96\xb6", pal('y'));
-      }
-      text_draw_sh(x + 15, y + 5 + i * 13, S.opts[V.mFirst + i].text, col);
+      int en = opt_enabled(i), sel = i == V.mCur;
+      float yy = y + i * rh;
+      d2_shadow(x, yy, w, rh - 6, 10, 10, 0x90000000);
+      d2_rrect(x, yy, w, rh - 6, 10, sel ? 0xF02A2218 : 0xE0141016);
+      d2_rrect_line(x, yy, w, rh - 6, 10, sel ? 2.0f : 1.0f, sel ? UI_GOLD : 0x50E8B84A);
+      char num[8];
+      snprintf(num, sizeof num, "%d", i + 1);
+      d2_circle(x + 24, yy + (rh - 6) / 2, 13, sel ? UI_GOLD : 0xFF3A3238);
+      d2_text_c(FONT_BOLD, 16, x + 24, yy + (rh - 6) / 2 - 10, num, sel ? 0xFF141016 : UI_GREY);
+      u32 col = !en ? UI_DIM : sel ? 0xFFFFE6A8 : UI_CREAM;
+      d2_text_sh(FONT_SANS, 20, x + 48, yy + 8, S.opts[V.mFirst + i].text, col);
     }
   }
 }

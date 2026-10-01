@@ -8,6 +8,7 @@ int g_mouse_x = -1, g_mouse_y = -1, g_want_mouse_capture;
 int g_quit, g_fullscreen_toggle;
 char g_data_dir[512];
 int g_mouse_sens = 5;
+int g_render;
 Input in;
 Hero H;
 int g_mode = MODE_TITLE;
@@ -191,6 +192,8 @@ void game_debug(const char *cmdline) {
   else if (!strcmp(t[0], "script") && n >= 2) { int s = script_find(t[1]); if (s >= 0) script_start(s, NULL); else fprintf(stderr, "debug: brak skryptu %s\n", t[1]); }
   else if (!strcmp(t[0], "spawn") && n >= 4) world_spawn(t[1], atoi(t[2]), atoi(t[3]), n > 4);
   else if (!strcmp(t[0], "heal")) { H.hp = H.mhp; }
+  else if (!strcmp(t[0], "quality") && n >= 2) quality_apply(atoi(t[1]));
+  else if (!strcmp(t[0], "bloom") && n >= 2) g_cfg.bloom = atoi(t[1]);
   else if (!strcmp(t[0], "killall")) { for (int i = 0; i < W.n; i++) if (W.ents[i].hostile && !W.ents[i].dead) { W.ents[i].dead = 1; W.ents[i].deadT = 24; } }
   else if (!strcmp(t[0], "god")) g_autoplay = 2;
   else if (!strcmp(t[0], "title")) ui_title_enter();
@@ -258,7 +261,7 @@ void testdrv_frame(void) {
       return;
     }
     if (!strcmp(cmd, "mouse")) { int fr = 10; sscanf(arg, "%f %f %d", &tdMouseX, &tdMouseY, &fr); g_mouse_dx = tdMouseX; g_mouse_dy = tdMouseY; tdWait = fr; return; }
-    if (!strcmp(cmd, "shot")) { save_bmp(arg); continue; }
+    if (!strcmp(cmd, "shot")) { if (g_render) { game_draw(); r_screenshot(arg); } continue; }
     if (!strcmp(cmd, "debug")) { game_debug(arg); continue; }
     if (!strcmp(cmd, "autoplay")) { g_autoplay = atoi(arg); continue; }
     if (!strcmp(cmd, "choose")) {
@@ -328,10 +331,16 @@ static char *read_file(const char *path) {
 
 void game_init(int argc, char **argv) {
   srand((unsigned)time(NULL));
-  font_init();
-  textures_init();
-  actors_init();
-  art_init();
+  if (g_render) {
+    r_resize(g_winW, g_winH);
+    r_init();
+    tex_generate();
+    models_build();
+    humans_build();
+    weapons_build();
+    humans_portraits_build();
+  }
+  settings_load();
   audio_init();
   combat_init();
   const char *storyPath = NULL;
@@ -359,19 +368,22 @@ void game_init(int argc, char **argv) {
   ui_title_enter();
 }
 
-static void post_shake(void) {
-  if (g_shake <= 0) return;
-  int dx = (rand() % 3 - 1) * (g_shake > 3 ? 2 : 1), dy = (rand() % 3 - 1);
-  static u32 tmp[SCREEN_W * SCREEN_H];
-  memcpy(tmp, fb, sizeof tmp);
-  for (int y = 0; y < SCREEN_H; y++)
-    for (int x = 0; x < SCREEN_W; x++) {
-      int sx = x - dx, sy = y - dy;
-      fb[y * SCREEN_W + x] = (sx >= 0 && sy >= 0 && sx < SCREEN_W && sy < SCREEN_H) ? tmp[sy * SCREEN_W + sx] : pal('i');
-    }
-  g_shake--;
+int g_shake;
+void gfx_shake(int amount) { if (amount > g_shake) g_shake = amount; }
+
+int utf8_next(const char **p) {
+  const unsigned char *s = (const unsigned char *)*p;
+  int c = *s;
+  if (c < 0x80) { *p += 1; return c; }
+  if ((c & 0xE0) == 0xC0 && s[1]) { *p += 2; return ((c & 0x1F) << 6) | (s[1] & 0x3F); }
+  if ((c & 0xF0) == 0xE0 && s[1] && s[2]) { *p += 3; return ((c & 0x0F) << 12) | ((s[1] & 0x3F) << 6) | (s[2] & 0x3F); }
+  *p += 1;
+  return '?';
 }
 
+int art_exists(const char *name) { return human_find(name) >= 0 || objmodel_find(name) >= 0; }
+
+/* logika jednej klatki (60 Hz) */
 void game_frame(void) {
   if (g_testdrv) testdrv_frame();
   input_update();
@@ -387,28 +399,46 @@ void game_frame(void) {
   }
   g_want_mouse_capture = g_mode == MODE_WORLD && !script_blocking();
   if (g_autofade && g_mode == MODE_WORLD) {
-    g_fade -= 15;
+    g_fade -= 12;
     if (g_fade <= 0) { g_fade = 0; g_autofade = 0; }
   }
   if (g_autoplay && g_mode == MODE_MENU) game_set_mode(MODE_WORLD);
-  if (g_autoplay && g_testdrv) { g_frame++; return; } /* szybkie testy: bez rysowania */
+  if (g_shake > 0) g_shake--;
+  g_frame++;
+}
 
+/* rysowanie klatki: scena 3D + postprocess, potem UI 2D */
+void game_draw(void) {
+  if (!g_render) return;
+  g_time = g_frame / 60.0f;
+  int world = g_mode == MODE_WORLD || g_mode == MODE_MENU || g_mode == MODE_SHOP || g_mode == MODE_GAMEOVER || g_mode == MODE_TITLE;
+  float sy = 0, sp = 0;
+  if (g_shake > 0) { sy = ((rand() % 200) - 100) / 100.0f * 0.004f * g_shake; sp = ((rand() % 200) - 100) / 100.0f * 0.003f * g_shake; W.yaw += sy; W.pitch += sp; }
+  if (world) world_draw();
+  else {
+    /* tło 2D (księga, zakończenie) — czysty ekran */
+    REnv e;
+    memset(&e, 0, sizeof e);
+    e.interior = 1; e.exposure = 1;
+    RCam c = {v3(0, -50, 0), 0, 0, 60};
+    r_frame_begin(&c, &e);
+    r_lights_commit();
+    r_frame_end();
+  }
+  if (g_shake > 0) { W.yaw -= sy; W.pitch -= sp; }
+  d2_begin();
   switch (g_mode) {
     case MODE_TITLE: ui_title_draw(); break;
-    case MODE_WORLD: world_draw(); gfx_darken(g_fade); script_draw(); break;
-    case MODE_MENU: world_draw(); ui_pause_draw(); break;
-    case MODE_SHOP: world_draw(); ui_shop_draw(); break;
-    case MODE_GAMEOVER: world_draw(); ui_gameover_draw(); break;
+    case MODE_WORLD: world_draw_ui(); script_draw(); break;
+    case MODE_MENU: ui_pause_draw(); break;
+    case MODE_SHOP: ui_shop_draw(); break;
+    case MODE_GAMEOVER: ui_gameover_draw(); break;
     case MODE_ENDING: ui_ending_draw(); break;
     case MODE_TYCOON: tycoon_draw(); break;
     case MODE_TRAVEL: tycoon_travel_draw(); break;
   }
-  post_shake();
+  if (g_fade > 0) d2_rect(-400, -400, UI_W + 800, UI_H + 800, WITH_A(0x000000, g_fade));
   ui_toast_draw();
-  if (g_mode != MODE_WORLD && in.mx >= 0 && in.my >= 0) { /* kursor myszy */
-    static const char *cur[] = {"#", "##", "#w#", "#ww#", "#www#", "#wwww#", "#www##", "#w#", "##"};
-    for (int y = 0; y < 9; y++)
-      for (int x = 0; cur[y][x]; x++) gfx_pset(in.mx + x, in.my + y, cur[y][x] == '#' ? pal('i') : pal('w'));
-  }
-  g_frame++;
+  if (g_mode != MODE_WORLD || script_blocking()) ui_cursor();
+  d2_end();
 }

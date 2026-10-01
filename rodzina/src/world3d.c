@@ -1,49 +1,8 @@
-/* Świat 3D: budowanie siatki z map ASCII, oświetlenie, ruch gracza (FPP), kolizje,
- * postacie jako billboardy, interakcja (E), drzwi, zdarzenia, rysowanie sceny i HUD. */
+/* Świat 3D: logika mapy (kolizje, encje, ruch gracza FPP, interakcja, drzwi, zdarzenia)
+ * oraz rysowanie sceny przez renderer GPU (geometria z city.c, postacie z human.c). */
 #include "engine.h"
 
 World W;
-
-/* ---------------------------------------------------------------- kafelki 3D */
-enum { K_FLOOR, K_BLOCK, K_PROP, K_WATER, K_BB, K_CAR };
-typedef struct { char c; int kind; int floorTex; int sideTex; int topTex; float h; int flags; } TDef;
-static const TDef TD[] = {
-  {'.', K_FLOOR, TX_ASPHALT}, {'-', K_FLOOR, TX_ROADLINE}, {'|', K_FLOOR, TX_ROADLINE_V}, {',', K_FLOOR, TX_SIDEWALK},
-  {':', K_FLOOR, TX_COBBLE}, {'"', K_FLOOR, TX_GRASS}, {'_', K_FLOOR, TX_WOOD}, {'q', K_FLOOR, TX_CHECKER},
-  {'r', K_FLOOR, TX_CARPET}, {'o', K_FLOOR, TX_CONCRETE}, {'=', K_FLOOR, TX_PLANKS}, {'y', K_FLOOR, TX_RING}, {'s', K_FLOOR, TX_STAIRS},
-  {'R', K_BLOCK, TX_SIDEWALK, TX_BRICK_WIN}, {'W', K_BLOCK, TX_SIDEWALK, TX_BRICK}, {'w', K_BLOCK, TX_SIDEWALK, TX_BRICK_WIN},
-  {'G', K_BLOCK, TX_SIDEWALK, TX_SHOPWIN}, {'a', K_BLOCK, TX_SIDEWALK, TX_AWNING}, {'D', K_BLOCK, TX_SIDEWALK, TX_DOOR},
-  {'#', K_BLOCK, TX_CONCRETE, TX_STONE}, {'g', K_BLOCK, TX_CONCRETE, TX_STAINED}, {'i', K_BLOCK, TX_WOOD, TX_WALLPAPER},
-  {'j', K_BLOCK, TX_WOOD, TX_WALLPAPER_RED}, {'M', K_BLOCK, TX_CONCRETE, TX_WAREHOUSE}, {'Q', K_BLOCK, TX_CONCRETE, TX_PLASTER},
-  {'x', K_BLOCK, TX_CONCRETE, TX_BLACK}, {'z', K_BLOCK, TX_WOOD, TX_CURTAIN}, {'n', K_BLOCK, TX_SIDEWALK, TX_POSTER},
-  {'X', K_PROP, TX_CONCRETE, TX_CRATE, TX_CRATE, 0.55f}, {'k', K_PROP, TX_CONCRETE, TX_BARREL, TX_BARREL, 0.55f},
-  {'t', K_PROP, TX_WOOD, TX_TABLE_SIDE, TX_TABLECLOTH, 0.42f}, {'h', K_PROP, TX_WOOD, TX_PEW, TX_PEW, 0.28f},
-  {'b', K_PROP, TX_WOOD, TX_BAR_FRONT, TX_BAR_TOP, 0.6f}, {'S', K_PROP, TX_WOOD, TX_SHELF_BOTTLES, TX_BAR_TOP, 1.4f},
-  {'P', K_PROP, TX_WOOD, TX_PIANO, TX_PIANO, 0.6f}, {'V', K_PROP, TX_CONCRETE, TX_VAT, TX_METAL, 1.3f},
-  {'d', K_PROP, TX_WOOD, TX_BAR_FRONT, TX_DESK_TOP, 0.45f}, {'e', K_PROP, TX_WOOD, TX_PEW, TX_PEW, 0.35f},
-  {'B', K_PROP, TX_WOOD, TX_PEW, TX_BED, 0.3f}, {'u', K_PROP, TX_WOOD, TX_BOOKS, TX_BAR_TOP, 1.4f},
-  {'f', K_PROP, TX_WOOD, TX_FIRE, TX_STONE, 1.0f}, {'A', K_PROP, TX_CONCRETE, TX_ALTAR, TX_ALTAR, 0.55f},
-  {'Y', K_PROP, TX_RING, TX_POLE, TX_POLE, 0.8f}, {'F', K_PROP, TX_SIDEWALK, TX_FENCE, TX_FENCE, 0.6f, RF_ALPHA},
-  {'I', K_PROP, TX_CONCRETE, TX_BARS, TX_BARS, 1.6f, RF_ALPHA}, {'m', K_PROP, TX_CONCRETE, TX_METAL, TX_METAL, 0.9f},
-  {'~', K_WATER, TX_WATER}, {'T', K_BB, TX_GRASS}, {'p', K_BB, TX_WOOD}, {'L', K_BB, TX_SIDEWALK},
-  {'c', K_CAR, TX_ASPHALT}, {'C', K_CAR, TX_ASPHALT},
-};
-#define NTD ((int)(sizeof(TD) / sizeof(TD[0])))
-static const TDef *tdef[128];
-
-static void tdef_init(void) {
-  static int done;
-  if (done) return;
-  done = 1;
-  for (int i = 0; i < NTD; i++) tdef[(int)TD[i].c] = &TD[i];
-}
-
-int tile_valid(int c) { tdef_init(); return c > 0 && c < 128 && tdef[c] != NULL; }
-int tile_solid(int c) {
-  tdef_init();
-  if (c <= 0 || c >= 128 || !tdef[c]) return 1;
-  return tdef[c]->kind != K_FLOOR;
-}
 
 static MapDef *M(void) { return &S.maps[W.map]; }
 static int tile_at(int x, int z) {
@@ -51,224 +10,18 @@ static int tile_at(int x, int z) {
   if (x < 0 || z < 0 || x >= m->w || z >= m->h) return 'x';
   return m->tiles[z][x];
 }
-static const TDef *td_at(int x, int z) { tdef_init(); int c = tile_at(x, z); return tdef[c] ? tdef[c] : tdef['x']; }
 
-int world_solid_at(float x, float z) {
-  return tile_solid(tile_at((int)floorf(x), (int)floorf(z)));
-}
+int world_solid_at(float x, float z) { return tile_solid(tile_at((int)floorf(x), (int)floorf(z))); }
 
-/* linia widzenia po siatce (tylko bloki i wysokie rekwizyty zasłaniają) */
-static int blocks_sight(int c) {
-  const TDef *t = tdef[c];
-  if (!t) return 1;
-  if (t->kind == K_BLOCK) return 1;
-  if (t->kind == K_PROP && t->h > 1.0f && !(t->flags & RF_ALPHA)) return 1;
-  return 0;
-}
 int world_los(float x0, float z0, float x1, float z1) {
   float dx = x1 - x0, dz = z1 - z0;
   float d = sqrtf(dx * dx + dz * dz);
   int steps = (int)(d * 6) + 1;
   for (int i = 1; i < steps; i++) {
     float t = (float)i / steps;
-    if (blocks_sight(tile_at((int)floorf(x0 + dx * t), (int)floorf(z0 + dz * t)))) return 0;
+    if (tile_blocks_sight(tile_at((int)floorf(x0 + dx * t), (int)floorf(z0 + dz * t)))) return 0;
   }
   return 1;
-}
-
-/* ---------------------------------------------------------------- siatka */
-typedef struct { Vtx v[4]; short tex, flags; float cx, cy, cz, rad, nx, nz; } Quad;
-static Quad *quads;
-static int nquads, capquads;
-typedef struct { float x, y, z, r, i; } Light;
-static Light lights[256];
-static int nlights;
-static float ambient;
-typedef struct { float x, z, w, h; int kind; } Deco;
-static Deco decos[512];
-static int ndecos;
-
-static float light_at(float x, float y, float z, float face) {
-  float l = ambient;
-  for (int i = 0; i < nlights; i++) {
-    float dx = x - lights[i].x, dy = y - lights[i].y, dz = z - lights[i].z;
-    float d2 = dx * dx + dy * dy + dz * dz;
-    float r2 = lights[i].r * lights[i].r;
-    if (d2 >= r2) continue;
-    float f = 1.0f - sqrtf(d2) / lights[i].r;
-    l += f * f * lights[i].i;
-  }
-  l *= face;
-  return l > 1.5f ? 1.5f : l;
-}
-
-static void add_quad(float x0, float y0, float z0, float x1, float y1, float z1,
-                     float x2, float y2, float z2, float x3, float y3, float z3,
-                     float us, float vs, int tex, int flags, float face, float nx, float nz) {
-  if (nquads >= capquads) {
-    capquads = capquads ? capquads * 2 : 4096;
-    quads = (Quad *)realloc(quads, sizeof(Quad) * capquads);
-  }
-  Quad *q = &quads[nquads++];
-  float P[4][3] = {{x0, y0, z0}, {x1, y1, z1}, {x2, y2, z2}, {x3, y3, z3}};
-  float U[4] = {0, us, us, 0}, V[4] = {vs, vs, 0, 0};
-  q->cx = q->cy = q->cz = 0;
-  for (int i = 0; i < 4; i++) {
-    q->v[i].x = P[i][0]; q->v[i].y = P[i][1]; q->v[i].z = P[i][2];
-    q->v[i].u = U[i]; q->v[i].v = V[i];
-    q->v[i].l = light_at(P[i][0], P[i][1] + 0.2f, P[i][2], face);
-    q->cx += P[i][0] * 0.25f; q->cy += P[i][1] * 0.25f; q->cz += P[i][2] * 0.25f;
-  }
-  float r = 0;
-  for (int i = 0; i < 4; i++) {
-    float dx = P[i][0] - q->cx, dy = P[i][1] - q->cy, dz = P[i][2] - q->cz;
-    float d = sqrtf(dx * dx + dy * dy + dz * dz);
-    if (d > r) r = d;
-  }
-  q->rad = r;
-  q->tex = (short)tex; q->flags = (short)flags;
-  q->nx = nx; q->nz = nz;
-}
-
-static float bheight(int x, int z) {
-  MapDef *m = M();
-  if (m->interior) return m->ceil;
-  u32 h = (u32)(x / 5) * 2654435761u ^ (u32)(z / 7) * 40503u ^ (u32)W.map * 97u;
-  return (m->floors + (int)(h % 3)) * 1.5f;
-}
-
-/* ściana pionowa między (x0,z0) a (x1,z1), normalna (nx,nz), segmenty po piętrach */
-static void wall(float x0, float z0, float x1, float z1, float yb, float yt, int tex, int ground, float nx, float nz, int flags, int tx, int tz) {
-  float face = nz > 0.5f ? 1.0f : nz < -0.5f ? 0.72f : nx > 0 ? 0.88f : 0.8f;
-  MapDef *m = M();
-  if (!ground || m->interior) { /* rekwizyty i wnętrza: tekstura dopasowana do wysokości */
-    add_quad(x0, yb, z0, x1, yb, z1, x1, yt, z1, x0, yt, z0, 1, 1, tex, flags, face, nx, nz);
-    return;
-  }
-  for (float y = yb; y < yt - 0.01f; y += 1.5f) {
-    float y2 = y + 1.5f > yt ? yt : y + 1.5f;
-    int t = tex;
-    if (y > 0.1f) {
-      /* wyższe piętra: okna, część zapalona */
-      u32 hs = (u32)(tx * 73856093) ^ (u32)(tz * 19349663) ^ (u32)(y * 100);
-      if (tex == TX_STONE || tex == TX_STAINED) t = TX_STONE_WIN;
-      else if (tex == TX_WAREHOUSE) t = TX_WAREHOUSE;
-      else t = (hs % 5 < 2 && m->night) ? TX_BRICK_WIN_LIT : TX_BRICK_WIN;
-    } else if (ground && tex == TX_BRICK_WIN) {
-      u32 hs = (u32)(tx * 2654435761u) ^ (u32)tz;
-      if (m->night && hs % 3 == 0) t = TX_BRICK_WIN_LIT;
-    }
-    add_quad(x0, y, z0, x1, y, z1, x1, y2, z1, x0, y2, z0, 1, (y2 - y) / 1.5f, t, flags, face, nx, nz);
-  }
-}
-
-static void box(float x0, float z0, float x1, float z1, float h, int side, int top, int flags, int tx, int tz) {
-  wall(x0, z1, x1, z1, 0, h, side, 0, 0, 1, flags, tx, tz);  /* południe */
-  wall(x1, z0, x0, z0, 0, h, side, 0, 0, -1, flags, tx, tz); /* północ */
-  wall(x1, z1, x1, z0, 0, h, side, 0, 1, 0, flags, tx, tz);  /* wschód */
-  wall(x0, z0, x0, z1, 0, h, side, 0, -1, 0, flags, tx, tz); /* zachód */
-  add_quad(x0, h, z1, x1, h, z1, x1, h, z0, x0, h, z0, 1, 1, top, flags, 1.1f, 0, 0);
-}
-
-static void build_mesh(void) {
-  MapDef *m = M();
-  tdef_init();
-  nquads = 0; nlights = 0; ndecos = 0;
-  ambient = m->interior ? (m->night ? 0.55f : 0.8f) : (m->night ? 0.28f + (255 - m->night) / 600.0f : 0.95f);
-  /* światła */
-  for (int z = 0; z < m->h; z++)
-    for (int x = 0; x < m->w; x++) {
-      int c = m->tiles[z][x];
-      if (nlights >= 256) break;
-      if (c == 'L') { lights[nlights++] = (Light){x + 0.5f, 2.0f, z + 0.5f, 5.5f, 1.1f}; }
-      else if (c == 'f') { lights[nlights++] = (Light){x + 0.5f, 0.6f, z + 0.5f, 4.0f, 0.9f}; }
-      else if (m->interior && (x % 4 == 2) && (z % 4 == 2) && !tile_solid(c)) { lights[nlights++] = (Light){x + 0.5f, m->ceil - 0.2f, z + 0.5f, 4.5f, 0.55f}; }
-      else if (c == 'G' && m->night) { lights[nlights++] = (Light){x + 0.5f, 0.8f, z + 1.2f, 2.5f, 0.5f}; }
-    }
-  for (int z = 0; z < m->h; z++)
-    for (int x = 0; x < m->w; x++) {
-      const TDef *t = td_at(x, z);
-      float X = (float)x, Z = (float)z;
-      int ceilT = m->bg[0] == 'w' ? TX_CEIL_WOOD : TX_CEIL_PLASTER;
-      switch (t->kind) {
-        case K_FLOOR: case K_BB: case K_CAR:
-          add_quad(X, 0, Z + 1, X + 1, 0, Z + 1, X + 1, 0, Z, X, 0, Z, 1, 1, t->kind == K_CAR ? TX_ASPHALT : t->floorTex, 0, 1.0f, 0, 0);
-          if (m->interior) add_quad(X, m->ceil, Z, X + 1, m->ceil, Z, X + 1, m->ceil, Z + 1, X, m->ceil, Z + 1, 1, 1, ceilT, 0, 0.9f, 0, 0);
-          if (t->kind == K_BB && ndecos < 512) {
-            int kind = t->c == 'T' ? BB_TREE : t->c == 'p' ? BB_PLANT : BB_LAMP;
-            float w = kind == BB_TREE ? 1.6f : kind == BB_PLANT ? 0.45f : 0.22f;
-            float h = kind == BB_TREE ? 2.6f : kind == BB_PLANT ? 0.7f : 2.2f;
-            decos[ndecos++] = (Deco){X + 0.5f, Z + 0.5f, w, h, kind};
-          }
-          if (t->kind == K_CAR) {
-            int left = t->c == 'c';
-            float x0 = left ? X + 0.08f : X, x1 = left ? X + 1 : X + 0.92f;
-            float z0 = Z + 0.12f, z1 = Z + 0.88f;
-            wall(x0, z1, x1, z1, 0.08f, 0.52f, TX_CAR_SIDE, 0, 0, 1, 0, x, z);
-            wall(x1, z0, x0, z0, 0.08f, 0.52f, TX_CAR_SIDE, 0, 0, -1, 0, x, z);
-            if (left) wall(x0, z0, x0, z1, 0.08f, 0.52f, TX_CAR_BACK, 0, -1, 0, 0, x, z);
-            else wall(x1, z1, x1, z0, 0.08f, 0.52f, TX_CAR_FRONT, 0, 1, 0, 0, x, z);
-            add_quad(x0, 0.52f, z1, x1, 0.52f, z1, x1, 0.52f, z0, x0, 0.52f, z0, 1, 1, TX_CAR_TOP, 0, 1.0f, 0, 0);
-            if (left) { /* kabina */
-              float cx0 = X + 0.45f, cx1 = X + 1.0f;
-              wall(cx0, z1 - 0.06f, cx1, z1 - 0.06f, 0.52f, 0.82f, TX_CAR_SIDE, 0, 0, 1, 0, x, z);
-              wall(cx1, z0 + 0.06f, cx0, z0 + 0.06f, 0.52f, 0.82f, TX_CAR_SIDE, 0, 0, -1, 0, x, z);
-              wall(cx0, z0 + 0.06f, cx0, z1 - 0.06f, 0.52f, 0.82f, TX_CAR_BACK, 0, -1, 0, 0, x, z);
-              add_quad(cx0, 0.82f, z1 - 0.06f, cx1 + 0.4f, 0.82f, z1 - 0.06f, cx1 + 0.4f, 0.82f, z0 + 0.06f, cx0, 0.82f, z0 + 0.06f, 1, 1, TX_CAR_TOP, 0, 1.0f, 0, 0);
-            } else {
-              float cx1 = X + 0.4f;
-              wall(X, z1 - 0.06f, cx1, z1 - 0.06f, 0.52f, 0.82f, TX_CAR_SIDE, 0, 0, 1, 0, x, z);
-              wall(cx1, z0 + 0.06f, X, z0 + 0.06f, 0.52f, 0.82f, TX_CAR_SIDE, 0, 0, -1, 0, x, z);
-              wall(cx1, z1 - 0.06f, cx1, z0 + 0.06f, 0.52f, 0.82f, TX_CAR_FRONT, 0, 1, 0, 0, x, z);
-            }
-          }
-          break;
-        case K_WATER:
-          add_quad(X, -0.25f, Z + 1, X + 1, -0.25f, Z + 1, X + 1, -0.25f, Z, X, -0.25f, Z, 1, 1, TX_WATER, 0, 1.0f, 0, 0);
-          for (int d = 0; d < 4; d++) {
-            int nx = x + (d == 0) - (d == 1), nz = z + (d == 2) - (d == 3);
-            if (td_at(nx, nz)->kind == K_WATER) continue;
-            if (d == 0) wall(X + 1, Z, X + 1, Z + 1, -0.25f, 0, TX_CONCRETE, 0, -1, 0, 0, x, z);
-            if (d == 1) wall(X, Z + 1, X, Z, -0.25f, 0, TX_CONCRETE, 0, 1, 0, 0, x, z);
-            if (d == 2) wall(X + 1, Z + 1, X, Z + 1, -0.25f, 0, TX_CONCRETE, 0, 0, -1, 0, x, z);
-            if (d == 3) wall(X, Z, X + 1, Z, -0.25f, 0, TX_CONCRETE, 0, 0, 1, 0, x, z);
-          }
-          break;
-        case K_PROP: {
-          add_quad(X, 0, Z + 1, X + 1, 0, Z + 1, X + 1, 0, Z, X, 0, Z, 1, 1, t->floorTex, 0, 1.0f, 0, 0);
-          if (m->interior) add_quad(X, m->ceil, Z, X + 1, m->ceil, Z, X + 1, m->ceil, Z + 1, X, m->ceil, Z + 1, 1, 1, ceilT, 0, 0.9f, 0, 0);
-          float in = (t->c == 'k' || t->c == 't' || t->c == 'h' || t->c == 'd') ? 0.12f : (t->c == 'Y') ? 0.42f : 0.02f;
-          if (t->c == 'F' || t->c == 'I') {
-            /* cienki płot/kraty: płaszczyzna przez środek, dwustronna */
-            int horiz = !tile_solid(tile_at(x, z - 1)) || !tile_solid(tile_at(x, z + 1));
-            if (horiz) { wall(X, Z + 0.5f, X + 1, Z + 0.5f, 0, t->h, t->sideTex, 0, 0, 1, RF_ALPHA, x, z); wall(X + 1, Z + 0.5f, X, Z + 0.5f, 0, t->h, t->sideTex, 0, 0, -1, RF_ALPHA, x, z); }
-            else { wall(X + 0.5f, Z, X + 0.5f, Z + 1, 0, t->h, t->sideTex, 0, -1, 0, RF_ALPHA, x, z); wall(X + 0.5f, Z + 1, X + 0.5f, Z, 0, t->h, t->sideTex, 0, 1, 0, RF_ALPHA, x, z); }
-          } else box(X + in, Z + in, X + 1 - in, Z + 1 - in, t->h, t->sideTex, t->topTex, t->flags, x, z);
-          break;
-        }
-        case K_BLOCK: {
-          float h = bheight(x, z);
-          for (int d = 0; d < 4; d++) {
-            int nx = x + (d == 0) - (d == 1), nz = z + (d == 2) - (d == 3);
-            const TDef *n = td_at(nx, nz);
-            float nh = n->kind == K_BLOCK ? bheight(nx, nz) : 0;
-            if (n->kind == K_BLOCK && nh >= h) continue;
-            if (nx < 0 || nz < 0 || nx >= m->w || nz >= m->h) continue;
-            int tex = t->sideTex;
-            int ground = 1;
-            /* boczne ściany "masy" budynku i wyższe partie: cegła z oknami */
-            if (t->c == 'R') tex = TX_BRICK_WIN;
-            if (t->c == 'n' && d != 2) tex = TX_BRICK;
-            float yb = n->kind == K_BLOCK ? nh : 0;
-            if (d == 0) wall(X + 1, Z + 1, X + 1, Z, yb, h, tex, ground, 1, 0, 0, x, z);
-            if (d == 1) wall(X, Z, X, Z + 1, yb, h, tex, ground, -1, 0, 0, x, z);
-            if (d == 2) wall(X, Z + 1, X + 1, Z + 1, yb, h, tex, ground, 0, 1, 0, x, z);
-            if (d == 3) wall(X + 1, Z, X, Z, yb, h, tex, ground, 0, -1, 0, x, z);
-          }
-          break;
-        }
-      }
-    }
 }
 
 /* ---------------------------------------------------------------- encje */
@@ -326,7 +79,7 @@ void world_load_map(int map, int tx, int ty, int dir) {
   W.n = 0;
   nspawn = 0;
   MapDef *m = M();
-  build_mesh();
+  city_build(m);
   for (int i = 0; i < m->nents && W.n < MAX_ENTS; i++) {
     Ent *e = &W.ents[W.n++];
     memset(e, 0, sizeof *e);
@@ -336,6 +89,8 @@ void world_load_map(int map, int tx, int ty, int dir) {
     e->ang = dir_angle(e->d->dir);
     e->walkT = 60 + rand() % 120;
     e->enemyDef = -1;
+    e->htype = human_find(e->d->sprite);
+    e->animT = (rand() % 1000) / 100.0f;
   }
   W.px = tx + 0.5f; W.pz = ty + 0.5f;
   W.yaw = dir_angle(dir); W.pitch = 0;
@@ -370,6 +125,7 @@ void world_spawn(const char *enemyId, int tx, int ty, int ally) {
   e->ally = ally;
   e->hp = e->maxhp = ed >= 0 ? S.enemies[ed].hp : 30;
   e->state = 1; /* od razu czujni */
+  e->htype = human_find(d->sprite);
 }
 
 int world_enemies_alive(void) {
@@ -561,10 +317,10 @@ static void update_npcs(void) {
 
 void world_update(void) {
   W.time++;
+  for (int i = 0; i < W.n; i++) W.ents[i].animT += 1.0f / 60.0f;
   if (W.grace > 0) W.grace--;
   if (W.bannerT > 0) W.bannerT--;
   if (W.hurtT > 0) W.hurtT--;
-  textures_animate(W.time);
   if (W.trans == 1) {
     g_fade += 24;
     if (g_fade >= 255) { g_fade = 255; world_load_map(W.tMap, W.tX, W.tY, W.tDir); W.trans = 2; lastTileX = W.tX; lastTileZ = W.tY; }
@@ -583,128 +339,153 @@ void world_update(void) {
 }
 
 /* ---------------------------------------------------------------- rysowanie */
-static void draw_actor(Ent *e) {
-  Actor *a = actor_get(e->d->sprite);
+static REnv env_for_map(const MapDef *m) {
+  REnv e;
+  memset(&e, 0, sizeof e);
+  e.exposure = 1.0f;
+  if (m->interior) {
+    e.interior = 1;
+    float f[3] = {0.035f, 0.026f, 0.022f};
+    memcpy(e.fogCol, f, sizeof f);
+    e.fogDensity = 0.035f;
+    e.ambSky[0] = 0.2f; e.ambSky[1] = 0.165f; e.ambSky[2] = 0.135f;
+    e.ambGround[0] = 0.07f; e.ambGround[1] = 0.055f; e.ambGround[2] = 0.045f;
+    e.sunDir[0] = 0.3f; e.sunDir[1] = 0.8f; e.sunDir[2] = 0.4f;
+    e.sunCol[0] = 0.05f; e.sunCol[1] = 0.045f; e.sunCol[2] = 0.04f;
+    e.exposure = 1.05f;
+    return e;
+  }
+  if (m->night) {
+    float top[3] = {0.012f, 0.016f, 0.035f}, hor[3] = {0.11f, 0.08f, 0.12f}, glow[3] = {0.22f, 0.11f, 0.05f};
+    memcpy(e.skyTop, top, 12); memcpy(e.skyHorizon, hor, 12); memcpy(e.skyGlow, glow, 12);
+    e.fogCol[0] = 0.075f; e.fogCol[1] = 0.062f; e.fogCol[2] = 0.085f;
+    e.fogDensity = m->rain ? 0.05f : 0.038f;
+    e.ambSky[0] = 0.12f; e.ambSky[1] = 0.125f; e.ambSky[2] = 0.17f;
+    e.ambGround[0] = 0.06f; e.ambGround[1] = 0.05f; e.ambGround[2] = 0.045f;
+    e.sunDir[0] = -0.4f; e.sunDir[1] = 0.55f; e.sunDir[2] = 0.6f;
+    e.sunCol[0] = 0.1f; e.sunCol[1] = 0.12f; e.sunCol[2] = 0.2f;
+    e.wet = m->rain ? 1.0f : 0.35f;
+    e.rain = m->rain ? 1.0f : 0;
+    e.moon = m->rain ? 0.25f : 1.0f;
+    e.stars = m->rain ? 0.1f : 1.0f;
+    return e;
+  }
+  /* dzień (pochmurny, złote popołudnie) */
+  float top[3] = {0.25f, 0.38f, 0.62f}, hor[3] = {0.75f, 0.7f, 0.62f}, glow[3] = {0.3f, 0.2f, 0.1f};
+  memcpy(e.skyTop, top, 12); memcpy(e.skyHorizon, hor, 12); memcpy(e.skyGlow, glow, 12);
+  e.fogCol[0] = 0.62f; e.fogCol[1] = 0.6f; e.fogCol[2] = 0.56f;
+  e.fogDensity = 0.022f;
+  e.ambSky[0] = 0.55f; e.ambSky[1] = 0.58f; e.ambSky[2] = 0.65f;
+  e.ambGround[0] = 0.25f; e.ambGround[1] = 0.22f; e.ambGround[2] = 0.2f;
+  e.sunDir[0] = -0.5f; e.sunDir[1] = 0.6f; e.sunDir[2] = 0.4f;
+  e.sunCol[0] = 1.6f; e.sunCol[1] = 1.35f; e.sunCol[2] = 1.0f;
+  e.wet = m->rain ? 0.8f : 0;
+  e.rain = m->rain ? 1.0f : 0;
+  e.exposure = 0.9f;
+  return e;
+}
+
+static void draw_ent(Ent *e) {
   float dx = e->x - W.px, dz = e->z - W.pz;
-  float dist = sqrtf(dx * dx + dz * dz);
-  if (dist > 26) return;
-  float l = light_at(e->x, 0.6f, e->z, 1.0f);
-  if (e->hitT > 0) l = 1.4f;
-  if (!a) {
-    Sprite *s = art_get(e->d->sprite);
-    const TDef *t = td_at((int)floorf(e->x), (int)floorf(e->z));
-    float y0 = t->kind == K_PROP ? t->h : 0.0f; /* przedmiot leżący na stole/biurku */
-    if (s) r3d_billboard(e->x, y0, e->z, y0 > 0 ? 0.32f : 0.42f, y0 > 0 ? 0.32f : 0.42f, s, 0, l + 0.2f, 0);
+  if (dx * dx + dz * dz > 40 * 40) return;
+  if (e->htype < 0) {
+    int md = objmodel_find(e->d->sprite);
+    if (md < 0) return;
+    float y = tile_prop_height(tile_at((int)floorf(e->x), (int)floorf(e->z)));
+    if (y > 2) y = 0;
+    M4 mm = m4_mul(m4_translate(e->x, y, e->z), m4_roty(e->ang));
+    r_draw(&MODELS[md], &mm, 0);
+    if (e->d->script >= 0) {
+      float p = 0.5f + 0.5f * sinf(g_time * 3);
+      r_glow(e->x, y + 0.08f, e->z, 0.25f, 0.25f * p, 0.2f * p, 0.08f * p);
+    }
     return;
   }
-  if (e->dead) {
-    Sprite *s = e->deadT > 12 ? a->dead[0] : a->dead[1];
-    r3d_billboard(e->x, 0.0f, e->z, 0.45f, 0.9f, s, e->ang > 0, l, 0);
-    return;
+  HumanPose p;
+  memset(&p, 0, sizeof p);
+  p.t = e->animT;
+  p.weapon = e->enemyDef >= 0 ? S.enemies[e->enemyDef].weapon : 0;
+  p.hitT = e->hitT / 8.0f;
+  if (e->dead) { p.anim = AN_DEAD; p.deadT = 1.0f - e->deadT / 24.0f; }
+  else if (e->shootT > 0) p.anim = AN_SHOOT;
+  else if ((e->hostile || e->ally) && e->state >= 2) p.anim = e->moving ? AN_RUN : AN_AIM;
+  else if (e->moving) p.anim = AN_WALK;
+  else if (script_self() == e && script_blocking()) p.anim = AN_TALK;
+  else p.anim = AN_IDLE;
+  if (p.anim == AN_AIM || p.anim == AN_SHOOT) {
+    float d = sqrtf(dx * dx + dz * dz);
+    p.aimPitch = atan2f(0.0f, d > 0.1f ? d : 0.1f);
   }
-  /* który widok: kąt między kierunkiem postaci a kierunkiem do kamery */
-  float toCam = atan2f(-dx, -dz);
-  float rel = toCam - e->ang;
-  while (rel > PI_F) rel -= 2 * PI_F;
-  while (rel < -PI_F) rel += 2 * PI_F;
-  int view, flip = 0;
-  if (fabsf(rel) < PI_F * 0.25f) view = VIEW_FRONT;
-  else if (fabsf(rel) > PI_F * 0.75f) view = VIEW_BACK;
-  else { view = VIEW_SIDE; flip = rel < 0; }
-  int pose = POSE_STAND;
-  if (e->hitT > 0) pose = POSE_HIT;
-  else if (e->shootT > 0) pose = POSE_SHOOT;
-  else if (e->state >= 2 && e->hostile) pose = e->moving ? ((W.time / 8) % 2 ? POSE_WALK1 : POSE_WALK2) : POSE_AIM;
-  else if (e->ally && e->state >= 2) pose = e->moving ? ((W.time / 8) % 2 ? POSE_WALK1 : POSE_WALK2) : POSE_AIM;
-  else if (e->moving) pose = (W.time / 10) % 2 ? POSE_WALK1 : POSE_WALK2;
-  if (view == VIEW_BACK && (pose == POSE_AIM || pose == POSE_SHOOT)) pose = POSE_STAND;
-  r3d_billboard(e->x, 0.0f, e->z, 0.45f, 0.9f, a->fr[view][pose], flip, l, 0);
+  float gy = world_ground(e->x, e->z);
+  human_draw(e->htype, e->x, gy, e->z, e->ang, &p, 0);
 }
 
 void world_draw(void) {
   MapDef *m = M();
-  Cam c = {W.px, 0.78f + W.bob, W.pz, W.yaw, W.pitch};
-  r3d_begin(&c);
-  u32 fogc = m->interior ? RGB(0x12, 0x0e, 0x10) : m->night ? RGB(0x16, 0x16, 0x26) : RGB(0x9a, 0xa4, 0xb0);
-  float fe = m->interior ? 18.0f : m->night ? 22.0f : 40.0f;
-  r3d_fog(fogc, m->interior ? 6.0f : 5.0f, fe);
-  if (m->interior) gfx_clear(fogc);
-  else r3d_sky(m->night > 0, W.time);
-  float fx = sinf(W.yaw), fz = cosf(W.yaw);
-  for (int i = 0; i < nquads; i++) {
-    Quad *q = &quads[i];
-    float dx = q->cx - W.px, dz = q->cz - W.pz;
-    float d2 = dx * dx + dz * dz;
-    float lim = fe + q->rad + 1;
-    if (d2 > lim * lim) continue;
-    if (dx * fx + dz * fz < -q->rad - 0.5f) continue; /* za plecami */
-    if ((q->nx != 0 || q->nz != 0) && !(q->flags & RF_ALPHA)) {
-      if ((W.px - q->cx) * q->nx + (W.pz - q->cz) * q->nz < 0) continue; /* tył ściany */
-    }
-    r3d_poly(q->v, 4, TEX[q->tex], q->flags);
-  }
-  for (int i = 0; i < ndecos; i++) {
-    Deco *d = &decos[i];
-    float dx = d->x - W.px, dz = d->z - W.pz;
-    if (dx * dx + dz * dz > fe * fe) continue;
-    r3d_billboard(d->x, 0.0f, d->z, d->w, d->h, BB[d->kind], 0, d->kind == BB_LAMP ? 1.0f : light_at(d->x, 1, d->z, 1), d->kind == BB_LAMP ? RF_FULLBRIGHT : 0);
-  }
+  REnv env = env_for_map(m);
+  float gy = world_ground(W.px, W.pz);
+  static float camY;
+  float target = gy + 0.78f;
+  if (fabsf(camY - target) > 0.5f) camY = target;
+  camY += (target - camY) * 0.25f;
+  RCam cam = {v3(W.px, camY + W.bob, W.pz), W.yaw, W.pitch, (float)g_cfg.fov};
+  r_frame_begin(&cam, &env);
+  city_lights(g_time);
+  combat_lights();
+  r_light(W.px, camY + 0.3f, W.pz, 0.22f, 0.2f, 0.18f, 4.0f); /* delikatne doświetlenie wokół gracza */
+  r_lights_commit();
+  city_draw();
   for (int i = 0; i < W.n; i++) {
     Ent *e = &W.ents[i];
     if (!e->vis && !(e->dead && e->d->type == ENT_MOB)) continue;
     if (e->d->type == ENT_WARP || e->d->type == ENT_EVENT) continue;
-    draw_actor(e);
+    draw_ent(e);
   }
-  if (m->rain) {
-    for (int i = 0; i < 140; i++) {
-      u32 h = (u32)(i * 2654435761u);
-      int x = (int)((h % 520) + (W.time * 3)) % 520 - 20;
-      int y = (int)(((h >> 9) % 300) + W.time * 9) % 300 - 15;
-      for (int k = 0; k < 7; k++) gfx_pset_a(x - k / 3, y + k, RGB(0xa0, 0xb8, 0xd8), 90);
-    }
-  }
-  if (!script_blocking()) { combat_draw_view(); combat_draw_hud(); }
+  combat_draw_world();
+  city_glows();
+  r_glow_flush();
+  if (env.rain > 0) r_rain(env.rain * 0.55f);
+  if (!script_blocking() && g_mode == MODE_WORLD) combat_draw_view();
+  float hurt = W.hurtT / 18.0f;
+  r_grade(0.9f, 1.0f, 1.0f + hurt * 0.8f, 0);
+  r_frame_end();
+}
 
-  /* podpowiedź interakcji */
+/* nakładki UI świata: podpowiedź interakcji, nazwa lokacji, HUD */
+void world_draw_ui(void) {
+  MapDef *m = M();
+  if (!script_blocking()) combat_draw_hud();
   if (!script_blocking() && !W.trans && g_mode == MODE_WORLD) {
     Ent *t = look_target(NULL);
-    const char *msg = NULL;
-    char b[96];
+    char b[128] = "";
     if (t) {
       const char *nm = t->d->type == ENT_NPC ? "Rozmawiaj" : "Zbadaj";
       int sp = speaker_find(t->d->id);
-      if (sp >= 0 && t->d->type == ENT_NPC) snprintf(b, sizeof b, "E  %s: %s", nm, S.speakers[sp].name);
-      else snprintf(b, sizeof b, "E  %s", nm);
-      msg = b;
+      if (sp >= 0 && t->d->type == ENT_NPC) snprintf(b, sizeof b, "%s  \xe2\x80\x94  %s", nm, S.speakers[sp].name);
+      else snprintf(b, sizeof b, "%s", nm);
     } else {
       Ent *door = look_door();
-      if (door && door->d->toMap >= 0) {
-        snprintf(b, sizeof b, "E  Wejdź: %s", S.maps[door->d->toMap].name);
-        msg = b;
-      }
+      if (door && door->d->toMap >= 0) snprintf(b, sizeof b, "Wejdź  \xe2\x80\x94  %s", S.maps[door->d->toMap].name);
     }
-    if (msg) {
-      int w = text_width(msg) + 12;
-      gfx_rect_a((SCREEN_W - w) / 2, SCREEN_H / 2 + 18, w, 14, pal('i'), 170);
-      text_draw_sh((SCREEN_W - w) / 2 + 6, SCREEN_H / 2 + 20, msg, pal('y'));
+    if (b[0]) {
+      float w = d2_text_w(FONT_BOLD, 20, b) + 70;
+      float x = (UI_W - w) / 2, y = UI_H / 2 + 60;
+      d2_shadow(x, y, w, 40, 10, 10, 0x80000000);
+      d2_rrect(x, y, w, 40, 10, 0xC8141016);
+      d2_rrect_line(x, y, w, 40, 10, 1.5f, 0x90E8B84A);
+      d2_rrect(x + 8, y + 7, 26, 26, 6, UI_GOLD);
+      d2_text_c(FONT_BOLD, 18, x + 21, y + 9, "E", 0xFF141016);
+      d2_text_sh(FONT_BOLD, 20, x + 46, y + 8, b, UI_CREAM);
     }
   }
   if (W.bannerT > 0 && m->name[0]) {
-    int a = W.bannerT > 140 ? (170 - W.bannerT) * 8 : W.bannerT < 30 ? W.bannerT * 8 : 240;
-    int w = text_width(m->name) * 2 + 24, x = (SCREEN_W - w) / 2;
-    gfx_rect_a(x, 30, w, 28, pal('i'), a > 200 ? 200 : a);
-    gfx_rect_a(x, 30, w, 1, pal('z'), a);
-    gfx_rect_a(x, 57, w, 1, pal('z'), a);
-    if (a > 120) text_draw_big(x + 12, 33, m->name, pal('y'), 2);
-  }
-  if (W.hurtT > 0) {
-    for (int y = 0; y < SCREEN_H; y++)
-      for (int x = 0; x < SCREEN_W; x++) {
-        int ex = abs(x - SCREEN_W / 2) * 256 / (SCREEN_W / 2), ey = abs(y - SCREEN_H / 2) * 256 / (SCREEN_H / 2);
-        int e = (ex > ey ? ex : ey) - 120;
-        if (e > 0) gfx_pset_a(x, y, pal('r'), e * W.hurtT / 18);
-      }
+    float a = W.bannerT > 140 ? (170 - W.bannerT) / 30.0f : W.bannerT < 40 ? W.bannerT / 40.0f : 1.0f;
+    int ia = (int)(a * 255);
+    float w = d2_text_w(FONT_SERIF, 46, m->name);
+    float x = (UI_W - w) / 2;
+    d2_grad(x - 120, 92, w + 240, 76, WITH_A(0x000000, ia * 0), WITH_A(0x000000, ia * 0));
+    d2_rect(UI_W / 2 - (w / 2 + 60) * a, 100, (w + 120) * a, 1.5f, WITH_A(UI_GOLD, ia));
+    d2_rect(UI_W / 2 - (w / 2 + 60) * a, 160, (w + 120) * a, 1.5f, WITH_A(UI_GOLD, ia));
+    d2_text_sh(FONT_SERIF, 46, x, 106, m->name, WITH_A(UI_CREAM, ia));
   }
 }
-
-float world_light_at(float x, float z) { return light_at(x, 0.6f, z, 1.0f); }

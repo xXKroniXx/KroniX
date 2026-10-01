@@ -10,16 +10,14 @@
 #include <string.h>
 #include <math.h>
 
-#define SCREEN_W 480
-#define SCREEN_H 270
-#define TILE 16
+#define SCREEN_W UI_W
+#define SCREEN_H UI_H
 #define AUDIO_RATE 22050
-#define PI_F 3.14159265f
-
 typedef uint32_t u32;
 typedef uint8_t u8;
 
 #define RGB(r, g, b) ((u32)(0xFF000000u | ((u32)(r) << 16) | ((u32)(g) << 8) | (u32)(b)))
+#define PI_F 3.14159265f
 #define CLAMP(v, a, b) ((v) < (a) ? (a) : (v) > (b) ? (b) : (v))
 
 /* ------------------------------------------------------------------ platforma */
@@ -38,7 +36,6 @@ extern int g_want_mouse_capture;      /* rdzeń prosi o przechwycenie myszy (try
 extern int g_quit;
 extern int g_fullscreen_toggle;
 extern char g_data_dir[512];
-extern u32 fb[SCREEN_W * SCREEN_H];
 
 void game_init(int argc, char **argv);
 void game_frame(void);
@@ -53,94 +50,29 @@ extern Input in;
 void input_update(void);
 void input_clear(void);
 
-/* ------------------------------------------------------------------ grafika 2D */
-typedef struct { int w, h; u32 *px; } Sprite; /* alfa 0 = przezroczysty */
-
-u32 pal(char c);
-u32 blend(u32 a, u32 b, int t);
-u32 shade(u32 c, int l); /* l: 0..256 (i więcej = rozjaśnienie) */
-Sprite *spr_new(int w, int h);
-Sprite *spr_art(const char *const *rows, int n, const u32 *remap);
-void gfx_clear(u32 c);
-void gfx_pset(int x, int y, u32 c);
-void gfx_pset_a(int x, int y, u32 c, int a);
-void gfx_rect(int x, int y, int w, int h, u32 c);
-void gfx_rect_a(int x, int y, int w, int h, u32 c, int a);
-void gfx_vgrad(int x, int y, int w, int h, u32 top, u32 bot);
-void gfx_circle(int cx, int cy, int r, u32 c, int a);
-void gfx_blit(const Sprite *s, int x, int y, int flip, int scale);
-void gfx_blit_fx(const Sprite *s, int x, int y, int flip, int scale, u32 tint, int tintAmt, int alpha);
-void gfx_blit_scaled(const Sprite *s, int x, int y, int w, int h, int flip, int alpha);
-void gfx_darken(int amt);
-void gfx_window(int x, int y, int w, int h);
+/* ------------------------------------------------------------------ grafika (GPU) */
+#include "render.h"
+#include "assets.h"
+#define LINE_H 22
+/* paleta UI (ARGB) */
+#define UI_GOLD 0xFFE8B84Au
+#define UI_GOLD_D 0xFF9A7A34u
+#define UI_CREAM 0xFFF0E6D0u
+#define UI_GREY 0xFFA9B4C2u
+#define UI_DIM 0xFF6A7080u
+#define UI_RED 0xFFE0605Au
+#define UI_GREEN 0xFF7CC97Au
+#define UI_BLUE 0xFF7FB2F0u
+#define UI_PANEL 0xE8141016u
+#define UI_PANEL2 0xF01C1820u
+int utf8_next(const char **p);
+void ui_panel(float x, float y, float w, float h);        /* panel art-deco z cieniem */
+void ui_button(float x, float y, float w, float h, const char *label, int selected, int enabled);
+void ui_cursor(void);
+extern int g_render;          /* czy jest kontekst GL (testy bez okna: 0) */
+void game_draw(void);         /* rysuje klatkę (platforma woła po aktualizacjach) */
 void gfx_shake(int amount);
 extern int g_shake;
-void save_bmp(const char *path);
-
-/* ------------------------------------------------------------------ font */
-#define LINE_H 11
-void font_init(void);
-int utf8_next(const char **p);
-int text_width(const char *s);
-int text_draw(int x, int y, const char *s, u32 col);
-int text_draw_sh(int x, int y, const char *s, u32 col);
-int text_draw_big(int x, int y, const char *s, u32 col, int scale);
-int text_wrap(const char *s, int maxw, char out[][160], int maxlines);
-int text_draw_n(int x, int y, const char *s, u32 col, int maxChars);
-
-/* ------------------------------------------------------------------ renderer 3D */
-typedef struct { int w, h, lw, lh; u32 *px; } Tex; /* wymiary = potęgi dwójki */
-typedef struct { float x, y, z, u, v, l; } Vtx;    /* pozycja w świecie, UV, światło */
-typedef struct { float x, y, z, yaw, pitch; } Cam;
-
-enum { RF_ALPHA = 1, RF_FULLBRIGHT = 2, RF_NOFOG = 4, RF_NOZWRITE = 8, RF_ADD = 16 };
-
-extern float zbuf[SCREEN_W * SCREEN_H];
-extern float r3d_focal;
-Tex *tex_new(int lw, int lh);
-void r3d_begin(const Cam *c);
-void r3d_fog(u32 color, float start, float end);
-void r3d_ambient_flash(float add);
-void r3d_poly(const Vtx *v, int n, const Tex *t, int flags);
-void r3d_billboard(float x, float y, float z, float w, float h, const Sprite *s, int flip, float light, int flags);
-int r3d_project(float x, float y, float z, float *sx, float *sy, float *depth);
-void r3d_sky(int night, int t);
-float r3d_horizon(void);
-
-/* tekstury proceduralne */
-enum {
-  TX_ASPHALT, TX_ROADLINE, TX_ROADLINE_V, TX_SIDEWALK, TX_COBBLE, TX_GRASS, TX_WOOD, TX_CHECKER, TX_CARPET,
-  TX_CONCRETE, TX_PLANKS, TX_RING, TX_STAIRS,
-  TX_BRICK, TX_BRICK_WIN, TX_BRICK_WIN_LIT, TX_SHOPWIN, TX_DOOR, TX_AWNING, TX_STONE, TX_STONE_WIN,
-  TX_PLASTER, TX_WALLPAPER, TX_WALLPAPER_RED, TX_WAREHOUSE, TX_ROOF,
-  TX_CEIL_PLASTER, TX_CEIL_WOOD,
-  TX_CRATE, TX_BARREL, TX_TABLECLOTH, TX_TABLE_SIDE, TX_BAR_FRONT, TX_BAR_TOP, TX_SHELF_BOTTLES,
-  TX_PIANO, TX_VAT, TX_DESK_TOP, TX_BOOKS, TX_FIRE, TX_BARS, TX_FENCE, TX_CAR_SIDE, TX_CAR_FRONT,
-  TX_CAR_BACK, TX_CAR_TOP, TX_WATER, TX_METAL, TX_POSTER, TX_POSTER2, TX_PEW, TX_BED, TX_ALTAR, TX_STAINED,
-  TX_POLE, TX_CURTAIN, TX_BLACK, TX_COUNT
-};
-extern Tex *TEX[TX_COUNT];
-void textures_init(void);
-void textures_animate(int t);
-enum { BB_TREE, BB_PLANT, BB_LAMP, BB_COUNT };
-extern Sprite *BB[BB_COUNT];
-
-/* ------------------------------------------------------------------ postacie (billboardy) */
-enum { POSE_STAND, POSE_WALK1, POSE_WALK2, POSE_AIM, POSE_SHOOT, POSE_HIT, POSE_COUNT };
-enum { VIEW_FRONT, VIEW_BACK, VIEW_SIDE, VIEW_COUNT };
-typedef struct {
-  char name[24];
-  Sprite *fr[VIEW_COUNT][POSE_COUNT];
-  Sprite *dead[2];
-  Sprite *portrait;
-} Actor;
-void actors_init(void);
-Actor *actor_get(const char *name);
-int actor_exists(const char *name);
-int art_exists(const char *name);
-Sprite *art_get(const char *name);
-Sprite *art_portrait(const char *name);
-void art_init(void);
 
 /* ------------------------------------------------------------------ dźwięk */
 enum { SFX_BLIP, SFX_OK, SFX_CANCEL, SFX_HIT, SFX_CRIT, SFX_FIRE, SFX_HEAL, SFX_DOOR,
@@ -152,6 +84,7 @@ void sfx_play(int id);
 void sfx_play_at(int id, float dist);
 int sfx_find(const char *name);
 int music_exists(const char *name);
+int art_exists(const char *name);
 extern int g_volume;
 extern int g_mouse_sens;
 
@@ -248,6 +181,13 @@ int speaker_find(const char *id);
 int var_find(const char *name, int create);
 int tile_valid(int c);
 int tile_solid(int c);
+int tile_blocks_sight(int c);
+float tile_prop_height(int c);
+void city_build(MapDef *m);
+void city_lights(float time);
+void city_glows(void);
+void city_draw(void);
+float world_ground(float x, float z);
 
 /* ------------------------------------------------------------------ bohater */
 typedef struct { char id[24]; char text[120]; int done; } Quest;
@@ -288,6 +228,8 @@ typedef struct {
   float tx, tz;          /* cel ruchu */
   int walkT, moving, shootT;
   int talkT;
+  int htype;        /* typ postaci 3D (-1 = przedmiot) */
+  float animT;
 } Ent;
 
 typedef struct {
@@ -313,7 +255,7 @@ int world_enemies_alive(void);
 void world_hurt_player(int dmg);
 void world_kill_all(void);
 void move_circle(float *x, float *z, float dx, float dz, float r, Ent *self);
-float world_light_at(float x, float z);
+void world_draw_ui(void);
 
 /* walka */
 void combat_init(void);
@@ -321,6 +263,8 @@ void combat_update(void);
 void combat_draw_view(void);
 void combat_ent_update(Ent *e);
 void combat_draw_hud(void);
+void combat_lights(void);
+void combat_draw_world(void);
 void combat_top_up(int w);
 extern const char *WPN_NAMES[WPN_COUNT];
 
@@ -328,6 +272,7 @@ extern const char *WPN_NAMES[WPN_COUNT];
 void script_start(int idx, Ent *self);
 int script_running(void);
 int script_blocking(void); /* czy skrypt zatrzymuje gracza (dialog) */
+Ent *script_self(void);
 void script_update(void);
 void script_draw(void);
 void script_stop(void);
@@ -337,11 +282,17 @@ typedef struct {
   const char *items[24];
   int enabled[24];
   int n, cur, scroll, visible;
+  float dx, dy, dw, rh; /* ostatnie położenie (mysz) */
+  int lmx, lmy;
 } Menu;
 void menu_init(Menu *m);
 void menu_add(Menu *m, const char *label, int enabled);
 int menu_input(Menu *m);
-void menu_draw(Menu *m, int x, int y, int w);
+void menu_draw(Menu *m, float x, float y, float w);
+void settings_save(void);
+void settings_load(void);
+void quality_apply(int preset);
+extern int g_quality;
 void ui_open_pause(void);
 void ui_pause_update(void);
 void ui_pause_draw(void);

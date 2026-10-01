@@ -1309,6 +1309,44 @@ int tycoon_debug_mission(int type, int target) {
   return mission_start(type, target, team, 1, 3);
 }
 
+/* ================================================================ UI: warstwa zgodności (układ 480x270 -> wektorowe UI 1280x720) */
+#define KS (1280.0f / 480.0f)
+#define TFS 19.0f /* rozmiar tekstu */
+#define TSCREEN_W 480
+#define TSCREEN_H 270
+static u32 pal(char c) {
+  switch (c) {
+    case 'k': return 0xFF1A1C2C; case 'p': return 0xFF5D275D; case 'r': return 0xFFE0605A; case 'o': return 0xFFEF8D57;
+    case 'y': return 0xFFF2C46B; case 'l': return 0xFF9AE08A; case 'g': return 0xFF5AC07A; case 't': return 0xFF2E8A94;
+    case 'n': return 0xFF29366F; case 'b': return 0xFF3B5DC9; case 'c': return 0xFF6AB6F6; case 'a': return 0xFF8AEFF7;
+    case 'w': return 0xFFF0E6D0; case 's': return 0xFFA9B4C2; case 'd': return 0xFF6A7488; case 'e': return 0xFF333C57;
+    case 'f': return 0xFFF0C8A0; case 'u': return 0xFF8B5A3C; case 'v': return 0xFF5A3A28; case 'x': return 0xFF1F4D33;
+    case 'm': return 0xFFC0CAD6; case 'z': return 0xFFE8B84A; case 'j': return 0xFF7A2A3A; case 'q': return 0xFF3A2A4A;
+    case 'i': return 0xFF141016; default: return 0xFFFFFFFF;
+  }
+}
+static u32 blend(u32 a, u32 b, int t) {
+  int r = (((a >> 16) & 255) * (256 - t) + ((b >> 16) & 255) * t) >> 8;
+  int g = (((a >> 8) & 255) * (256 - t) + ((b >> 8) & 255) * t) >> 8;
+  int bb = ((a & 255) * (256 - t) + (b & 255) * t) >> 8;
+  return 0xFF000000u | (r << 16) | (g << 8) | bb;
+}
+static void gfx_rect(int x, int y, int w, int h, u32 c) { d2_rect(x * KS, y * KS, w * KS, h * KS, c); }
+static void gfx_rect_a(int x, int y, int w, int h, u32 c, int a) { d2_rect(x * KS, y * KS, w * KS, h * KS, WITH_A(c, a < 0 ? 0 : a > 255 ? 255 : a)); }
+static void gfx_vgrad(int x, int y, int w, int h, u32 t, u32 b) { d2_grad(x * KS, y * KS, w * KS, h * KS, t, b); }
+static void gfx_window(int x, int y, int w, int h) { ui_panel(x * KS, y * KS, w * KS, h * KS); }
+static int text_width(const char *s) { return (int)(d2_text_w(FONT_SANS, TFS, s) / KS + 0.5f); }
+static int text_draw(int x, int y, const char *s, u32 c) { return (int)(d2_text(FONT_SANS, TFS, x * KS, y * KS - 3, s, c) / KS); }
+static int text_draw_sh(int x, int y, const char *s, u32 c) { return (int)(d2_text_sh(FONT_SANS, TFS, x * KS, y * KS - 3, s, c) / KS); }
+static void text_draw_n(int x, int y, const char *s, u32 c, int n) { d2_text_n(FONT_SANS, TFS, x * KS, y * KS - 3, s, c, n); }
+static int text_wrap(const char *s, int maxw, char out[][256], int maxl) { return d2_wrap(FONT_SANS, TFS, s, maxw * KS, out, maxl); }
+static void portrait(const char *sprite, int x, int y, int sz) {
+  unsigned t = human_portrait(human_find(sprite));
+  d2_rrect(x * KS, y * KS, sz * KS, sz * KS, 8, 0xFF2A2430);
+  if (t) d2_image(t, x * KS + 3, y * KS + 3, sz * KS - 6, sz * KS - 6, 0, 1, 1, 0, 0xFFFFFFFF);
+  d2_rrect_line(x * KS, y * KS, sz * KS, sz * KS, 8, 1.5f, 0xA0E8B84A);
+}
+
 /* ================================================================ UI: narzędzia */
 typedef struct { short x, y, w, h, kind, idx; } Zone;
 enum { Z_TAB = 1, Z_ROW, Z_MOPT, Z_NEXT, Z_BACK };
@@ -1320,22 +1358,24 @@ static void zone(int x, int y, int w, int h, int kind, int idx) {
 }
 static Zone *zone_at(void) {
   if (in.mx < 0) return NULL;
+  int mx = (int)(in.mx / KS), my = (int)(in.my / KS);
   for (int i = nz - 1; i >= 0; i--)
-    if (in.mx >= zones[i].x && in.my >= zones[i].y && in.mx < zones[i].x + zones[i].w && in.my < zones[i].y + zones[i].h) return &zones[i];
+    if (mx >= zones[i].x && my >= zones[i].y && mx < zones[i].x + zones[i].w && my < zones[i].y + zones[i].h) return &zones[i];
   return NULL;
 }
 
 static void text_r(int xr, int y, const char *s, u32 c) { text_draw_sh(xr - text_width(s), y, s, c); }
 static void text_c(int xc, int y, const char *s, u32 c) { text_draw_sh(xc - text_width(s) / 2, y, s, c); }
 static void bar(int x, int y, int w, int h, int v, int max, u32 c) {
-  gfx_rect(x, y, w, h, RGB(0x10, 0x0c, 0x14));
-  int f = max > 0 ? (w - 2) * CLAMP(v, 0, max) / max : 0;
-  gfx_rect(x + 1, y + 1, f, h - 2, c);
+  float r = h * KS * 0.5f;
+  d2_rrect(x * KS, y * KS, w * KS, h * KS, r, 0xFF221C24);
+  float f = max > 0 ? (w * KS - 4) * CLAMP(v, 0, max) / max : 0;
+  if (f > 1) d2_rrect(x * KS + 2, y * KS + 2, f, h * KS - 4, r - 2, c);
 }
 static void panel(int x, int y, int w, int h) {
-  gfx_rect_a(x, y, w, h, RGB(0x12, 0x0e, 0x18), 220);
-  gfx_rect(x, y, w, 1, RGB(0x6a, 0x52, 0x2a));
-  gfx_rect(x, y + h - 1, w, 1, RGB(0x3a, 0x2c, 0x1a));
+  d2_shadow(x * KS, y * KS, w * KS, h * KS, 12, 14, 0x80000000);
+  d2_grad(x * KS, y * KS, w * KS, h * KS, 0xE81A161C, 0xE8100D12);
+  d2_rrect_line(x * KS, y * KS, w * KS, h * KS, 10, 1.2f, 0x60E8B84A);
 }
 static void fmt_money(char *b, int n, int v) {
   int a = v < 0 ? -v : v;
@@ -1837,7 +1877,7 @@ static void draw_over(void) {
   y = CY + 21;
   int from = T.nlog > 16 ? T.nlog - 16 : 0;
   for (int i = from; i < T.nlog; i++) {
-    char lines[3][160];
+    char lines[3][256];
     int n = text_wrap(T.log[i], 216, lines, 3);
     for (int k = 0; k < n && y < CY + CH - 10; k++) { text_draw(248 + (k ? 6 : 0), y, lines[k], T.log[i][0] == 0xE2 ? pal('z') : pal('m')); y += 10; }
   }
@@ -1979,8 +2019,7 @@ static void draw_men(void) {
   int r = tsel[TAB_MEN];
   Man *m = r < T.nmen ? &T.men[r] : r > T.nmen ? &T.rec[r - T.nmen - 1] : NULL;
   if (m) {
-    Sprite *p = art_portrait(m->sprite);
-    if (p) { gfx_rect(334, CY + 8, 44, 44, RGB(0x08, 0x06, 0x0c)); gfx_blit(p, 336, CY + 10, 0, 2); }
+    portrait(m->sprite, 334, CY + 8, 44);
     char s[64];
     text_draw_sh(384, CY + 10, m->nick, pal('y'));
     snprintf(s, sizeof s, "Poziom %d", m->lvl); text_draw(384, CY + 22, s, pal('s'));
@@ -1999,7 +2038,7 @@ static void draw_men(void) {
     snprintf(s, sizeof s, "Mamy: %d", T.soldiers); text_draw(334, CY + 26, s, pal('w'));
     snprintf(s, sizeof s, "Limit: %d", max_soldiers()); text_draw(334, CY + 37, s, pal('s'));
     text_draw(334, CY + 52, "Pensja: $6/dzień", pal('s'));
-    char lines[8][160];
+    char lines[8][256];
     int n = text_wrap("Żołnierze bronią dzielnic i wspierają akcje. Limit rośnie z liczbą dzielnic i szacunkiem.", 130, lines, 8);
     for (int i = 0; i < n; i++) text_draw(334, CY + 70 + i * 10, lines[i], pal('m'));
   }
@@ -2018,7 +2057,7 @@ static void draw_ops(void) {
     y += 12;
   }
   y += 6;
-  char lines[4][160];
+  char lines[4][256];
   int n = text_wrap(OT[tsel[TAB_OPS]].desc, 280, lines, 4);
   for (int i = 0; i < n; i++) { text_draw(16, y, lines[i], pal('m')); y += 10; }
   text_draw(16, CY + CH - 25, "3D = możesz poprowadzić akcję osobiście", pal('a'));
@@ -2055,8 +2094,7 @@ static void draw_fam(void) {
     panel(8, y, 464, h);
     zone(8, y, 464, h, Z_ROW, r);
     if (tsel[TAB_FAM] == r) { gfx_rect(8, y, 3, h, pal('y')); gfx_rect_a(11, y + 1, 461, h - 2, pal('b'), 50); }
-    Sprite *p = art_portrait(FT[f].sprite);
-    if (p) { gfx_rect(16, y + 5, 42, 42, RGB(0x08, 0x06, 0x0c)); gfx_blit(p, 17, y + 6, 0, 2); }
+    portrait(FT[f].sprite, 16, y + 5, 42);
     if (!fam_alive(f)) gfx_rect_a(16, y + 5, 42, 42, RGB(0, 0, 0), 150);
     text_draw_sh(66, y + 5, FT[f].name, pal(FT[f].col));
     char s[80];
@@ -2097,9 +2135,9 @@ static void draw_modal(Modal *m) {
   int lines = m->ntext;
   int vis = m->nopt > 12 ? 12 : m->nopt;
   int h = 30 + lines * 11 + (lines ? 6 : 0) + vis * 12 + 30;
-  int x = (SCREEN_W - w) / 2, y = (SCREEN_H - h) / 2;
+  int x = (TSCREEN_W - w) / 2, y = (TSCREEN_H - h) / 2;
   if (y < 4) y = 4;
-  gfx_rect_a(0, 0, SCREEN_W, SCREEN_H, RGB(0, 0, 0), 110);
+  gfx_rect_a(0, 0, TSCREEN_W, TSCREEN_H, RGB(0, 0, 0), 110);
   gfx_window(x, y, w, h);
   text_draw_sh(x + 10, y + 7, m->title, pal('z'));
   gfx_rect(x + 8, y + 19, w - 16, 1, RGB(0x6a, 0x52, 0x2a));
@@ -2127,7 +2165,7 @@ static void draw_modal(Modal *m) {
   if (m->nopt > vis) { char b[24]; snprintf(b, sizeof b, "%d/%d", m->cur + 1, m->nopt); text_r(x + w - 10, y + 7, b, pal('d')); }
   /* opis */
   if (m->desc[m->cur][0]) {
-    char dl[3][160];
+    char dl[3][256];
     int n = text_wrap(m->desc[m->cur], w - 20, dl, 2);
     gfx_rect(x + 8, y + h - 27, w - 16, 1, RGB(0x3a, 0x2c, 0x1a));
     for (int i = 0; i < n; i++) text_draw(x + 10, y + h - 24 + i * 10, dl[i], pal('s'));
@@ -2136,27 +2174,28 @@ static void draw_modal(Modal *m) {
 
 void tycoon_draw(void) {
   nz = 0;
-  /* tło: ciemne biurko */
-  gfx_vgrad(0, 0, SCREEN_W, SCREEN_H, RGB(0x24, 0x18, 0x14), RGB(0x10, 0x0a, 0x0a));
-  for (int y = 36; y < SCREEN_H; y += 6) gfx_rect_a(0, y, SCREEN_W, 1, RGB(0x30, 0x20, 0x18), 60);
+  /* tło: skórzana okładka */
+  d2_grad(0, 0, UI_W, UI_H, 0xFF2A1C16, 0xFF0E0A0A);
+  d2_grad(0, 0, UI_W, 120, 0x50000000, 0x00000000);
   /* nagłówek */
-  gfx_rect(0, 0, SCREEN_W, 19, RGB(0x0c, 0x08, 0x0a));
-  gfx_rect(0, 19, SCREEN_W, 1, pal('z'));
-  text_draw_sh(8, 4, "KSIĘGA RODZINY", pal('z'));
+  d2_grad(0, 0, UI_W, 50, 0xFF100C0E, 0xFF1A1418);
+  d2_rect(0, 50, UI_W, 2, UI_GOLD);
+  d2_text_sh(FONT_SERIF, 30, 22, 8, "Księga Rodziny", UI_GOLD);
   char ds[40], b[64], mm[32];
   date_str(T.day, ds, sizeof ds);
-  snprintf(b, sizeof b, "Dzień %d  •  %s", T.day + 1, ds);
-  text_c(SCREEN_W / 2 + 10, 4, b, pal('w'));
+  snprintf(b, sizeof b, "Dzień %d  \xe2\x80\xa2  %s", T.day + 1, ds);
+  d2_text_c(FONT_SANS, 20, UI_W / 2 + 20, 13, b, UI_CREAM);
   fmt_money(mm, sizeof mm, H.gold);
-  text_r(SCREEN_W - 8, 4, mm, H.gold < 0 ? pal('r') : pal('l'));
+  d2_text_r(FONT_BOLD, 24, UI_W - 22, 11, mm, H.gold < 0 ? UI_RED : 0xFF9AE08A);
   /* zakładki */
   int tw = 66, tx = 9;
   for (int i = 0; i < TAB_N; i++) {
     int x = tx + i * tw;
     int sel = i == tab;
-    gfx_rect(x, 22, tw - 2, 13, sel ? RGB(0x5a, 0x3c, 0x16) : RGB(0x1c, 0x14, 0x18));
-    if (sel) gfx_rect(x, 34, tw - 2, 1, pal('y'));
-    text_c(x + tw / 2 - 1, 24, TABN[i], sel ? pal('y') : pal('s'));
+    float X = x * KS, Y = 22 * KS, Wd = (tw - 3) * KS, Hd = 13 * KS;
+    if (sel) { d2_rrect(X, Y, Wd, Hd, 8, 0xFF4A3618); d2_rrect_line(X, Y, Wd, Hd, 8, 1.5f, UI_GOLD); }
+    else d2_rrect(X, Y, Wd, Hd, 8, 0xFF1C1618);
+    d2_text_c(sel ? FONT_BOLD : FONT_SANS, 18, X + Wd / 2, Y + 7, TABN[i], sel ? 0xFFFFE6A8 : UI_GREY);
     zone(x, 22, tw - 2, 13, Z_TAB, i);
   }
   switch (tab) {
@@ -2169,13 +2208,13 @@ void tycoon_draw(void) {
     case TAB_LOG: draw_log(); break;
   }
   /* stopka */
-  gfx_rect(0, 255, SCREEN_W, 15, RGB(0x0c, 0x08, 0x0a));
-  gfx_rect(0, 255, SCREEN_W, 1, RGB(0x6a, 0x52, 0x2a));
+  gfx_rect(0, 255, TSCREEN_W, 15, RGB(0x0c, 0x08, 0x0a));
+  gfx_rect(0, 255, TSCREEN_W, 1, RGB(0x6a, 0x52, 0x2a));
   text_draw(8, 258, "←→ zakładki  ↑↓ wybór  E wybierz", pal('d'));
   text_draw_sh(206, 258, "N: koniec dnia", pal('y'));
   zone(204, 256, 80, 14, Z_NEXT, 0);
-  text_r(SCREEN_W - 8, 258, "Esc/Tab: do miasta", pal('s'));
-  zone(SCREEN_W - 110, 256, 110, 14, Z_BACK, 0);
+  text_r(TSCREEN_W - 8, 258, "Esc/Tab: do miasta", pal('s'));
+  zone(TSCREEN_W - 110, 256, 110, 14, Z_BACK, 0);
   if (md) draw_modal(&MD[md - 1]);
 }
 

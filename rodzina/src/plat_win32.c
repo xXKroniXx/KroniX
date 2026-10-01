@@ -1,18 +1,81 @@
-/* Platforma Windows: okno GDI, klawiatura + mysz (raw input) + pad XInput, dźwięk waveOut, 60 FPS. */
+/* Platforma Windows: okno z kontekstem OpenGL 3.3 core (WGL), klawiatura + mysz (raw input)
+ * + pad XInput, dźwięk waveOut. Logika w stałym kroku 60 Hz, rysowanie raz na klatkę ekranu. */
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <mmsystem.h>
 #undef RGB
 #include "engine.h"
+#include "glapi.h"
 
 static HWND hwnd;
-static BITMAPINFO bmi;
+static HDC hdc;
+static HGLRC hglrc;
 static int keys[256];
 static int fullscreen;
 static WINDOWPLACEMENT prevPlacement = {sizeof(WINDOWPLACEMENT)};
 static int mouseBtn[3], wheelPulse, captured;
-static int vpX, vpY, vpW = SCREEN_W, vpH = SCREEN_H; /* obszar obrazu w oknie */
+static int resized, clientW = 1280, clientH = 720;
 static float padLookX, padLookY;
+
+/* ---------------------------------------------------------------- OpenGL (WGL) */
+#define WGL_CONTEXT_MAJOR_VERSION_ARB 0x2091
+#define WGL_CONTEXT_MINOR_VERSION_ARB 0x2092
+#define WGL_CONTEXT_PROFILE_MASK_ARB 0x9126
+#define WGL_CONTEXT_CORE_PROFILE_BIT_ARB 0x0001
+typedef HGLRC(WINAPI *CreateCtxAttribsFn)(HDC, HGLRC, const int *);
+typedef BOOL(WINAPI *SwapIntervalFn)(int);
+static SwapIntervalFn swapInterval;
+static HMODULE glLib;
+
+static void *win_getproc(const char *name) {
+  void *p = (void *)wglGetProcAddress(name);
+  if (p == NULL || p == (void *)1 || p == (void *)2 || p == (void *)3 || p == (void *)-1)
+    p = (void *)GetProcAddress(glLib, name);
+  return p;
+}
+
+static void fatal(const char *msg) {
+  MessageBoxA(NULL, msg, "KroniX: Rodzina", MB_ICONERROR | MB_OK);
+  ExitProcess(1);
+}
+
+static void gl_create(void) {
+  hdc = GetDC(hwnd);
+  PIXELFORMATDESCRIPTOR pfd;
+  memset(&pfd, 0, sizeof pfd);
+  pfd.nSize = sizeof pfd;
+  pfd.nVersion = 1;
+  pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+  pfd.iPixelType = PFD_TYPE_RGBA;
+  pfd.cColorBits = 32;
+  pfd.cAlphaBits = 8;
+  pfd.cDepthBits = 24;
+  pfd.cStencilBits = 8;
+  pfd.iLayerType = PFD_MAIN_PLANE;
+  int pf = ChoosePixelFormat(hdc, &pfd);
+  if (!pf || !SetPixelFormat(hdc, pf, &pfd)) fatal("Nie udało się ustawić formatu pikseli OpenGL.");
+  HGLRC tmp = wglCreateContext(hdc);
+  if (!tmp || !wglMakeCurrent(hdc, tmp)) fatal("Nie udało się utworzyć kontekstu OpenGL.\nZaktualizuj sterowniki karty graficznej.");
+  glLib = LoadLibraryA("opengl32.dll");
+  CreateCtxAttribsFn createAttribs = (CreateCtxAttribsFn)(void *)wglGetProcAddress("wglCreateContextAttribsARB");
+  hglrc = tmp;
+  if (createAttribs) {
+    int at[] = {WGL_CONTEXT_MAJOR_VERSION_ARB, 3, WGL_CONTEXT_MINOR_VERSION_ARB, 3,
+                WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB, 0};
+    HGLRC core = createAttribs(hdc, NULL, at);
+    if (core && wglMakeCurrent(hdc, core)) { wglDeleteContext(tmp); hglrc = core; }
+    else wglMakeCurrent(hdc, tmp); /* zgodność: kontekst domyślny (często i tak 3.3+) */
+  }
+  const char *miss = NULL;
+  if (gl_load(win_getproc, &miss)) {
+    char b[512];
+    snprintf(b, sizeof b, "Karta graficzna nie obsługuje OpenGL 3.3 (brak funkcji %s).\n"
+             "Zaktualizuj sterowniki karty graficznej.", miss ? miss : "?");
+    fatal(b);
+  }
+  swapInterval = (SwapIntervalFn)(void *)wglGetProcAddress("wglSwapIntervalEXT");
+  if (swapInterval) swapInterval(g_cfg.vsync ? 1 : 0);
+}
 
 /* ---------------------------------------------------------------- pad XInput (ładowany dynamicznie) */
 typedef struct { WORD wButtons; BYTE bLeftTrigger, bRightTrigger; SHORT sThumbLX, sThumbLY, sThumbRX, sThumbRY; } XPad;
@@ -116,24 +179,6 @@ static void toggle_fullscreen(void) {
   fullscreen = !fullscreen;
 }
 
-static void present(HDC dc) {
-  RECT rc;
-  GetClientRect(hwnd, &rc);
-  int cw = rc.right, ch = rc.bottom;
-  if (cw <= 0 || ch <= 0) return;
-  int scale = cw / SCREEN_W < ch / SCREEN_H ? cw / SCREEN_W : ch / SCREEN_H;
-  int dw, dh;
-  if (scale >= 1) { dw = SCREEN_W * scale; dh = SCREEN_H * scale; }
-  else if (cw * SCREEN_H < ch * SCREEN_W) { dw = cw; dh = cw * SCREEN_H / SCREEN_W; }
-  else { dh = ch; dw = ch * SCREEN_W / SCREEN_H; }
-  int ox = (cw - dw) / 2, oy = (ch - dh) / 2;
-  vpX = ox; vpY = oy; vpW = dw; vpH = dh;
-  if (ox > 0) { PatBlt(dc, 0, 0, ox, ch, BLACKNESS); PatBlt(dc, ox + dw, 0, cw - ox - dw, ch, BLACKNESS); }
-  if (oy > 0) { PatBlt(dc, 0, 0, cw, oy, BLACKNESS); PatBlt(dc, 0, oy + dh, cw, ch - oy - dh, BLACKNESS); }
-  SetStretchBltMode(dc, COLORONCOLOR);
-  StretchDIBits(dc, ox, oy, dw, dh, 0, 0, SCREEN_W, SCREEN_H, fb, &bmi, DIB_RGB_COLORS, SRCCOPY);
-}
-
 static LRESULT CALLBACK wndproc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
   switch (msg) {
     case WM_CLOSE: g_quit = 1; return 0;
@@ -152,11 +197,16 @@ static LRESULT CALLBACK wndproc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
     }
     case WM_MOUSEMOVE: {
       int x = (short)LOWORD(lp), y = (short)HIWORD(lp);
-      if (vpW > 0 && vpH > 0 && !captured) {
-        g_mouse_x = (x - vpX) * SCREEN_W / vpW;
-        g_mouse_y = (y - vpY) * SCREEN_H / vpH;
-        if (g_mouse_x < 0 || g_mouse_y < 0 || g_mouse_x >= SCREEN_W || g_mouse_y >= SCREEN_H) g_mouse_x = g_mouse_y = -1;
+      if (g_uiScale > 0 && !captured) {
+        g_mouse_x = (int)((x - g_uiOffX) / g_uiScale);
+        g_mouse_y = (int)((y - g_uiOffY) / g_uiScale);
+        if (g_mouse_x < 0 || g_mouse_y < 0 || g_mouse_x >= UI_W || g_mouse_y >= UI_H) g_mouse_x = g_mouse_y = -1;
       }
+      return 0;
+    }
+    case WM_SIZE: {
+      int w = LOWORD(lp), h = HIWORD(lp);
+      if (w > 0 && h > 0 && (w != clientW || h != clientH)) { clientW = w; clientH = h; resized = 1; }
       return 0;
     }
     case WM_LBUTTONDOWN: mouseBtn[0] = 1; SetCapture(h); return 0;
@@ -183,8 +233,7 @@ static LRESULT CALLBACK wndproc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
       return 0;
     case WM_PAINT: {
       PAINTSTRUCT ps;
-      HDC dc = BeginPaint(h, &ps);
-      present(dc);
+      BeginPaint(h, &ps);
       EndPaint(h, &ps);
       return 0;
     }
@@ -252,36 +301,52 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmd, int show) {
     snprintf(g_data_dir, sizeof g_data_dir, "%s", exe);
   }
 
-  game_init(__argc, __argv);
-
   WNDCLASSW wc;
   memset(&wc, 0, sizeof wc);
+  wc.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
   wc.lpfnWndProc = wndproc;
   wc.hInstance = inst;
   wc.hCursor = LoadCursor(NULL, IDC_ARROW);
   wc.hIcon = LoadIconW(inst, MAKEINTRESOURCEW(1));
+  wc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
   wc.lpszClassName = L"KroniXRodzina";
   RegisterClassW(&wc);
 
+  /* okno ~80% obszaru roboczego, proporcje 16:9 */
   RECT wa;
   SystemParametersInfoA(SPI_GETWORKAREA, 0, &wa, 0);
-  int scale = 1;
-  while (SCREEN_W * (scale + 1) + 40 <= wa.right - wa.left && SCREEN_H * (scale + 1) + 80 <= wa.bottom - wa.top) scale++;
-  RECT r = {0, 0, SCREEN_W * scale, SCREEN_H * scale};
+  int aw = wa.right - wa.left, ah = wa.bottom - wa.top;
+  int cw = aw * 85 / 100, ch = cw * 9 / 16;
+  if (ch > ah * 85 / 100) { ch = ah * 85 / 100; cw = ch * 16 / 9; }
+  RECT r = {0, 0, cw, ch};
   AdjustWindowRect(&r, WS_OVERLAPPEDWINDOW, FALSE);
   int ww = r.right - r.left, wh = r.bottom - r.top;
   hwnd = CreateWindowW(L"KroniXRodzina", L"KroniX: Rodzina", WS_OVERLAPPEDWINDOW,
-                       wa.left + (wa.right - wa.left - ww) / 2, wa.top + (wa.bottom - wa.top - wh) / 2, ww, wh,
-                       NULL, NULL, inst, NULL);
-  ShowWindow(hwnd, show);
+                       wa.left + (aw - ww) / 2, wa.top + (ah - wh) / 2, ww, wh, NULL, NULL, inst, NULL);
+  if (!hwnd) fatal("Nie udało się utworzyć okna.");
+  gl_create();
+  RECT cr;
+  GetClientRect(hwnd, &cr);
+  clientW = cr.right > 0 ? cr.right : cw;
+  clientH = cr.bottom > 0 ? cr.bottom : ch;
+  g_winW = clientW; g_winH = clientH;
 
-  memset(&bmi, 0, sizeof bmi);
-  bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-  bmi.bmiHeader.biWidth = SCREEN_W;
-  bmi.bmiHeader.biHeight = -SCREEN_H;
-  bmi.bmiHeader.biPlanes = 1;
-  bmi.bmiHeader.biBitCount = 32;
-  bmi.bmiHeader.biCompression = BI_RGB;
+  /* ekran ładowania (generowanie tekstur i modeli trwa chwilę) */
+  ShowWindow(hwnd, show);
+  UpdateWindow(hwnd);
+  glViewport(0, 0, clientW, clientH);
+  glClearColor(0.02f, 0.018f, 0.015f, 1);
+  glClear(GL_COLOR_BUFFER_BIT);
+  SwapBuffers(hdc);
+
+  g_render = 1;
+  game_init(__argc, __argv);
+  if (g_glError[0]) {
+    char b[1400];
+    snprintf(b, sizeof b, "Błąd shaderów karty graficznej:\n\n%s", g_glError);
+    fatal(b);
+  }
+  if (swapInterval) swapInterval(g_cfg.vsync ? 1 : 0);
 
   RAWINPUTDEVICE rid;
   rid.usUsagePage = 0x01; rid.usUsage = 0x02; rid.dwFlags = 0; rid.hwndTarget = hwnd;
@@ -290,10 +355,11 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmd, int show) {
   audio_open();
   timeBeginPeriod(1);
 
-  LARGE_INTEGER freq, now, next;
+  LARGE_INTEGER freq, now, last;
   QueryPerformanceFrequency(&freq);
-  QueryPerformanceCounter(&next);
-  LONGLONG frameTicks = freq.QuadPart / 60;
+  QueryPerformanceCounter(&last);
+  const double step = 1.0 / 60.0;
+  double acc = step;
 
   while (!g_quit) {
     MSG m;
@@ -303,27 +369,41 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmd, int show) {
       DispatchMessageW(&m);
     }
     if (g_quit) break;
-    map_input();
-    game_frame();
-    if (g_fullscreen_toggle) { g_fullscreen_toggle = 0; toggle_fullscreen(); }
-    HDC dc = GetDC(hwnd);
-    present(dc);
-    ReleaseDC(hwnd, dc);
-    audio_pump();
+    if (IsIconic(hwnd)) { Sleep(30); QueryPerformanceCounter(&last); audio_pump(); continue; }
+    if (resized) { resized = 0; r_resize(clientW, clientH); }
 
-    next.QuadPart += frameTicks;
     QueryPerformanceCounter(&now);
-    if (now.QuadPart > next.QuadPart + frameTicks * 4) next = now; /* za duże opóźnienie: nie nadrabiaj */
-    while (now.QuadPart < next.QuadPart) {
-      LONGLONG left = next.QuadPart - now.QuadPart;
-      if (left * 1000 / freq.QuadPart > 2) Sleep(1);
-      QueryPerformanceCounter(&now);
-      audio_pump();
+    acc += (double)(now.QuadPart - last.QuadPart) / (double)freq.QuadPart;
+    last = now;
+    if (acc > step * 6) acc = step * 6; /* po zacięciu nie nadrabiaj w nieskończoność */
+    int steps = 0;
+    while (acc >= step) {
+      map_input();
+      game_frame();
+      acc -= step;
+      steps++;
+      if (g_fullscreen_toggle) { g_fullscreen_toggle = 0; toggle_fullscreen(); }
     }
+    audio_pump();
+    if (steps > 0 || !g_cfg.vsync) {
+      game_draw();
+      SwapBuffers(hdc);
+    } else {
+      Sleep(1);
+    }
+    if (!g_cfg.vsync) {
+      /* bez vsync: ogranicz do ~144 FPS, żeby nie palić procesora */
+      QueryPerformanceCounter(&now);
+      double spent = (double)(now.QuadPart - last.QuadPart) / (double)freq.QuadPart;
+      if (spent < 1.0 / 144) Sleep((DWORD)((1.0 / 144 - spent) * 1000));
+    }
+    audio_pump();
   }
   ClipCursor(NULL);
   timeEndPeriod(1);
   if (audioOk) { waveOutReset(waveOut); waveOutClose(waveOut); }
+  wglMakeCurrent(NULL, NULL);
+  if (hglrc) wglDeleteContext(hglrc);
   DestroyWindow(hwnd);
   return 0;
 }

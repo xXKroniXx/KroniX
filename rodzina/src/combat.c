@@ -16,14 +16,28 @@ static const float EN_RANGE[WPN_COUNT] = {1.0f, 14.0f, 9.0f, 15.0f};
 
 static struct { int cool, reloadT, kick, flashT, hitMark, swapT, punchT, aimEnemy; } C;
 
-typedef struct { float x, y, z; int t; u32 c; } Spark;
-static Spark sparks[48];
+/* cząstki: krew (kropelki), iskry (świecące), dym */
+typedef struct { float x, y, z, vx, vy, vz; int t, life; u32 c; int kind; } Spark;
+#define NSPARK 160
+static Spark sparks[NSPARK];
+static int sparkNext;
 
 void combat_init(void) { memset(&C, 0, sizeof C); memset(sparks, 0, sizeof sparks); }
 
+static void spark1(float x, float y, float z, float vx, float vy, float vz, int life, u32 c, int kind) {
+  Spark *s = &sparks[sparkNext];
+  sparkNext = (sparkNext + 1) % NSPARK;
+  *s = (Spark){x, y, z, vx, vy, vz, life, life, c, kind};
+}
+static float frand(void) { return (rand() % 2001) / 1000.0f - 1.0f; }
+/* c == czerwony -> krew, inaczej iskry/pył */
 static void spark(float x, float y, float z, u32 c) {
-  for (int i = 0; i < 48; i++)
-    if (sparks[i].t <= 0) { sparks[i] = (Spark){x, y, z, 10, c}; return; }
+  int blood = ((c >> 16) & 255) > 150 && ((c >> 8) & 255) < 120;
+  for (int k = 0; k < (blood ? 9 : 6); k++) {
+    if (blood) spark1(x, y, z, frand() * 0.02f, 0.01f + frand() * 0.015f, frand() * 0.02f, 30 + rand() % 20, 0xFF6A0A0E, 0);
+    else spark1(x, y, z, frand() * 0.03f, 0.02f + frand() * 0.02f, frand() * 0.03f, 10 + rand() % 8, 0xFFFFC060, 1);
+  }
+  if (!blood) spark1(x, y, z, 0, 0.003f, 0, 40, 0xFF8A8478, 2);
 }
 
 static void alert_noise(float x, float z, float radius) {
@@ -115,9 +129,9 @@ static void player_shot(float spreadYaw, float spreadPitch, int dmg, float range
     int head = hy > 0.74f;
     damage_ent(e, head ? dmg * 2 : dmg, 1);
     C.hitMark = head ? 14 : 8;
-    spark(W.px + dx * ht, oy + dy * ht, W.pz + dz * ht, pal('r'));
+    spark(W.px + dx * ht, oy + dy * ht, W.pz + dz * ht, 0xFFB13E53);
   } else if (wt < range) {
-    spark(W.px + dx * wt, oy + dy * wt, W.pz + dz * wt, pal('y'));
+    spark(W.px + dx * wt, oy + dy * wt, W.pz + dz * wt, 0xFFFFCD75);
   }
 }
 
@@ -132,7 +146,7 @@ static void fire(void) {
     }
     H.clip[w]--;
     C.flashT = 4;
-    r3d_ambient_flash(0.35f);
+
     alert_noise(W.px, W.pz, 16.0f);
   } else {
     C.punchT = 14;
@@ -157,11 +171,18 @@ void combat_top_up(int w) {
 void combat_update(void) {
   if (C.cool > 0) C.cool--;
   if (C.kick > 0) C.kick--;
-  if (C.flashT > 0) { if (--C.flashT == 0) r3d_ambient_flash(0); }
+  if (C.flashT > 0) C.flashT--;
   if (C.hitMark > 0) C.hitMark--;
   if (C.punchT > 0) C.punchT--;
   if (C.swapT > 0) C.swapT--;
-  for (int i = 0; i < 48; i++) if (sparks[i].t > 0) sparks[i].t--;
+  for (int i = 0; i < NSPARK; i++) {
+    Spark *p = &sparks[i];
+    if (p->t <= 0) continue;
+    p->t--;
+    p->x += p->vx; p->y += p->vy; p->z += p->vz;
+    if (p->kind == 0) { p->vy -= 0.0018f; if (p->y < 0.01f) { p->y = 0.01f; p->vx = p->vz = p->vy = 0; } }
+    if (p->kind == 1) p->vy -= 0.002f;
+  }
   if (C.reloadT > 0) {
     if (--C.reloadT == 0) {
       int w = H.weapon;
@@ -345,109 +366,183 @@ void combat_ent_update(Ent *e) {
   }
 }
 
-/* ---------------------------------------------------------------- widok broni i HUD */
-static void hand(int x, int y, int w, int h) {
-  gfx_rect(x, y, w, h, RGB(0xd8, 0xa8, 0x80));
-  gfx_rect(x, y, w, 2, RGB(0xf0, 0xc8, 0xa0));
-  gfx_rect(x, y + h - 2, w, 2, RGB(0xa8, 0x78, 0x58));
-  gfx_rect(x - 2, y + h, w + 4, 30, RGB(0x4a, 0x42, 0x3a)); /* rękaw */
+/* ---------------------------------------------------------------- rysowanie (GPU) */
+static GMesh blob;
+static void ensure_blob(void) {
+  if (blob.vao) return;
+  MB b;
+  mb_init(&b);
+  mb_paint(0xFFFFFFFF, L_WHITE);
+  mb_sphere(&b, v3(0, 0, 0), 1, 1, 1, 6);
+  blob = gm_upload(&b);
+  mb_free(&b);
+}
+
+/* światła: błysk lufy gracza i wrogów */
+void combat_lights(void) {
+  if (C.flashT > 0 && H.weapon != WPN_FISTS) {
+    M4 cw = r_cam_to_world();
+    V3 p = m4_point(cw, v3(0.1f, -0.05f, -0.6f));
+    r_light(p.x, p.y, p.z, 4.5f, 3.2f, 1.6f, 5.0f);
+  }
+  for (int i = 0; i < W.n; i++) {
+    Ent *e = &W.ents[i];
+    if (!e->vis || e->dead || e->shootT < 4) continue;
+    if (e->enemyDef >= 0 && S.enemies[e->enemyDef].weapon == WPN_FISTS) continue;
+    r_light(e->x + sinf(e->ang) * 0.4f, 0.6f, e->z + cosf(e->ang) * 0.4f, 4.0f, 2.8f, 1.4f, 4.0f);
+  }
+}
+
+void combat_draw_world(void) {
+  ensure_blob();
+  for (int i = 0; i < NSPARK; i++) {
+    Spark *p = &sparks[i];
+    if (p->t <= 0) continue;
+    float k = (float)p->t / p->life;
+    if (p->kind == 1) { r_glow(p->x, p->y, p->z, 0.05f, 2.0f * k, 1.4f * k, 0.5f * k); continue; }
+    float sz = p->kind == 0 ? 0.012f + (1 - k) * 0.01f : 0.03f + (1 - k) * 0.1f;
+    if (p->kind == 2 && k < 0.05f) continue;
+    M4 m = m4_mul(m4_translate(p->x, p->y, p->z), m4_scale(sz, p->kind == 0 && p->y < 0.02f ? sz * 0.15f : sz, sz));
+    r_draw(&blob, &m, p->c);
+  }
+  /* błysk lufy wrogów */
+  for (int i = 0; i < W.n; i++) {
+    Ent *e = &W.ents[i];
+    if (!e->vis || e->dead || e->shootT < 3) continue;
+    if (e->enemyDef >= 0 && S.enemies[e->enemyDef].weapon == WPN_FISTS) continue;
+    float fx = sinf(e->ang), fz = cosf(e->ang);
+    float rx = -cosf(e->ang), rz = sinf(e->ang);
+    r_glow(e->x + fx * 0.42f + rx * 0.12f, 0.62f, e->z + fz * 0.42f + rz * 0.12f, 0.18f, 3.0f, 2.0f, 0.8f);
+  }
 }
 
 void combat_draw_view(void) {
   if (g_mode != MODE_WORLD) return;
-  int bx = (int)(sinf(W.bobT) * 6), by = (int)(fabsf(cosf(W.bobT)) * 5);
-  int ky = C.kick * 2, rl = 0;
-  if (C.reloadT > 0) { int t = C.reloadT, tot = WD[H.weapon].reload; rl = (int)(sinf((float)t / tot * PI_F) * 60); }
-  if (C.swapT > 0) rl += C.swapT * 6;
-  int cx = SCREEN_W / 2 + bx, base = SCREEN_H + by + ky + rl;
-  u32 metal = RGB(0x2a, 0x2a, 0x32), metal2 = RGB(0x46, 0x46, 0x52), wood = RGB(0x7a, 0x4a, 0x2a), wood2 = RGB(0x5a, 0x34, 0x1c);
-  switch (H.weapon) {
-    case WPN_FISTS: {
-      int p = C.punchT > 6 ? (14 - C.punchT) * 9 : C.punchT * 9;
-      hand(cx - 130, base - 46, 34, 28);
-      hand(cx + 70 - p / 2, base - 46 - p, 36 + p / 4, 30 + p / 6);
-      break;
+  float reload = 0, swap = 0;
+  if (C.reloadT > 0) { int t = C.reloadT, tot = WD[H.weapon].reload; reload = sinf((float)t / tot * PI_F); }
+  if (C.swapT > 0) swap = C.swapT / 12.0f;
+  float punch = C.punchT > 6 ? (14 - C.punchT) / 8.0f : C.punchT / 6.0f;
+  r_viewmodel_begin(52);
+  weapon_draw_fpp(H.weapon, W.bobT, C.kick / 14.0f, reload, swap, C.punchT > 0 ? punch : 0, C.flashT > 0);
+  r_viewmodel_end();
+}
+
+/* ---------------------------------------------------------------- HUD */
+static void minimap(float x0, float y0, float sz) {
+  MapDef *m = &S.maps[W.map];
+  d2_shadow(x0, y0, sz, sz, 14, 12, 0x90000000);
+  d2_rrect(x0, y0, sz, sz, 14, 0xC010121A);
+  d2_clip(x0 + 3, y0 + 3, sz - 6, sz - 6);
+  float cx = x0 + sz / 2, cy = y0 + sz / 2, ts = 9.0f;
+  float ca = cosf(W.yaw), sa = sinf(W.yaw);
+  int R = (int)(sz / ts * 0.75f) + 1;
+  for (int dz = -R; dz <= R; dz++)
+    for (int dx = -R; dx <= R; dx++) {
+      int tx = (int)floorf(W.px) + dx, tz = (int)floorf(W.pz) + dz;
+      if (tx < 0 || tz < 0 || tx >= m->w || tz >= m->h) continue;
+      int c = m->tiles[tz][tx];
+      u32 col;
+      if (c == '~') col = 0xFF1E3A50;
+      else if (tile_solid(c) && tile_prop_height(c) > 2) col = (c == 'D') ? 0xFFB8903A : 0xFF2C2A30;
+      else if (tile_solid(c)) col = 0xFF4A4650;
+      else if (c == ',') col = 0xFF6A6870;
+      else if (c == '.' || c == '-' || c == '|') col = 0xFF3E3E46;
+      else col = 0xFF5A5048;
+      /* obrót: kierunek patrzenia gracza = góra minimapy */
+      float wx = tx + 0.5f - W.px, wz = tz + 0.5f - W.pz;
+      float sx = -(wx * ca - wz * sa), sy = -(wx * sa + wz * ca);
+      float px = cx + sx * ts, py = cy + sy * ts;
+      float hx = -ca * ts * 0.5f, hy = -sa * ts * 0.5f;
+      d2_line(px - hx, py - hy, px + hx, py + hy, ts + 0.6f, col);
     }
-    case WPN_PISTOL:
-      hand(cx + 34, base - 48, 26, 30);
-      gfx_rect(cx + 30, base - 74, 22, 44, metal);
-      gfx_rect(cx + 32, base - 92, 14, 22, metal2);
-      gfx_rect(cx + 32, base - 92, 14, 3, RGB(0x6a, 0x6a, 0x76));
-      gfx_rect(cx + 37, base - 96, 4, 4, metal);
-      break;
-    case WPN_SHOTGUN:
-      hand(cx + 50, base - 40, 30, 26);
-      gfx_rect(cx + 30, base - 60, 40, 60, wood);
-      gfx_rect(cx + 30, base - 60, 6, 60, wood2);
-      gfx_rect(cx + 20, base - 120, 16, 66, metal);
-      gfx_rect(cx + 36, base - 116, 10, 60, metal2);
-      gfx_rect(cx + 16, base - 82, 32, 14, wood);
-      break;
-    case WPN_TOMMY:
-      hand(cx - 60, base - 54, 30, 24);
-      hand(cx + 60, base - 40, 28, 26);
-      gfx_rect(cx - 20, base - 70, 90, 30, metal);
-      gfx_rect(cx - 30, base - 104, 14, 50, metal2);
-      gfx_circle(cx + 8, base - 40, 22, metal2, 255);
-      gfx_circle(cx + 8, base - 40, 8, metal, 255);
-      gfx_rect(cx - 60, base - 64, 40, 18, wood);
-      gfx_rect(cx + 50, base - 52, 26, 50, wood);
-      gfx_rect(cx + 50, base - 52, 6, 50, wood2);
-      break;
+  for (int i = 0; i < W.n; i++) {
+    Ent *e = &W.ents[i];
+    if (!e->vis || e->d->type == ENT_EVENT) continue;
+    if (e->dead) continue;
+    float wx = e->x - W.px, wz = e->z - W.pz;
+    float sx = -(wx * ca - wz * sa), sy = -(wx * sa + wz * ca);
+    u32 col = e->hostile ? UI_RED : e->ally ? UI_GREEN : e->d->type == ENT_WARP ? 0 : e->d->type == ENT_OBJ ? UI_GOLD : 0xFFE8E8E8;
+    if (!col) continue;
+    d2_circle(cx + sx * ts, cy + sy * ts, e->hostile ? 4.5f : 3.5f, col);
   }
-  if (C.flashT > 0 && H.weapon != WPN_FISTS) {
-    int fx = H.weapon == WPN_TOMMY ? cx - 23 : H.weapon == WPN_SHOTGUN ? cx + 28 : cx + 39;
-    int fy = H.weapon == WPN_TOMMY ? base - 110 : H.weapon == WPN_SHOTGUN ? base - 126 : base - 100;
-    gfx_circle(fx, fy, 16, pal('o'), 160);
-    gfx_circle(fx, fy, 9, pal('y'), 230);
-    gfx_circle(fx, fy, 4, pal('w'), 255);
-  }
+  d2_noclip();
+  /* gracz */
+  d2_line(cx, cy - 8, cx - 6, cy + 6, 3, UI_GOLD);
+  d2_line(cx, cy - 8, cx + 6, cy + 6, 3, UI_GOLD);
+  d2_rrect_line(x0, y0, sz, sz, 14, 2, 0xA0E8B84A);
 }
 
 void combat_draw_hud(void) {
-  /* iskry trafień */
-  for (int i = 0; i < 48; i++) {
-    if (sparks[i].t <= 0) continue;
-    float sx, sy, dp;
-    if (!r3d_project(sparks[i].x, sparks[i].y, sparks[i].z, &sx, &sy, &dp)) continue;
-    int r = sparks[i].t > 6 ? 2 : 1;
-    gfx_rect((int)sx - r, (int)sy - r, r * 2, r * 2, sparks[i].c);
-  }
   if (g_mode != MODE_WORLD) return;
-  int cx = SCREEN_W / 2, cy = SCREEN_H / 2;
-  u32 ch = C.aimEnemy ? pal('r') : pal('w');
-  gfx_rect(cx - 6, cy, 4, 1, ch); gfx_rect(cx + 3, cy, 4, 1, ch);
-  gfx_rect(cx, cy - 6, 1, 4, ch); gfx_rect(cx, cy + 3, 1, 4, ch);
-  if (C.hitMark > 0) for (int k = 2; k < 6; k++) { gfx_pset(cx - k, cy - k, pal('y')); gfx_pset(cx + k, cy - k, pal('y')); gfx_pset(cx - k, cy + k, pal('y')); gfx_pset(cx + k, cy + k, pal('y')); }
-  /* zdrowie */
-  char b[64];
-  gfx_rect_a(6, SCREEN_H - 24, 128, 18, pal('i'), 170);
-  snprintf(b, sizeof b, "\xe2\x99\xa5 %d", H.hp);
-  text_draw_sh(11, SCREEN_H - 21, b, H.hp < 30 ? pal('r') : pal('w'));
-  gfx_rect(52, SCREEN_H - 18, 76, 6, pal('i'));
-  gfx_rect(53, SCREEN_H - 17, 74 * (H.hp > 0 ? H.hp : 0) / (H.mhp ? H.mhp : 100), 4, H.hp < 30 ? pal('r') : pal('g'));
-  if (H.armor > 0) { snprintf(b, sizeof b, "Kamizelka %d", H.armor); text_draw_sh(11, SCREEN_H - 36, b, pal('c')); }
-  /* amunicja */
-  if (H.weapon != WPN_FISTS) snprintf(b, sizeof b, "%s  %d / %d", WPN_NAMES[H.weapon], H.clip[H.weapon], H.ammo[H.weapon]);
-  else snprintf(b, sizeof b, "%s", WPN_NAMES[H.weapon]);
-  int w = text_width(b) + 12;
-  gfx_rect_a(SCREEN_W - w - 6, SCREEN_H - 24, w, 18, pal('i'), 170);
-  text_draw_sh(SCREEN_W - w, SCREEN_H - 21, b, C.reloadT ? pal('d') : pal('y'));
-  if (C.reloadT) text_draw_sh(SCREEN_W - w, SCREEN_H - 36, "Przeładowanie...", pal('s'));
-  /* pieniądze i cel */
-  snprintf(b, sizeof b, "$ %d", H.gold);
-  w = text_width(b) + 10;
-  gfx_rect_a(SCREEN_W - w - 6, 6, w, 14, pal('i'), 160);
-  text_draw_sh(SCREEN_W - w - 1, 8, b, pal('l'));
-  if (H.objective[0] && !script_blocking()) {
-    char lines[2][160];
-    int n = text_wrap(H.objective, 240, lines, 2);
-    gfx_rect_a(6, 6, 250, 6 + n * LINE_H, pal('i'), 150);
-    for (int k = 0; k < n; k++) text_draw_sh(10, 8 + k * LINE_H, lines[k], k ? pal('s') : pal('y'));
+  char b[96];
+  float cx = UI_W / 2.0f, cy = UI_H / 2.0f;
+  /* celownik */
+  u32 ch = C.aimEnemy ? 0xE8F05050 : 0xD0F0F0F0;
+  float sp = 7 + (C.kick > 0 ? C.kick * 0.8f : 0) + (in.held[BTN_UP] || in.held[BTN_DOWN] || in.held[BTN_SL] || in.held[BTN_SR] ? 3 : 0);
+  if (H.weapon != WPN_FISTS) {
+    d2_line(cx - sp - 9, cy, cx - sp, cy, 2, ch); d2_line(cx + sp, cy, cx + sp + 9, cy, 2, ch);
+    d2_line(cx, cy - sp - 9, cx, cy - sp, 2, ch); d2_line(cx, cy + sp, cx, cy + sp + 9, 2, ch);
   }
+  d2_circle(cx, cy, 2, ch);
+  if (C.hitMark > 0) {
+    u32 hc = C.hitMark > 10 ? 0xFFFF5040 : 0xFFF0E0B0;
+    d2_line(cx - 14, cy - 14, cx - 6, cy - 6, 2.5f, hc); d2_line(cx + 14, cy - 14, cx + 6, cy - 6, 2.5f, hc);
+    d2_line(cx - 14, cy + 14, cx - 6, cy + 6, 2.5f, hc); d2_line(cx + 14, cy + 14, cx + 6, cy + 6, 2.5f, hc);
+  }
+  /* zdrowie i pancerz */
+  float hx = 28, hy = UI_H - 92;
+  d2_shadow(hx, hy, 330, 64, 12, 14, 0x90000000);
+  d2_rrect(hx, hy, 330, 64, 12, 0xC8121016);
+  d2_rrect_line(hx, hy, 330, 64, 12, 1.5f, 0x70E8B84A);
+  int lowhp = H.hp < 30;
+  d2_text(FONT_SANS, 30, hx + 16, hy + 12, "\xe2\x99\xa5", lowhp ? (((g_frame / 15) & 1) ? UI_RED : 0xFF801818) : UI_RED);
+  snprintf(b, sizeof b, "%d", H.hp);
+  d2_text_sh(FONT_BOLD, 28, hx + 50, hy + 12, b, UI_CREAM);
+  float bw = 200, bx = hx + 116;
+  d2_rrect(bx, hy + 18, bw, 14, 7, 0xFF2A2228);
+  float f = (float)(H.hp > 0 ? H.hp : 0) / (H.mhp ? H.mhp : 100);
+  if (f > 0) d2_grad(bx + 2, hy + 20, (bw - 4) * f, 10, lowhp ? 0xFFF05A4A : 0xFF8AD07A, lowhp ? 0xFF9A2020 : 0xFF3A8A4A);
+  if (H.armor > 0) {
+    d2_rrect(bx, hy + 40, bw, 8, 4, 0xFF2A2228);
+    d2_grad(bx + 1, hy + 41, (bw - 2) * H.armor / 100.0f, 6, 0xFF9AC8F0, 0xFF4A7AB0);
+    d2_text(FONT_SANS, 13, hx + 50, hy + 40, "Kamizelka", UI_BLUE);
+  }
+  /* broń i amunicja */
+  float ax = UI_W - 300, ay = UI_H - 92;
+  d2_shadow(ax, ay, 272, 64, 12, 14, 0x90000000);
+  d2_rrect(ax, ay, 272, 64, 12, 0xC8121016);
+  d2_rrect_line(ax, ay, 272, 64, 12, 1.5f, 0x70E8B84A);
+  d2_text_sh(FONT_SERIF, 20, ax + 16, ay + 8, WPN_NAMES[H.weapon], UI_GOLD);
+  if (H.weapon != WPN_FISTS) {
+    snprintf(b, sizeof b, "%d", H.clip[H.weapon]);
+    d2_text_r(FONT_BOLD, 32, ax + 196, ay + 18, b, C.reloadT ? UI_DIM : (H.clip[H.weapon] == 0 ? UI_RED : UI_CREAM));
+    snprintf(b, sizeof b, "/ %d", H.ammo[H.weapon]);
+    d2_text_sh(FONT_SANS, 20, ax + 202, ay + 28, b, UI_GREY);
+    if (C.reloadT) d2_text_sh(FONT_SANS, 15, ax + 16, ay + 38, "Przeładowanie...", UI_GREY);
+    else if (H.clip[H.weapon] == 0 && H.ammo[H.weapon] == 0) d2_text_sh(FONT_SANS, 15, ax + 16, ay + 38, "Brak amunicji", UI_RED);
+  } else d2_text_sh(FONT_SANS, 15, ax + 16, ay + 36, "1-4 / kółko: zmiana broni", UI_DIM);
+  /* pieniądze */
+  snprintf(b, sizeof b, "$ %d", H.gold);
+  float mw = d2_text_w(FONT_BOLD, 24, b) + 34;
+  d2_rrect(UI_W - mw - 28, 24, mw, 42, 10, 0xB8121016);
+  d2_text_sh(FONT_BOLD, 24, UI_W - mw - 11, 30, b, 0xFF9AE08A);
+  /* minimapa */
+  minimap(UI_W - 196, 78, 168);
   int en = world_enemies_alive();
   if (en > 0) {
     snprintf(b, sizeof b, "Wrogowie: %d", en);
-    text_draw_sh(SCREEN_W - text_width(b) - 8, 24, b, pal('r'));
+    d2_text_r(FONT_BOLD, 18, UI_W - 30, 254, b, UI_RED);
   }
+  /* cel misji */
+  if (H.objective[0]) {
+    char lines[3][256];
+    int n = d2_wrap(FONT_SANS, 19, H.objective, 400, lines, 3);
+    float h = 40 + n * 24;
+    d2_shadow(28, 24, 440, h, 10, 12, 0x80000000);
+    d2_rrect(28, 24, 440, h, 10, 0xB8121016);
+    d2_rect(28, 32, 4, h - 16, UI_GOLD);
+    d2_text(FONT_BOLD, 13, 46, 32, "CEL", UI_GOLD_D);
+    for (int k = 0; k < n; k++) d2_text_sh(FONT_SANS, 19, 46, 52 + k * 24, lines[k], UI_CREAM);
+  }
+  if (W.hurtT > 0) d2_rect(0, 0, UI_W, UI_H, WITH_A(0x8A0A0A, W.hurtT * 4));
 }
