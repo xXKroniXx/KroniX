@@ -457,6 +457,7 @@ void world_draw(void) {
   if (dt < 0 || dt > 0.1f) dt = 1.0f / 60;
   camY += (target - camY) * (1 - powf(0.75f, dt * 60)); /* wygładzanie krawężników niezależne od FPS */
   RCam cam = {v3(cx, camY + cb, cz), W.yaw, W.pitch, (float)g_cfg.fov};
+  if (getenv("KX_CAM")) fprintf(stderr, "cam %.4f %.4f %.4f fov %.1f dt %.4f\n", cam.pos.x, cam.pos.y, cam.pos.z, cam.fov, dt);
   r_frame_begin(&cam, &env);
   city_lights(g_time);
   combat_lights();

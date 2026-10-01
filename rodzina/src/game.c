@@ -210,6 +210,7 @@ void game_debug(const char *cmdline) {
   else if (!strcmp(t[0], "mission") && n >= 3) printf("mission: %d\n", tycoon_debug_mission(atoi(t[1]), atoi(t[2])));
   else if (!strcmp(t[0], "beat") && n >= 2) { printf("beat %s (tryb %d)\n", t[1], g_mode); tycoon_debug_beat(atoi(t[1])); }
   else if (!strcmp(t[0], "ledger")) tycoon_open();
+  else if (!strcmp(t[0], "state")) printf("stan: px=%.4f pz=%.4f yaw=%.4f pitch=%.4f bob=%.4f ppx=%.4f alpha=%.2f shake=%d\n", W.px, W.pz, W.yaw, W.pitch, W.bob, W.ppx, g_alpha, g_shake);
   else if (!strcmp(t[0], "endday")) { int k = n > 1 ? atoi(t[1]) : 1; for (int i = 0; i < k; i++) tycoon_end_day(); }
   else if (!strcmp(t[0], "mode") && n >= 2) game_set_mode(!strcmp(t[1], "world") ? MODE_WORLD : !strcmp(t[1], "menu") ? MODE_MENU : MODE_TITLE);
   else if (!strcmp(t[0], "pause")) ui_open_pause();

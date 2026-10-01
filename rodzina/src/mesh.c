@@ -57,9 +57,9 @@ V3 m4_dir(M4 m, V3 d) {
 /* ---------------------------------------------------------------- budowniczy */
 Paint P_ = {0xFFFFFFFFu, 0, 0, 0, 0, 1.0f};
 
-void mb_init(MB *b) { b->v = NULL; b->n = b->cap = 0; }
+void mb_init(MB *b) { b->v = NULL; b->n = b->cap = 0; P_.bone = 0; P_.flags = 0; }
+void mb_reset(MB *b) { b->n = 0; P_.bone = 0; P_.flags = 0; } /* nowa siatka: kość 0 (statyczna) */
 void mb_free(MB *b) { free(b->v); b->v = NULL; b->n = b->cap = 0; }
-void mb_reset(MB *b) { b->n = 0; }
 Vert *mb_push(MB *b, int n) {
   if (b->n + n > b->cap) {
     int nc = b->cap ? b->cap * 2 : 1024;
