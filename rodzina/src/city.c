@@ -78,7 +78,10 @@ static Chunk chunks[MAXCH];
 static int nchunks;
 static void split_chunks(void);
 /* duże miasto budujemy raz: po wyjściu z wnętrza wraca gotowa geometria */
-typedef struct { MapDef *m; GMesh far; Chunk ch[MAXCH]; int nch; CLight l[400]; int nl; } CitySlot;
+#define MAXVENT 64
+static float vents[MAXVENT][2];
+static int nvents;
+typedef struct { MapDef *m; GMesh far; Chunk ch[MAXCH]; int nch; CLight l[400]; int nl; float v[MAXVENT][2]; int nv; } CitySlot;
 static CitySlot bigSlot;
 static int curIsBig;
 static int interior;
@@ -529,6 +532,24 @@ static void street_furniture(void) {
     }
 }
 
+/* studzienki z parą: kratka w jezdni, para animowana w city_steam */
+static void steam_vents(void) {
+  nvents = 0;
+  if (interior) return;
+  for (int z = 1; z < Mh - 1 && nvents < MAXVENT; z++)
+    for (int x = 1; x < Mw - 1 && nvents < MAXVENT; x++) {
+      int c = tile(x, z);
+      if (c != '.' && c != '-' && c != '|') continue;
+      if (H32(x, z, 71) % 53) continue;
+      float X = x + 0.5f, Z = z + 0.5f;
+      vents[nvents][0] = X; vents[nvents][1] = Z; nvents++;
+      mb_paint(0xFF2A2A2E, L_GRATE);
+      mb_cyl(&mb, v3(X, 0.0f, Z), 0.24f, 0.24f, 0.012f, 14, 3);
+      mb_paint(0xFF3A3A40, L_METAL);
+      mb_cyl(&mb, v3(X, 0.0f, Z), 0.27f, 0.27f, 0.008f, 14, 0);
+    }
+}
+
 /* panorama: pierścień budynków w oddali */
 static void skyline(void) {
   if (interior) return;
@@ -564,6 +585,7 @@ void city_build(MapDef *m) {
     cityMesh = bigSlot.far;
     memcpy(chunks, bigSlot.ch, sizeof(Chunk) * bigSlot.nch); nchunks = bigSlot.nch;
     memcpy(clights, bigSlot.l, sizeof(CLight) * bigSlot.nl); nclights = bigSlot.nl;
+    memcpy(vents, bigSlot.v, sizeof vents); nvents = bigSlot.nv;
     curIsBig = 1;
     return;
   }
@@ -661,6 +683,7 @@ void city_build(MapDef *m) {
       }
   cars();
   street_furniture();
+  steam_vents();
   skyline();
   if (g_render) {
     if (cityMesh.vao && !curIsBig) gm_free(&cityMesh);
@@ -672,6 +695,7 @@ void city_build(MapDef *m) {
       bigSlot.m = m; bigSlot.far = cityMesh;
       memcpy(bigSlot.ch, chunks, sizeof(Chunk) * nchunks); bigSlot.nch = nchunks;
       memcpy(bigSlot.l, clights, sizeof(CLight) * nclights); bigSlot.nl = nclights;
+      memcpy(bigSlot.v, vents, sizeof vents); bigSlot.nv = nvents;
       curIsBig = 1;
     }
     if (getenv("KX_STAT")) fprintf(stderr, "miasto: %d wierzchołków, %d kwartałów, %d świateł\n", mb.n, nchunks, nclights);
@@ -720,10 +744,30 @@ void city_lights(float time) {
 void city_glows(void) {
   for (int i = 0; i < nclights; i++) {
     CLight *l = &clights[i];
-    if (l->kind == 3) r_glow(l->x, l->y, l->z, 0.5f, l->r * 0.35f, l->g * 0.35f, l->b * 0.35f);
+    if (l->kind == 3) {
+      r_glow(l->x, l->y, l->z, 0.5f, l->r * 0.35f, l->g * 0.35f, l->b * 0.35f);
+      if (Mp->night) r_cone(l->x, l->y - 0.08f, l->z, 0.07f, 1.05f, l->y - 0.08f, l->r, l->g, l->b);
+    }
     if (l->kind == 1) r_glow(l->x, l->y, l->z, 0.9f, l->r * 0.2f, l->g * 0.2f, l->b * 0.2f);
   }
 }
+/* para z kanałów: kłęby wznoszące się i znoszone wiatrem */
+void city_steam(float time) {
+  for (int i = 0; i < nvents; i++) {
+    float dx = vents[i][0] - g_camPos.x, dz = vents[i][1] - g_camPos.z;
+    if (dx * dx + dz * dz > 45 * 45) continue;
+    for (int k = 0; k < 7; k++) {
+      float ph = fmodf(time * 0.22f + k / 7.0f + i * 0.37f, 1.0f);
+      float y = 0.05f + ph * 2.4f;
+      float s = 0.25f + ph * 0.95f;
+      float a = 0.32f * (1 - ph) * fminf(1, ph * 6);
+      float wx = sinf(time * 0.3f + i) * 0.4f * ph + ph * 0.6f, wz = cosf(time * 0.23f + k) * 0.25f * ph;
+      float c = Mp->night ? 0.42f : 0.75f;
+      r_puff(vents[i][0] + wx, y, vents[i][1] + wz, s, c, c * 0.97f, c * 0.95f, a);
+    }
+  }
+}
+
 void city_draw(void) {
   r_draw(&cityMesh, NULL, 0);
   V3 c = g_camPos;

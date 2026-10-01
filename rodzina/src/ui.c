@@ -106,7 +106,9 @@ static const char *QNAMES[4] = {"Niska", "Średnia", "Wysoka", "Ultra"};
 void quality_apply(int q) {
   g_quality = q < 0 ? 0 : q > 3 ? 3 : q;
   static const int MS[4] = {0, 0, 4, 4}, BL[4] = {0, 1, 1, 1}, SC[4] = {60, 80, 100, 100}, LI[4] = {6, 10, 16, 16};
+  static const int SR[4] = {0, 0, 1, 1}, AO[4] = {0, 1, 1, 1};
   g_cfg.msaa = MS[g_quality]; g_cfg.bloom = BL[g_quality]; g_cfg.scale = SC[g_quality]; g_cfg.maxLights = LI[g_quality];
+  g_cfg.ssr = SR[g_quality]; g_cfg.ssao = AO[g_quality];
   if (g_render) r_resize(g_winW, g_winH);
 }
 static void settings_path(char *p, int n) { snprintf(p, n, "%skronix_rodzina_ustawienia.txt", g_data_dir); }

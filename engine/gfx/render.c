@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCfg g_cfg = {4, 1, 100, 16, 1, 75};
+RCfg g_cfg = {4, 1, 100, 16, 1, 75, 1, 1};
 int g_winW = 1280, g_winH = 720;
 float g_time;
 M4 g_view, g_proj, g_vp;
@@ -38,6 +38,8 @@ static const char *FS_WORLD =
   "uniform vec4 uTint; uniform int uViewModel;\n"
   "out vec4 frag;\n"
   "float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233)))*43758.5453); }\n"
+  "float vnoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f);\n"
+  "  return mix(mix(hash(i), hash(i+vec2(1,0)), f.x), mix(hash(i+vec2(0,1)), hash(i+vec2(1,1)), f.x), f.y); }\n"
   "void main(){\n"
   "  vec3 uv = vUV;\n"
   "  if ((vFlags & 8) != 0) uv.xy += vec2(uTime*0.03, uTime*0.017);\n"
@@ -49,8 +51,11 @@ static const char *FS_WORLD =
   "  vec3 V = normalize(uCam - vPos);\n"
   "  if ((vFlags & 2) != 0) { frag = vec4(alb * (1.0 + vCol.a*6.0), 1.0); return; }\n"
   "  if ((vFlags & 32) != 0) { float f = 0.75 + 0.25*sin(uTime*13.0+vPos.x*5.0)*sin(uTime*7.3+vPos.z*3.0); frag = vec4(alb*4.0*f, 1.0); return; }\n"
-  "  float wet = uWet * smoothstep(0.6, 0.95, N.y) * (uViewModel==1 ? 0.0 : 1.0);\n"
-  "  alb *= mix(1.0, 0.55, wet);\n"
+  "  float flat_ = smoothstep(0.6, 0.95, N.y);\n"
+  "  float wet = uWet * flat_ * (uViewModel==1 ? 0.0 : 1.0);\n"
+  "  float pud = wet * smoothstep(0.55, 0.72, vnoise(vPos.xz*0.45)*0.7 + vnoise(vPos.xz*1.9)*0.3);\n"
+  "  wet = min(1.0, wet + pud*0.6);\n"
+  "  alb *= mix(1.0, 0.55, wet) * (1.0 - pud*0.3);\n"
   "  gloss = mix(gloss, max(gloss, 0.85), wet * (0.55 + 0.45*t.a));\n"
   "  if ((vFlags & 8) != 0) gloss = 0.95;\n"
   "  float shin = 8.0 + gloss*gloss*250.0;\n"
@@ -71,10 +76,15 @@ static const char *FS_WORLD =
   "  float fres = pow(1.0 - max(dot(N, V), 0.0), 3.0);\n"
   "  col += uAmbSky * fres * 0.9 * (0.4 + alb);\n"
   "  col += alb * vCol.a * 4.0;\n"
-  "  if ((vFlags & 4) == 0) { float dist = length(uCam - vPos); float f = 1.0 - exp(-pow(dist*uFogDens, 1.4)); col = mix(col, uFogCol, f); }\n"
-  "  else { float dist = length(uCam - vPos); float f = 1.0 - exp(-dist*uFogDens*0.35); col = mix(col, uFogCol, f*0.85); }\n"
+  "  float fogF = 0.0;\n"
+  "  if ((vFlags & 4) == 0) { float dist = length(uCam - vPos); fogF = 1.0 - exp(-pow(dist*uFogDens, 1.4)); col = mix(col, uFogCol, fogF); }\n"
+  "  else { float dist = length(uCam - vPos); fogF = 1.0 - exp(-dist*uFogDens*0.35); col = mix(col, uFogCol, fogF*0.85); }\n"
   "  if (uViewModel == 2) col = pow(col / (col + 0.6) * 1.5, vec3(1.0/2.2));\n"
-  "  frag = vec4(col, 1.0);\n"
+  "  /* alfa = odbijalność dla odbić ekranowych (SSR) */\n"
+  "  float refl = clamp(wet*(0.3 + 0.45*t.a) + pud*0.55, 0.0, 1.0) * smoothstep(0.85, 0.97, N.y);\n"
+  "  if ((vFlags & 8) != 0) refl = 0.75;\n"
+  "  refl *= 1.0 - fogF;\n"
+  "  frag = vec4(col, uViewModel == 2 ? 1.0 : (uViewModel == 1 ? 0.0 : refl));\n"
   "}\n";
 
 static const char *VS_FULL =
@@ -98,7 +108,7 @@ static const char *FS_SKY =
   "  float md = dot(d, uMoonDir);\n"
   "  col += vec3(1.0,0.97,0.88) * smoothstep(0.9993, 0.9996, md) * 3.0 * uMoon;\n"
   "  col += vec3(0.6,0.65,0.8) * pow(max(md,0.0), 400.0) * 0.8 * uMoon;\n"
-  "  frag = vec4(col, 1.0);\n"
+  "  frag = vec4(col, 0.0);\n"
   "}\n";
 
 static const char *VS_GLOW =
@@ -177,6 +187,94 @@ static const char *FS_FINAL =
   "  frag = vec4(c, 1.0);\n"
   "}\n";
 
+
+/* ---- post: odbicia ekranowe (SSR) na mokrych powierzchniach + cienie kontaktowe (SSAO) */
+static const char *FS_POST =
+  "#version 330 core\n"
+  "in vec2 vUV; uniform sampler2D uSrc; uniform sampler2D uDepth;\n"
+  "uniform mat4 uProj, uInvProj, uView, uInvView; uniform vec2 uRes; uniform float uTime, uSSR, uAO;\n"
+  "out vec4 frag;\n"
+  "float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233)))*43758.5453); }\n"
+  "vec3 vpos(vec2 uv){ float d = texture(uDepth, uv).r; vec4 p = uInvProj * vec4(uv*2.0-1.0, d*2.0-1.0, 1.0); return p.xyz/p.w; }\n"
+  "void main(){\n"
+  "  vec4 src = texture(uSrc, vUV); vec3 col = src.rgb; float refl = src.a;\n"
+  "  float d0 = texture(uDepth, vUV).r;\n"
+  "  if (d0 >= 0.99999) { frag = vec4(col, 1.0); return; }\n"
+  "  vec3 P = vpos(vUV);\n"
+  "  float jit = hash(vUV*uRes + fract(uTime)*17.0);\n"
+  "  if (uAO > 0.0 && -P.z > 0.15) {\n"
+  "    vec3 N = normalize(cross(dFdx(P), dFdy(P)));\n"
+  "    if (dot(N, P) > 0.0) N = -N;\n"
+  "    float rad = 0.32, occ = 0.0;\n"
+  "    float rpx = rad * uProj[1][1] / -P.z * 0.5;\n"
+  "    for (int i = 0; i < 10; i++) {\n"
+  "      float a = (float(i) + jit) * 2.39996; float r = (float(i) + 0.5) / 10.0;\n"
+  "      vec2 o = vec2(cos(a), sin(a)) * r * rpx * vec2(uRes.y/uRes.x, 1.0);\n"
+  "      vec3 S = vpos(vUV + o); vec3 v = S - P; float dl = length(v);\n"
+  "      occ += max(dot(N, v/max(dl,1e-4)) - 0.12, 0.0) * (1.0 - smoothstep(rad*0.6, rad*2.0, dl));\n"
+  "    }\n"
+  "    float ao = clamp(1.0 - occ/10.0 * 2.2, 0.0, 1.0);\n"
+  "    col *= mix(1.0, ao, uAO * 0.85);\n"
+  "  }\n"
+  "  if (uSSR > 0.0 && refl > 0.02) {\n"
+  "    vec3 W = (uInvView * vec4(P, 1.0)).xyz;\n"
+  "    /* krople deszczu: rozchodzące się kręgi zaburzają normalną */\n"
+  "    vec2 cell = floor(W.xz*2.2); vec2 f = fract(W.xz*2.2) - 0.5;\n"
+  "    float ph = fract(uTime*0.9 + hash(cell)); float rr = length(f - (vec2(hash(cell+3.1), hash(cell+7.7))-0.5)*0.5);\n"
+  "    float ring = sin((rr - ph*0.5)*40.0) * (1.0-ph) * smoothstep(0.5, 0.0, rr);\n"
+  "    vec3 nw = normalize(vec3(ring*0.05*(f.x), 1.0, ring*0.05*(f.y)) + vec3(sin(W.x*3.1+uTime*0.5), 0.0, cos(W.z*2.7))*0.012);\n"
+  "    vec3 N = normalize((uView * vec4(nw, 0.0)).xyz);\n"
+  "    vec3 V = normalize(P); vec3 R = reflect(V, N);\n"
+  "    vec3 pos = P; float st = 0.12 + jit*0.08; vec2 huv = vec2(-1.0); float fadeI = 0.0;\n"
+  "    for (int i = 0; i < 36; i++) {\n"
+  "      pos += R * st; st *= 1.11;\n"
+  "      vec4 c = uProj * vec4(pos, 1.0); vec2 uv = c.xy/c.w*0.5+0.5;\n"
+  "      if (uv.x < 0.0 || uv.y < 0.0 || uv.x > 1.0 || uv.y > 1.0 || pos.z > -0.05) break;\n"
+  "      float sz = vpos(uv).z;\n"
+  "      if (pos.z < sz && sz - pos.z < 0.3 + st*1.5) {\n"
+  "        vec3 a = pos - R*st, b = pos;\n"
+  "        for (int k = 0; k < 5; k++) { vec3 m = (a+b)*0.5; vec4 cm = uProj*vec4(m,1.0); vec2 um = cm.xy/cm.w*0.5+0.5; if (m.z < vpos(um).z) b = m; else a = m; }\n"
+  "        vec4 cb = uProj*vec4(b,1.0); huv = cb.xy/cb.w*0.5+0.5; fadeI = 1.0 - float(i)/36.0; break;\n"
+  "      }\n"
+  "    }\n"
+  "    if (huv.x >= 0.0) {\n"
+  "      vec2 e = smoothstep(0.0, 0.12, huv) * smoothstep(0.0, 0.12, 1.0-huv);\n"
+  "      float fres = mix(0.3, 1.0, pow(1.0 - max(dot(-V, N), 0.0), 4.0));\n"
+  "      vec3 hc = texture(uSrc, huv).rgb;\n"
+  "      float k = refl * e.x * e.y * fadeI * fres;\n"
+  "      col = mix(col, hc, k*0.45) + hc * k * 0.35;\n"
+  "    }\n"
+  "  }\n"
+  "  frag = vec4(col, 1.0);\n"
+  "}\n";
+
+/* ---- stożki światła: addytywne, jaśniejsze przy osi i przy źródle */
+static const char *VS_CONE =
+  "#version 330 core\n"
+  "layout(location=0) in vec3 aPos; layout(location=1) in vec3 aNrm; layout(location=2) in vec4 aCol;\n"
+  "uniform mat4 uVP; uniform vec3 uCam; out vec4 vCol; out float vF;\n"
+  "void main(){ vec3 V = normalize(uCam - aPos); vF = pow(abs(dot(normalize(aNrm), V)), 1.6); vCol = aCol;\n"
+  "  float dc = length(uCam - aPos); vF *= smoothstep(0.4, 2.5, dc) * exp(-dc*0.02); gl_Position = uVP*vec4(aPos,1.0); }\n";
+static const char *FS_CONE =
+  "#version 330 core\n"
+  "in vec4 vCol; in float vF; out vec4 frag;\n"
+  "void main(){ float h = vCol.a; frag = vec4(vCol.rgb * vF * pow(1.0-h, 1.8) * 0.16, 0.0); }\n";
+
+/* ---- kłęby pary i dymu: miękkie, półprzezroczyste, z szumem */
+static const char *VS_PUFF =
+  "#version 330 core\n"
+  "layout(location=0) in vec3 aPos; layout(location=1) in vec2 aCorner; layout(location=2) in vec4 aCol; layout(location=3) in float aSize;\n"
+  "uniform mat4 uVP; uniform vec3 uRight, uUp; out vec2 vC; out vec4 vCol; out float vSeed;\n"
+  "void main(){ vC = aCorner; vCol = aCol; vSeed = fract(aPos.x*1.7+aPos.z*3.1); vec3 p = aPos + (uRight*aCorner.x + uUp*aCorner.y)*aSize; gl_Position = uVP*vec4(p,1.0); }\n";
+static const char *FS_PUFF =
+  "#version 330 core\n"
+  "in vec2 vC; in vec4 vCol; in float vSeed; uniform float uTime; out vec4 frag;\n"
+  "float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233)))*43758.5453); }\n"
+  "float vn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f); return mix(mix(hash(i), hash(i+vec2(1,0)), f.x), mix(hash(i+vec2(0,1)), hash(i+vec2(1,1)), f.x), f.y); }\n"
+  "void main(){ float r = length(vC); if (r > 1.0) discard;\n"
+  "  float n = vn(vC*2.5 + vec2(vSeed*7.0, uTime*0.4)) * 0.6 + vn(vC*5.0 - vec2(uTime*0.3, vSeed*3.0)) * 0.4;\n"
+  "  float a = (1.0 - r*r) * (0.45 + n*0.75) * vCol.a; frag = vec4(vCol.rgb, clamp(a, 0.0, 1.0)); }\n";
+
 char g_glError[1024];
 static void gl_err(const char *what, const char *name, const char *log) {
   fprintf(stderr, "%s %s: %s\n", what, name, log);
@@ -213,13 +311,14 @@ static unsigned compile(const char *vs, const char *fs, const char *name) {
 }
 
 static struct {
-  unsigned world, sky, glow, rain, bright, blur, down, final;
+  unsigned world, sky, glow, rain, bright, blur, down, final, post, cone, puff;
   /* uniformy świata */
   int wVP, wModel, wBones, wTime, wTex, wCam, wNL, wLPos, wLCol, wAmbSky, wAmbGround, wSunDir, wSunCol, wFogCol, wFogDens, wWet, wExp, wTint, wVM;
   unsigned worldTex;
   /* bufory */
   unsigned msFbo, msColor, msDepth;
-  unsigned hdrFbo, hdrTex, hdrDepth;
+  unsigned hdrFbo, hdrTex, hdrDepth; /* hdrDepth: tekstura głębi (SSR, SSAO) */
+  unsigned postFbo, postTex;
   unsigned bFbo[6], bTex[6];
   int rw, rh, bw[3], bh[3];
   unsigned emptyVao;
@@ -229,6 +328,10 @@ static struct {
   int nglow;
   /* deszcz */
   unsigned rainVao, rainVbo;
+  /* stożki światła i kłęby pary */
+  unsigned coneVao, coneVbo, puffVao, puffVbo;
+  float coneBuf[48 * 72 * 10], puffBuf[256 * 6 * 10];
+  int ncone, npuff;
   int ready;
   REnv env;
   float grade[4];
@@ -243,7 +346,8 @@ static int uloc(unsigned p, const char *n) { return glGetUniformLocation(p, n); 
 
 static void destroy_targets(void) {
   if (R.msFbo) { glDeleteFramebuffers(1, &R.msFbo); glDeleteRenderbuffers(1, &R.msColor); glDeleteRenderbuffers(1, &R.msDepth); R.msFbo = 0; }
-  if (R.hdrFbo) { glDeleteFramebuffers(1, &R.hdrFbo); glDeleteTextures(1, &R.hdrTex); glDeleteRenderbuffers(1, &R.hdrDepth); R.hdrFbo = 0; }
+  if (R.hdrFbo) { glDeleteFramebuffers(1, &R.hdrFbo); glDeleteTextures(1, &R.hdrTex); glDeleteTextures(1, &R.hdrDepth); R.hdrFbo = 0; }
+  if (R.postFbo) { glDeleteFramebuffers(1, &R.postFbo); glDeleteTextures(1, &R.postTex); R.postFbo = 0; }
   for (int i = 0; i < 6; i++) if (R.bFbo[i]) { glDeleteFramebuffers(1, &R.bFbo[i]); glDeleteTextures(1, &R.bTex[i]); R.bFbo[i] = 0; }
 }
 
@@ -270,11 +374,14 @@ static void create_targets(void) {
   glBindFramebuffer(GL_FRAMEBUFFER, R.hdrFbo);
   R.hdrTex = make_tex(R.rw, R.rh, GL_RGBA16F, GL_RGBA, GL_HALF_FLOAT, GL_LINEAR);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, R.hdrTex, 0);
-  glGenRenderbuffers(1, &R.hdrDepth);
-  glBindRenderbuffer(GL_RENDERBUFFER, R.hdrDepth);
-  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, R.rw, R.rh);
-  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, R.hdrDepth);
+  R.hdrDepth = make_tex(R.rw, R.rh, GL_DEPTH_COMPONENT24, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, GL_NEAREST);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, R.hdrDepth, 0);
   if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) fprintf(stderr, "HDR FBO niekompletny\n");
+  /* wynik przebiegu SSR/SSAO */
+  glGenFramebuffers(1, &R.postFbo);
+  glBindFramebuffer(GL_FRAMEBUFFER, R.postFbo);
+  R.postTex = make_tex(R.rw, R.rh, GL_RGBA16F, GL_RGBA, GL_HALF_FLOAT, GL_LINEAR);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, R.postTex, 0);
   /* MSAA */
   R.msaaActive = 0;
   if (g_cfg.msaa > 1) {
@@ -334,6 +441,26 @@ int r_init(void) {
   R.blur = compile(VS_FULL, FS_BLUR, "blur");
   R.down = compile(VS_FULL, FS_DOWN, "down");
   R.final = compile(VS_FULL, FS_FINAL, "final");
+  R.post = compile(VS_FULL, FS_POST, "post");
+  R.cone = compile(VS_CONE, FS_CONE, "cone");
+  R.puff = compile(VS_PUFF, FS_PUFF, "puff");
+  glGenVertexArrays(1, &R.coneVao);
+  glGenBuffers(1, &R.coneVbo);
+  glBindVertexArray(R.coneVao);
+  glBindBuffer(GL_ARRAY_BUFFER, R.coneVbo);
+  glBufferData(GL_ARRAY_BUFFER, sizeof R.coneBuf, NULL, GL_DYNAMIC_DRAW);
+  glEnableVertexAttribArray(0); glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 40, (void *)0);
+  glEnableVertexAttribArray(1); glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 40, (void *)12);
+  glEnableVertexAttribArray(2); glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 40, (void *)24);
+  glGenVertexArrays(1, &R.puffVao);
+  glGenBuffers(1, &R.puffVbo);
+  glBindVertexArray(R.puffVao);
+  glBindBuffer(GL_ARRAY_BUFFER, R.puffVbo);
+  glBufferData(GL_ARRAY_BUFFER, sizeof R.puffBuf, NULL, GL_DYNAMIC_DRAW);
+  glEnableVertexAttribArray(0); glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 40, (void *)0);
+  glEnableVertexAttribArray(1); glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 40, (void *)12);
+  glEnableVertexAttribArray(2); glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 40, (void *)20);
+  glEnableVertexAttribArray(3); glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, 40, (void *)36);
   unsigned w = R.world;
   R.wVP = uloc(w, "uVP"); R.wModel = uloc(w, "uModel"); R.wBones = uloc(w, "uBones"); R.wTime = uloc(w, "uTime");
   R.wTex = uloc(w, "uTex"); R.wCam = uloc(w, "uCam"); R.wNL = uloc(w, "uNL"); R.wLPos = uloc(w, "uLPos"); R.wLCol = uloc(w, "uLCol");
@@ -474,8 +601,9 @@ void r_frame_begin(const RCam *cam, const REnv *env) {
   glViewport(0, 0, R.rw, R.rh);
   glDisable(GL_SCISSOR_TEST);
   glDepthMask(GL_TRUE);
-  glClearColor(env->fogCol[0], env->fogCol[1], env->fogCol[2], 1);
+  glClearColor(env->fogCol[0], env->fogCol[1], env->fogCol[2], 0);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  R.ncone = R.npuff = 0;
   glDisable(GL_BLEND);
   if (!env->interior) {
     /* niebo */
@@ -579,7 +707,91 @@ void r_glow(float x, float y, float z, float size, float r, float g, float b) {
   R.nglow++;
 }
 
+static void puff_flush(void) {
+  if (!R.npuff) return;
+  glUseProgram(R.puff);
+  glUniformMatrix4fv(uloc(R.puff, "uVP"), 1, GL_FALSE, g_vp.m);
+  glUniform3f(uloc(R.puff, "uRight"), camRight[0], camRight[1], camRight[2]);
+  glUniform3f(uloc(R.puff, "uUp"), camUp[0], camUp[1], camUp[2]);
+  glUniform1f(uloc(R.puff, "uTime"), g_time);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_FALSE);
+  glDepthMask(GL_FALSE);
+  glDisable(GL_CULL_FACE);
+  glBindVertexArray(R.puffVao);
+  glBindBuffer(GL_ARRAY_BUFFER, R.puffVbo);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, R.npuff * 6 * 10 * 4, R.puffBuf);
+  glDrawArrays(GL_TRIANGLES, 0, R.npuff * 6);
+  glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+  glDepthMask(GL_TRUE);
+  glDisable(GL_BLEND);
+  glEnable(GL_CULL_FACE);
+  R.npuff = 0;
+  glUseProgram(R.world);
+}
+
+static void cone_flush(void) {
+  if (!R.ncone) return;
+  glUseProgram(R.cone);
+  glUniformMatrix4fv(uloc(R.cone, "uVP"), 1, GL_FALSE, g_vp.m);
+  glUniform3f(uloc(R.cone, "uCam"), g_camPos.x, g_camPos.y, g_camPos.z);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_ONE, GL_ONE);
+  glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_FALSE);
+  glDepthMask(GL_FALSE);
+  glDisable(GL_CULL_FACE);
+  glBindVertexArray(R.coneVao);
+  glBindBuffer(GL_ARRAY_BUFFER, R.coneVbo);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, R.ncone * 72 * 10 * 4, R.coneBuf);
+  glDrawArrays(GL_TRIANGLES, 0, R.ncone * 72);
+  glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+  glDepthMask(GL_TRUE);
+  glDisable(GL_BLEND);
+  glEnable(GL_CULL_FACE);
+  R.ncone = 0;
+  glUseProgram(R.world);
+}
+
+void r_cone(float x, float y, float z, float topR, float botR, float h, float r, float g, float b) {
+  if (R.ncone >= 48) return;
+  float dx = x - g_camPos.x, dz = z - g_camPos.z;
+  if (dx * dx + dz * dz > 60 * 60) return;
+  float *v = &R.coneBuf[R.ncone * 72 * 10];
+  int k = 0;
+  for (int i = 0; i < 12; i++) {
+    float a0 = i * 6.2831853f / 12, a1 = (i + 1) * 6.2831853f / 12;
+    float c0 = cosf(a0), s0 = sinf(a0), c1 = cosf(a1), s1 = sinf(a1);
+    float P[4][3] = {{x + c0 * topR, y, z + s0 * topR}, {x + c1 * topR, y, z + s1 * topR},
+                     {x + c1 * botR, y - h, z + s1 * botR}, {x + c0 * botR, y - h, z + s0 * botR}};
+    float Hh[4] = {0, 0, 1, 1}, C[4][2] = {{c0, s0}, {c1, s1}, {c1, s1}, {c0, s0}};
+    static const int idx[6] = {0, 1, 2, 0, 2, 3};
+    for (int q = 0; q < 6; q++) {
+      int j = idx[q];
+      float *o = &v[k++ * 10];
+      o[0] = P[j][0]; o[1] = P[j][1]; o[2] = P[j][2];
+      o[3] = C[j][0]; o[4] = (botR - topR) / (h > 0.01f ? h : 0.01f); o[5] = C[j][1];
+      o[6] = r; o[7] = g; o[8] = b; o[9] = Hh[j];
+    }
+  }
+  R.ncone++;
+}
+
+void r_puff(float x, float y, float z, float size, float r, float g, float b, float a) {
+  if (R.npuff >= 256) return;
+  static const float C[6][2] = {{-1, -1}, {1, -1}, {1, 1}, {-1, -1}, {1, 1}, {-1, 1}};
+  float *v = &R.puffBuf[R.npuff * 6 * 10];
+  for (int i = 0; i < 6; i++) {
+    v[i * 10 + 0] = x; v[i * 10 + 1] = y; v[i * 10 + 2] = z;
+    v[i * 10 + 3] = C[i][0]; v[i * 10 + 4] = C[i][1];
+    v[i * 10 + 5] = r; v[i * 10 + 6] = g; v[i * 10 + 7] = b; v[i * 10 + 8] = a; v[i * 10 + 9] = size;
+  }
+  R.npuff++;
+}
+
 void r_glow_flush(void) {
+  puff_flush();
+  cone_flush();
   if (!R.nglow) return;
   glUseProgram(R.glow);
   glUniformMatrix4fv(uloc(R.glow, "uVP"), 1, GL_FALSE, g_vp.m);
@@ -587,12 +799,14 @@ void r_glow_flush(void) {
   glUniform3f(uloc(R.glow, "uUp"), camUp[0], camUp[1], camUp[2]);
   glEnable(GL_BLEND);
   glBlendFunc(GL_ONE, GL_ONE);
+  glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_FALSE);
   glDepthMask(GL_FALSE);
   glDisable(GL_CULL_FACE);
   glBindVertexArray(R.glowVao);
   glBindBuffer(GL_ARRAY_BUFFER, R.glowVbo);
   glBufferSubData(GL_ARRAY_BUFFER, 0, R.nglow * 6 * 9 * 4, R.glowBuf);
   glDrawArrays(GL_TRIANGLES, 0, R.nglow * 6);
+  glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
   glDepthMask(GL_TRUE);
   glDisable(GL_BLEND);
   glEnable(GL_CULL_FACE);
@@ -609,9 +823,11 @@ void r_rain(float intensity) {
   glUniform1f(uloc(R.rain, "uInt"), intensity);
   glEnable(GL_BLEND);
   glBlendFunc(GL_ONE, GL_ONE);
+  glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_FALSE);
   glDepthMask(GL_FALSE);
   glBindVertexArray(R.rainVao);
   glDrawArrays(GL_LINES, 0, (int)(2400 * 2 * (intensity > 1 ? 1 : intensity)) & ~1);
+  glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
   glDepthMask(GL_TRUE);
   glDisable(GL_BLEND);
   glUseProgram(R.world);
@@ -619,7 +835,7 @@ void r_rain(float intensity) {
 
 void r_viewmodel_begin(float fov) {
   r_glow_flush();
-  glClear(GL_DEPTH_BUFFER_BIT);
+  glDepthRange(0.0, 0.02); /* broń zawsze z przodu, bez kasowania głębi sceny (potrzebnej SSR/SSAO) */
   float aspect = (float)R.rw / R.rh;
   M4 proj = m4_perspective(fov * 3.14159265f / 180.0f, aspect, 0.01f, 10.0f);
   glUseProgram(R.world);
@@ -631,6 +847,7 @@ void r_viewmodel_begin(float fov) {
 }
 
 void r_viewmodel_end(void) {
+  glDepthRange(0.0, 1.0);
   glUseProgram(R.world);
   glUniformMatrix4fv(R.wVP, 1, GL_FALSE, g_vp.m);
   glUniform1i(R.wVM, 0);
@@ -654,9 +871,32 @@ void r_frame_end(void) {
   if (R.msaaActive) {
     glBindFramebuffer(GL_READ_FRAMEBUFFER, R.msFbo);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, R.hdrFbo);
-    glBlitFramebuffer(0, 0, R.rw, R.rh, 0, 0, R.rw, R.rh, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    glBlitFramebuffer(0, 0, R.rw, R.rh, 0, 0, R.rw, R.rh, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
   }
   glActiveTexture(GL_TEXTURE0);
+  unsigned src = R.hdrTex;
+  if ((g_cfg.ssr && R.env.wet > 0.01f) || g_cfg.ssao) {
+    glBindFramebuffer(GL_FRAMEBUFFER, R.postFbo);
+    glViewport(0, 0, R.rw, R.rh);
+    glUseProgram(R.post);
+    glUniform1i(uloc(R.post, "uSrc"), 0);
+    glUniform1i(uloc(R.post, "uDepth"), 1);
+    M4 ip = m4_inverse(g_proj);
+    glUniformMatrix4fv(uloc(R.post, "uProj"), 1, GL_FALSE, g_proj.m);
+    glUniformMatrix4fv(uloc(R.post, "uInvProj"), 1, GL_FALSE, ip.m);
+    glUniformMatrix4fv(uloc(R.post, "uView"), 1, GL_FALSE, g_view.m);
+    glUniformMatrix4fv(uloc(R.post, "uInvView"), 1, GL_FALSE, g_camToWorld.m);
+    glUniform2f(uloc(R.post, "uRes"), (float)R.rw, (float)R.rh);
+    glUniform1f(uloc(R.post, "uTime"), g_time);
+    glUniform1f(uloc(R.post, "uSSR"), g_cfg.ssr && R.env.wet > 0.01f ? 1.0f : 0.0f);
+    glUniform1f(uloc(R.post, "uAO"), g_cfg.ssao ? 1.0f : 0.0f);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, R.hdrDepth);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, R.hdrTex);
+    fullscreen();
+    src = R.postTex;
+  }
   if (g_cfg.bloom) {
     /* jasne fragmenty -> poziom 0 */
     glBindFramebuffer(GL_FRAMEBUFFER, R.bFbo[0]);
@@ -664,7 +904,7 @@ void r_frame_end(void) {
     glUseProgram(R.bright);
     glUniform1i(uloc(R.bright, "uSrc"), 0);
     glUniform1f(uloc(R.bright, "uExp"), R.env.exposure);
-    glBindTexture(GL_TEXTURE_2D, R.hdrTex);
+    glBindTexture(GL_TEXTURE_2D, src);
     fullscreen();
     for (int l = 0; l < 3; l++) {
       if (l > 0) {
@@ -705,7 +945,7 @@ void r_frame_end(void) {
   glUniform1f(uloc(R.final, "uVig"), R.grade[2]);
   glUniform1f(uloc(R.final, "uFlash"), R.grade[3]);
   glUniform2f(uloc(R.final, "uRes"), (float)g_winW, (float)g_winH);
-  glBindTexture(GL_TEXTURE_2D, R.hdrTex);
+  glBindTexture(GL_TEXTURE_2D, src);
   for (int i = 1; i <= 3; i++) {
     glActiveTexture(GL_TEXTURE0 + i);
     glBindTexture(GL_TEXTURE_2D, R.bTex[(i - 1) * 2]);

@@ -558,6 +558,7 @@ void world_draw(void) {
   }
   combat_draw_world();
   city_glows();
+  city_steam(g_time);
   r_glow_flush();
   if (env.rain > 0) r_rain(env.rain * 0.55f);
   if (!script_blocking() && g_mode == MODE_WORLD && !driving) combat_draw_view();

@@ -15,8 +15,8 @@
 #include <string.h>
 #include <math.h>
 
-#define KX_VERSION "1.0.0"
-#define KX_VERSION_NUM 10000 /* major*10000 + minor*100 + patch */
+#define KX_VERSION "1.1.0"
+#define KX_VERSION_NUM 10100 /* major*10000 + minor*100 + patch */
 
 typedef uint32_t u32;
 typedef uint8_t u8;

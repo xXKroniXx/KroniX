@@ -147,6 +147,7 @@ float tile_prop_height(int c);
 void city_build(MapDef *m);
 void city_lights(float time);
 void city_glows(void);
+void city_steam(float time);
 void city_draw(void);
 float world_ground(float x, float z);
 

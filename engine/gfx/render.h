@@ -73,6 +73,8 @@ typedef struct {
   int maxLights;   /* 4..16 */
   int vsync;
   int fov;         /* stopnie */
+  int ssr;         /* odbicia ekranowe na mokrych powierzchniach 0/1 */
+  int ssao;        /* cienie kontaktowe (ambient occlusion) 0/1 */
 } RCfg;
 extern RCfg g_cfg;
 
@@ -110,6 +112,10 @@ void r_draw_bones(const GMesh *m, const M4 *model, const M4 *bones, int nbones, 
 void r_glow(float x, float y, float z, float size, float r, float g, float b); /* addytywna poświata */
 void r_glow_flush(void);
 void r_rain(float intensity);
+/* stożek światła (latarnia, reflektor): wierzchołek u góry, rozszerza się w dół */
+void r_cone(float x, float y, float z, float topR, float botR, float h, float r, float g, float b);
+/* kłąb pary/dymu (miękka, półprzezroczysta chmurka); a = krycie 0..1 */
+void r_puff(float x, float y, float z, float size, float r, float g, float b, float a);
 void r_viewmodel_begin(float fov);
 void r_viewmodel_end(void);
 M4 r_cam_to_world(void); /* lokalny układ kamery: +x prawo, +y góra, -z przód */

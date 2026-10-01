@@ -181,7 +181,8 @@ typedef void GLvoid;
   X(void, glFramebufferRenderbuffer, (GLenum, GLenum, GLenum, GLuint)) \
   X(void, glBlitFramebuffer, (GLint, GLint, GLint, GLint, GLint, GLint, GLint, GLint, GLbitfield, GLenum)) \
   X(GLenum, glCheckFramebufferStatus, (GLenum)) \
-  X(void, glFinish, (void))
+  X(void, glFinish, (void)) \
+  X(void, glDepthRange, (double, double))
 
 GL_FUNCS(GLFN)
 #undef GLFN
