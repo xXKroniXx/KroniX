@@ -143,6 +143,7 @@ static const KxSfxDef SFX[SFX_COUNT] = {
   {"reload", 0.55f, 1, 0.02f, 0}, {"empty", 0.5f, 1, 0.02f, 0}, {"step", 0.3f, 3, 0.16f, 0}, {"hurt", 0.7f, 1, 0.02f, 0},
   {"horn", 0.6f, 1, 0.02f, 0}, {"phone", 0.5f, 1, 0.02f, 0}, {"glass", 0.5f, 1, 0.02f, 0}, {"bell", 0.6f, 1, 0.02f, 0},
   {"type", 0.4f, 1, 0.02f, 0}, {"paper", 0.4f, 1, 0.02f, 0}, {"car", 0.5f, 1, 0.02f, 0},
+  {"train", 0.7f, 2, 0.04f, 0},
 };
 
 static void gen(int id, int v, KxBuf *b, unsigned *rp) {
@@ -329,6 +330,27 @@ static void gen(int id, int v, KxBuf *b, unsigned *rp) {
       d = kx_fx_new(b, 0.5f);
       for (int k = 0; k < 6; k++) kx_fx_noise(d, b->n, k * 0.06f + (kx_fx_rand(&r) * 0.5f + 0.5f) * 0.03f, 7000, 1500, 0.4f, 0.01f, 25, &r);
       break;
+    case SFX_TRAIN: { /* kolejka nadziemna: dudnienie stalowej konstrukcji + stukot kół na złączach */
+      d = kx_fx_new(b, 1.6f);
+      float lp = 0, lp2 = 0;
+      for (int i = 0; i < b->n; i++) {
+        float t = i / (float)AUDIO_RATE;
+        float x = kx_fx_rand(&r);
+        lp += (x - lp) * kx_fx_lp(120);
+        lp2 += (x - lp2) * kx_fx_lp(900);
+        float env = (t < 0.15f ? t / 0.15f : 1) * (t > 1.3f ? fmaxf(0, 1 - (t - 1.3f) / 0.3f) : 1);
+        d[i] = (lp * 3.2f + (lp2 - lp) * 0.35f * (0.6f + 0.4f * kx_fx_sin(t * 7.3f))) * env;
+      }
+      /* stukot: para uderzeń na każdym złączu szyn */
+      for (int k = 0; k < 4; k++) {
+        float t0 = 0.1f + k * 0.38f + (v ? 0.05f : 0);
+        kx_fx_click(d, b->n, t0, 900, 0.55f, 0.03f, &r);
+        kx_fx_click(d, b->n, t0 + 0.09f, 760, 0.5f, 0.03f, &r);
+        kx_fx_thump(d, b->n, t0, 90, 50, 0.4f, 0.05f);
+      }
+      kx_fx_norm(b, 0.9f);
+      break;
+    }
     case SFX_CAR: { /* silnik auta z lat 30. — odjazd */
       d = kx_fx_new(b, 2.5f);
       float ph = 0, lp = 0;

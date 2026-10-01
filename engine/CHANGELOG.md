@@ -2,6 +2,17 @@
 
 Silnik rośnie razem z grami. Każda gra dopisuje tu, co wniosła do wspólnego kodu.
 
+## 1.2.0 — pojazdy i miasto z detalami
+* `mb_arch_z()` — łuk wokół osi Z (błotniki, sklepienia, arkady, mosty).
+* `mb_beam()` — belka o przekroju kwadratowym między dwoma dowolnymi punktami
+  (zastrzały, kratownice, rusztowania, dźwigary) — koniec ze „schodkami” z prostopadłościanów.
+* Wskazówki materiałowe dla gier: kolor lakieru to kolor wierzchołka mnożony przez jasną
+  warstwę tekstury z wysokim połyskiem w alfie (w „Rodzinie”: `L_PAINT`, `L_CHROME`, `L_TIRE`);
+  ciemne tekstury metalu zostawiamy dla stali surowej.
+* Wniesione przez „KroniX: Rodzina”: 8 modeli aut z własnym prowadzeniem, przechodnie na
+  chodnikach, kolejka nadziemna z ruchomym pociągiem, wieżowce z uskokami, neony na dachach
+  (kod w grze — kandydaci do przeniesienia do silnika przy następnej grze).
+
 ## 1.1.0 — grafika „mokrego miasta”
 * Odbicia ekranowe (SSR) na mokrych i wodnych powierzchniach: odbijalność zapisywana w kanale
   alfa bufora HDR, marsz promienia po buforze głębi, kręgi od kropel deszczu zaburzające odbicie.

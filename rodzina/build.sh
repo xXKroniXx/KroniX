@@ -7,7 +7,7 @@ KX_ROOT=../engine
 . "$KX_ROOT/kx_sources.sh"
 mkdir -p build
 python3 tools/embed.py build/story_data.c data/*.txt
-SRC="$KX_SRC src/sounds.c src/tex.c src/models.c src/human.c src/weapons.c src/city.c src/vehicle.c src/story.c src/script.c src/world3d.c src/combat.c src/tycoon.c src/ui.c src/game.c build/story_data.c"
+SRC="$KX_SRC src/sounds.c src/tex.c src/models.c src/human.c src/weapons.c src/city.c src/vehicle.c src/streetlife.c src/story.c src/script.c src/world3d.c src/combat.c src/tycoon.c src/ui.c src/game.c build/story_data.c"
 CFLAGS="-O2 -std=c99 -Wall -Wno-format-truncation -Wno-parentheses -Wno-misleading-indentation -Isrc $KX_INC"
 if [ "$1" != "win" ]; then
   OSM=$(ls /usr/lib/x86_64-linux-gnu/libOSMesa.so* 2>/dev/null | head -1)

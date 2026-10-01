@@ -59,6 +59,7 @@ void mb_cyl_z(MB *b, V3 c, float r, float len, int seg, int caps); /* oś Z */
 void mb_sphere(MB *b, V3 c, float rx, float ry, float rz, int seg);
 void mb_rbox(MB *b, V3 mn, V3 mx, float bevel); /* fazowany prostopadłościan (miękki wygląd) */
 void mb_arch_z(MB *b, V3 c, float r, float thick, float hw, float a0, float a1, int seg); /* łuk (błotnik, sklepienie) wokół osi z, kąty od +x do +y */
+void mb_beam(MB *b, V3 a, V3 c, float hw); /* belka o przekroju kwadratowym 2*hw między punktami a i c (zastrzały, kratownice) */
 void mb_append_tf(MB *dst, const MB *src, M4 tf);
 void mb_colorize_ao(MB *b, float (*ao)(float x, float y, float z));
 

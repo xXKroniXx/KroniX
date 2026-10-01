@@ -162,6 +162,7 @@ void world_load_map(int map, int tx, int ty, int dir) {
   world_audio();
   world_refresh_visibility();
   cars_init_map();
+  streetlife_map();
 }
 
 void world_spawn(const char *enemyId, int tx, int ty, int ally) {
@@ -425,6 +426,7 @@ void world_update(void) {
     combat_update();
   }
   cars_update();
+  streetlife_update();
   update_npcs();
   tycoon_world_tick();
 }
@@ -539,9 +541,11 @@ void world_draw(void) {
   combat_lights();
   if (!driving) r_light(cx, camY + 0.3f, cz, 0.22f, 0.2f, 0.18f, 4.0f); /* delikatne doświetlenie wokół gracza */
   cars_lights(m->night);
+  streetlife_lights(m->night);
   r_lights_commit();
   city_draw();
   cars_draw();
+  streetlife_draw();
   for (int i = 0; i < W.n; i++) {
     Ent *e = &W.ents[i];
     if (!e->vis && !(e->dead && e->d->type == ENT_MOB)) continue;

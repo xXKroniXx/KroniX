@@ -23,7 +23,7 @@ static const TDef TD[] = {
   {'f', K_PROP, L_WOODFLOOR, 0, 1.0f}, {'A', K_PROP, L_STONE, 0, 0.55f}, {'Y', K_PROP, L_CLOTH, 0, 0.8f},
   {'F', K_PROP, L_SIDEWALK, 0, 0.6f}, {'I', K_PROP, L_CONCRETE, 0, 1.6f}, {'m', K_PROP, L_CONCRETE, 0, 0.9f},
   {'~', K_WATER, L_WATER}, {'T', K_BB, L_GRASS}, {'p', K_BB, L_WOODFLOOR}, {'L', K_BB, L_SIDEWALK},
-  {'c', K_FLOOR, L_ASPHALT}, {'C', K_CAR, L_ASPHALT},
+  {'c', K_FLOOR, L_ASPHALT}, {'C', K_CAR, L_ASPHALT}, {'J', K_BB, L_SIDEWALK},
 };
 #define NTD ((int)(sizeof(TD) / sizeof(TD[0])))
 static const TDef *tdef[128];
@@ -67,7 +67,8 @@ static uint32_t H32(int a, int b, int c) {
 }
 
 typedef struct { float x, y, z, r, g, b, rad; int kind; float phase; } CLight;
-static CLight clights[400];
+#define MAXCL 1400
+static CLight clights[MAXCL];
 static int nclights;
 static GMesh cityMesh;
 static MB mb, mbFar;
@@ -81,13 +82,19 @@ static void split_chunks(void);
 #define MAXVENT 64
 static float vents[MAXVENT][2];
 static int nvents;
-typedef struct { MapDef *m; GMesh far; Chunk ch[MAXCH]; int nch; CLight l[400]; int nl; float v[MAXVENT][2]; int nv; } CitySlot;
+typedef struct { MapDef *m; GMesh far; Chunk ch[MAXCH]; int nch; CLight l[MAXCL]; int nl; float v[MAXVENT][2]; int nv; int rail; float rail3[3]; } CitySlot;
 static CitySlot bigSlot;
 static int curIsBig;
 static int interior;
+static unsigned char hdist[MAX_MAP_H][MAX_MAP_W]; /* odległość kafla wieżowca od ulicy (uskoki) */
+static int hasRail;
+static float railX0, railX1, railZc;
+int city_tile(int x, int z) { return Mp ? tile(x, z) : 'x'; }
+int city_rail(float *x0, float *x1, float *zc) { if (!hasRail || interior) return 0; *x0 = railX0; *x1 = railX1; *zc = railZc; return 1; }
+
 
 static void addlight(float x, float y, float z, float r, float g, float b, float rad, int kind) {
-  if (nclights >= 400) return;
+  if (nclights >= MAXCL) return;
   clights[nclights++] = (CLight){x, y, z, r, g, b, rad, kind, (x * 3.7f + z * 1.3f)};
 }
 
@@ -95,7 +102,14 @@ static void addlight(float x, float y, float z, float r, float g, float b, float
 static float bheight(int x, int z) {
   if (interior) return Mp->ceil;
   uint32_t h = H32(x / 5, z / 6, 7);
-  if (tile(x, z) == 'H') return (Mp->floors + 5 + (int)(H32(x / 4, z / 3, 8) % 6)) * 1.5f; /* wieżowce Loopu */
+  if (tile(x, z) == 'H') { /* wieżowce Loopu: uskoki w głąb kwartału (art déco, „tort weselny”) */
+    uint32_t g = H32(x / 5, z / 4, 8);
+    int d = hdist[z][x], fl = Mp->floors + 4 + (int)(g % 4);
+    if (d >= 2) fl += 3 + (int)((g >> 4) % 3);
+    if (d >= 3) fl += 4 + (int)((g >> 8) % 8);
+    if (d >= 5) fl += 2 + (int)((g >> 12) % 4);
+    return fl * 1.5f;
+  }
   return (Mp->floors + (int)(h % 3)) * 1.5f;
 }
 static int bmaterial(int x, int z, int c) {
@@ -274,6 +288,11 @@ static void exterior_face(const Face *f, int c, int tx, int tz, float h, float y
         continue;
       }
       if (c == 'W' || c == 'M' || c == '#' || c == 'x') { mb_paint(wc, wl); fquad(f, 0, 1, y, y + 1.5f, 0); continue; }
+      /* parter od strony chodnika: sklepy, bary, zakłady (losowo, w Loopie gęściej) */
+      if ((c == 'R' || c == 'w' || c == 'H') && yb < 0.01f && tile(tx + (int)f->nx, tz + (int)f->nz) == ',') {
+        uint32_t sh = H32(tx * 2 + (int)f->nx, tz * 2 + (int)f->nz, 41);
+        if ((int)(sh % 100) < (c == 'H' ? 65 : 28)) { shop_front(f, (sh >> 8) % 3 ? 'G' : 'a', wc, wl, tx, tz); continue; }
+      }
     }
     if (c == 'M' || c == 'x' || c == 'W') { mb_paint(wc, wl); fquad(f, 0, 1, y, y + 1.5f, 0); continue; }
     uint32_t hh = H32(tx * 3 + (int)(f->nx * 2), tz * 3 + (int)(f->nz * 2), (int)(y * 2));
@@ -576,6 +595,217 @@ static void skyline(void) {
   }
 }
 
+/* odległość (w kaflach) każdego kafla wieżowca od najbliższego otwartego kafla */
+static void compute_hdist(void) {
+  static short q[MAX_MAP_W * MAX_MAP_H];
+  int qh = 0, qt = 0;
+  for (int z = 0; z < Mh; z++)
+    for (int x = 0; x < Mw; x++) {
+      if (!isblock(x, z)) { hdist[z][x] = 0; continue; }
+      hdist[z][x] = 255;
+      int edge = 0;
+      for (int k = 0; k < 4; k++) {
+        int nx = x + (k == 0) - (k == 1), nz = z + (k == 2) - (k == 3);
+        if (nx >= 0 && nz >= 0 && nx < Mw && nz < Mh && !isblock(nx, nz)) edge = 1;
+      }
+      if (edge) { hdist[z][x] = 0; q[qt++] = (short)(z * Mw + x); }
+    }
+  while (qh < qt) {
+    int i = q[qh++], x = i % Mw, z = i / Mw, d = hdist[z][x];
+    if (d >= 8) continue;
+    for (int k = 0; k < 4; k++) {
+      int nx = x + (k == 0) - (k == 1), nz = z + (k == 2) - (k == 3);
+      if (nx < 0 || nz < 0 || nx >= Mw || nz >= Mh || hdist[nz][nx] <= d + 1) continue;
+      hdist[nz][nx] = (unsigned char)(d + 1);
+      q[qt++] = (short)(nz * Mw + nx);
+    }
+  }
+  for (int z = 0; z < Mh; z++)
+    for (int x = 0; x < Mw; x++) if (hdist[z][x] == 255) hdist[z][x] = 8;
+}
+
+/* dachy: billboardy i neony nad ulicami, iglice wieżowców z lampą ostrzegawczą */
+static void roof_extras(void) {
+  if (interior) return;
+  for (int z = 1; z < Mh - 1; z++)
+    for (int x = 1; x < Mw - 1; x++) {
+      int c = tile(x, z);
+      if (!isblock(x, z)) continue;
+      float h = bheight(x, z), X = (float)x, Z = (float)z;
+      if (c == 'H') {
+        /* iglica na najwyższym kaflu wieży */
+        if (hdist[z][x] < 3 || H32(x, z, 97) % 6) continue;
+        int top = 1;
+        for (int k = 0; k < 4; k++) { int nx = x + (k == 0) - (k == 1), nz = z + (k == 2) - (k == 3); if (bheight(nx, nz) > h) top = 0; }
+        if (!top) continue;
+        float cx = X + 0.5f, cz = Z + 0.5f;
+        mb_paint(0xFFD8CCB4, L_STONE);
+        mb_box(&mb, v3(cx - 0.42f, h, cz - 0.42f), v3(cx + 0.42f, h + 0.7f, cz + 0.42f));
+        mb_box(&mb, v3(cx - 0.3f, h + 0.7f, cz - 0.3f), v3(cx + 0.3f, h + 1.3f, cz + 0.3f));
+        mb_paint(0xFFB8BCC2, L_CHROME);
+        mb_cyl(&mb, v3(cx, h + 1.3f, cz), 0.18f, 0.02f, 2.6f, 8, 0);
+        addlight(cx, h + 4.0f, cz, 3.0f, 0.15f, 0.08f, 1.0f, 4);
+        continue;
+      }
+      if (c != 'R' && c != 'w' && c != 'W' && c != 'n' && c != 'g') continue;
+      if (H32(x, z, 98) % 19) continue;
+      /* fasada nad chodnikiem, sąsiad wzdłuż fasady tej samej wysokości (billboard na 2 kafle) */
+      for (int k = 0; k < 4; k++) {
+        int nx = x + (k == 0) - (k == 1), nz = z + (k == 2) - (k == 3);
+        if (tile(nx, nz) != ',') continue;
+        Face f;
+        if (k == 0) f = (Face){X + 1, Z + 1, 0, -1, 1, 0};
+        else if (k == 1) f = (Face){X, Z, 0, 1, -1, 0};
+        else if (k == 2) f = (Face){X, Z + 1, 1, 0, 0, 1};
+        else f = (Face){X + 1, Z, -1, 0, 0, -1};
+        int ax = x + (int)f.ux, az = z + (int)f.uz;
+        if (!isblock(ax, az) || fabsf(bheight(ax, az) - h) > 0.01f || isblock(ax + (int)f.nx, az + (int)f.nz)) continue;
+        int neon = H32(x, z, 99) % 2;
+        float d0 = -0.55f;
+        /* rusztowanie */
+        mb_paint(0xFF2A2C30, L_METAL);
+        for (float sp = 0.15f; sp < 2.0f; sp += 0.85f) {
+          fbox(&f, sp, sp + 0.05f, h, h + 1.75f, d0 - 0.05f, d0);
+          fbox(&f, sp, sp + 0.05f, h, h + 0.05f, d0 - 0.6f, d0); /* zastrzał */
+        }
+        fbox(&f, 0.1f, 1.9f, h + 0.4f, h + 0.45f, d0 - 0.05f, d0);
+        if (neon) {
+          /* neon: litery na tle tablicy, kolorowe światło */
+          static const float NC[8][3] = {{0.3f, 0.8f, 1.0f}, {1.0f, 0.25f, 0.35f}, {1.0f, 0.75f, 0.25f}, {0.4f, 1.0f, 0.55f}, {1.0f, 0.4f, 0.8f}, {1.0f, 0.3f, 0.2f}, {0.4f, 0.6f, 1.0f}, {1.0f, 0.8f, 0.35f}};
+          int w = (int)(H32(x, z, 100) % 8);
+          mb_paint(0xFF1A1A1E, L_METAL);
+          fquad(&f, 0.05f, 1.95f, h + 0.5f, h + 1.7f, d0 + 0.01f);
+          mb_paint(0xFFFFFFFF, L_NEON); P_.emis = Mp->night ? 1.0f : 0.15f;
+          fquad_uv(&f, 0.12f, 1.88f, h + 0.75f, h + 1.45f, d0 + 0.03f, 0, w / 8.0f, 1, (w + 1) / 8.0f);
+          V3 lp = fp(&f, 1.0f, h + 1.1f, 0.6f);
+          if (Mp->night) addlight(lp.x, lp.y, lp.z, NC[w][0] * 3.0f, NC[w][1] * 3.0f, NC[w][2] * 3.0f, 5.0f, 1);
+        } else {
+          /* plakat reklamowy z dwiema lampami */
+          mb_paint(0xFF3A2A1E, L_WOOD);
+          fbox(&f, 0.02f, 1.98f, h + 0.48f, h + 1.72f, d0 + 0.0f, d0 + 0.04f);
+          mb_paint(0xFFFFFFFF, L_POSTER1 + (int)(H32(x, z, 101) % 3));
+          fquad_uv(&f, 0.08f, 1.92f, h + 0.55f, h + 1.65f, d0 + 0.05f, 0, 0, 1, 1);
+          mb_paint(0xFF2A2C30, L_METAL);
+          for (int l = 0; l < 2; l++) {
+            float sp = 0.5f + l;
+            fbox(&f, sp - 0.02f, sp + 0.02f, h + 1.72f, h + 1.75f, d0, d0 + 0.35f);
+            mb_paint(0xFFFFE8B0, L_WHITE); P_.emis = Mp->night ? 1.0f : 0;
+            fbox(&f, sp - 0.07f, sp + 0.07f, h + 1.66f, h + 1.72f, d0 + 0.3f, d0 + 0.38f);
+            mb_paint(0xFF2A2C30, L_METAL);
+          }
+          V3 lp = fp(&f, 1.0f, h + 1.4f, 0.4f);
+          if (Mp->night) addlight(lp.x, lp.y, lp.z, 2.4f, 2.0f, 1.4f, 3.0f, 0);
+        }
+        break;
+      }
+    }
+}
+
+/* kolejka nadziemna („the L”) nad ulicą: filary na kaflach 'J', stalowe dźwigary, podkłady, szyny, peron */
+static void elevated_rail(void) {
+  hasRail = 0;
+  if (interior) return;
+  int minx = 9999, maxx = -1, za = -1, zb = -1;
+  for (int z = 0; z < Mh; z++)
+    for (int x = 0; x < Mw; x++)
+      if (tile(x, z) == 'J') {
+        if (x < minx) minx = x;
+        if (x > maxx) maxx = x;
+        if (za < 0 || z < za) za = z;
+        if (z > zb) zb = z;
+      }
+  if (maxx < 0 || zb <= za) return;
+  hasRail = 1;
+  float x0 = minx - 2.0f, x1 = maxx + 2.0f, zc = (za + zb) * 0.5f + 0.5f;
+  railX0 = x0; railX1 = x1; railZc = zc;
+  const float yb = 2.85f, yd = 3.0f, yt = 3.5f;
+  uint32_t steel = 0xFFC8D0C8;
+  /* filary z głowicami i cokołami */
+  for (int z = 0; z < Mh; z++)
+    for (int x = 0; x < Mw; x++) {
+      if (tile(x, z) != 'J') continue;
+      float cx = x + 0.5f, cz = z + 0.5f;
+      mb_paint(0xFF8A847A, L_STONE);
+      mb_box(&mb, v3(cx - 0.2f, 0.06f, cz - 0.2f), v3(cx + 0.2f, 0.32f, cz + 0.2f));
+      mb_paint(steel, L_METAL);
+      mb_box(&mb, v3(cx - 0.11f, 0.32f, cz - 0.11f), v3(cx + 0.11f, yb - 0.15f, cz + 0.11f));
+      mb_box(&mb, v3(cx - 0.17f, yb - 0.15f, cz - 0.17f), v3(cx + 0.17f, yb, cz + 0.17f));
+      /* zastrzały pod belką poprzeczną */
+      float dz = cz < zc ? 1 : -1;
+      mb_beam(&mb, v3(cx, yb - 0.75f, cz + dz * 0.1f), v3(cx, yb - 0.02f, cz + dz * 0.75f), 0.045f);
+      mb_beam(&mb, v3(cx - 0.1f, yb - 0.75f, cz), v3(cx - 0.75f, yb - 0.02f, cz), 0.04f);
+      mb_beam(&mb, v3(cx + 0.1f, yb - 0.75f, cz), v3(cx + 0.75f, yb - 0.02f, cz), 0.04f);
+      /* belka poprzeczna nad jezdnią */
+      if (z == za) mb_box(&mb, v3(cx - 0.12f, yb, zc - 2.2f), v3(cx + 0.12f, yd, zc + 2.2f));
+    }
+  /* podłużne dźwigary blachownicowe z żebrami */
+  for (int s = -1; s <= 1; s += 2) {
+    float gz = zc + s * 1.95f;
+    mb_paint(steel, L_METAL);
+    mb_box(&mb, v3(x0, yd - 0.05f, gz - 0.05f), v3(x1, yt + 0.05f, gz + 0.05f));
+    mb_box(&mb, v3(x0, yt + 0.05f, gz - 0.1f), v3(x1, yt + 0.1f, gz + 0.1f));
+    mb_box(&mb, v3(x0, yd - 0.1f, gz - 0.1f), v3(x1, yd - 0.05f, gz + 0.1f));
+    for (float x = x0 + 0.5f; x < x1; x += 0.8f) mb_box(&mb, v3(x, yd, gz - 0.08f), v3(x + 0.04f, yt + 0.05f, gz + 0.08f));
+    /* barierka */
+    mb_paint(0xFF3A3C40, L_METAL);
+    for (float x = x0 + 0.2f; x < x1; x += 1.0f) mb_box(&mb, v3(x, yt + 0.1f, gz + s * 0.12f - 0.015f), v3(x + 0.03f, yt + 0.6f, gz + s * 0.12f + 0.015f));
+    mb_box(&mb, v3(x0, yt + 0.57f, gz + s * 0.12f - 0.02f), v3(x1, yt + 0.6f, gz + s * 0.12f + 0.02f));
+  }
+  /* pomost: spód i nawierzchnia */
+  mb_paint(0xFF6A6E70, L_METAL);
+  mb_quad_world(&mb, v3(x0, yd, zc - 1.9f), v3(x1, yd, zc - 1.9f), v3(x1, yd, zc + 1.9f), v3(x0, yd, zc + 1.9f));
+  mb_paint(0xFF8A8478, L_GRAVEL);
+  mb_quad_world(&mb, v3(x0, yt - 0.02f, zc - 1.9f), v3(x0, yt - 0.02f, zc + 1.9f), v3(x1, yt - 0.02f, zc + 1.9f), v3(x1, yt - 0.02f, zc - 1.9f));
+  /* dwa tory: podkłady i szyny */
+  for (int tr = -1; tr <= 1; tr += 2) {
+    float tz = zc + tr * 0.8f;
+    mb_paint(0xFF5A4636, L_WOOD);
+    for (float x = x0 + 0.1f; x < x1 - 0.1f; x += 0.32f) mb_box(&mb, v3(x, yt - 0.02f, tz - 0.42f), v3(x + 0.13f, yt + 0.04f, tz + 0.42f));
+    mb_paint(0xFF9A9A9A, L_CHROME);
+    for (int r = -1; r <= 1; r += 2) mb_box(&mb, v3(x0, yt + 0.04f, tz + r * 0.25f - 0.02f), v3(x1, yt + 0.1f, tz + r * 0.25f + 0.02f));
+    /* odbojnice na końcach */
+    mb_paint(0xFFB02A20, L_PAINT);
+    mb_box(&mb, v3(x0 + 0.05f, yt, tz - 0.35f), v3(x0 + 0.2f, yt + 0.4f, tz + 0.35f));
+    mb_box(&mb, v3(x1 - 0.2f, yt, tz - 0.35f), v3(x1 - 0.05f, yt + 0.4f, tz + 0.35f));
+  }
+  /* lampy pod pomostem */
+  for (float x = x0 + 3.0f; x < x1 - 1; x += 6.0f) {
+    mb_paint(0xFFFFE6B0, L_WHITE); P_.emis = 1.0f;
+    mb_sphere(&mb, v3(x, yd - 0.12f, zc), 0.07f, 0.07f, 0.07f, 6);
+    addlight(x, yd - 0.25f, zc, 1.6f, 1.2f, 0.75f, 4.0f, 0);
+  }
+  /* stacja: perony boczne z wiatami między przecznicami */
+  float sx0 = (x0 + x1) * 0.5f - 3.5f, sx1 = sx0 + 7.0f;
+  for (int s = -1; s <= 1; s += 2) {
+    float zi = zc + s * 1.38f, zo = zc + s * 2.05f;
+    float zmin = fminf(zi, zo), zmax = fmaxf(zi, zo);
+    mb_paint(0xFFFFFFFF, L_WOODFLOOR);
+    mb_box(&mb, v3(sx0, yt, zmin), v3(sx1, yt + 0.16f, zmax));
+    mb_paint(0xFFE8D8A0, L_PAINT);
+    mb_box(&mb, v3(sx0, yt + 0.16f, s < 0 ? zmax - 0.06f : zmin), v3(sx1, yt + 0.165f, s < 0 ? zmax : zmin + 0.06f)); /* żółta linia */
+    mb_paint(0xFF4A5A4A, L_PAINT);
+    for (float x = sx0 + 0.3f; x < sx1; x += 1.6f) mb_box(&mb, v3(x, yt + 0.16f, zo - s * 0.12f - 0.04f), v3(x + 0.08f, yt + 1.35f, zo - s * 0.12f + 0.04f));
+    /* dach wiaty */
+    mb_paint(0xFF5A3A2A, L_ROOF);
+    mb_quad_world(&mb, v3(sx0, yt + 1.45f, zo + s * 0.1f), v3(sx1, yt + 1.45f, zo + s * 0.1f), v3(sx1, yt + 1.3f, zi - s * 0.05f), v3(sx0, yt + 1.3f, zi - s * 0.05f));
+    mb_quad_world(&mb, v3(sx1, yt + 1.43f, zo + s * 0.1f), v3(sx0, yt + 1.43f, zo + s * 0.1f), v3(sx0, yt + 1.28f, zi - s * 0.05f), v3(sx1, yt + 1.28f, zi - s * 0.05f));
+    mb_paint(0xFF4A5A4A, L_PAINT);
+    mb_box(&mb, v3(sx0, yt + 1.28f, fminf(zi, zi - s * 0.05f) - 0.03f), v3(sx1, yt + 1.36f, fmaxf(zi, zi - s * 0.05f) + 0.03f));
+    /* tablica z nazwą stacji i lampy */
+    mb_paint(0xFFFFFFFF, L_SIGNS); P_.emis = Mp->night ? 0.3f : 0;
+    {
+      float zz = zo - s * 0.07f;
+      if (s < 0) mb_quad(&mb, v3(sx0 + 2.5f, yt + 0.85f, zz), v3(sx0 + 4.5f, yt + 0.85f, zz), v3(sx0 + 4.5f, yt + 1.15f, zz), v3(sx0 + 2.5f, yt + 1.15f, zz), 0, 0.875f, 0.5f, 1.0f);
+      else mb_quad(&mb, v3(sx0 + 4.5f, yt + 0.85f, zz), v3(sx0 + 2.5f, yt + 0.85f, zz), v3(sx0 + 2.5f, yt + 1.15f, zz), v3(sx0 + 4.5f, yt + 1.15f, zz), 0, 0.875f, 0.5f, 1.0f);
+    }
+    for (float x = sx0 + 1.0f; x < sx1; x += 2.5f) {
+      mb_paint(0xFFFFE6B0, L_WHITE); P_.emis = 1.0f;
+      mb_sphere(&mb, v3(x, yt + 1.22f, (zi + zo) * 0.5f), 0.06f, 0.06f, 0.06f, 6);
+      addlight(x, yt + 1.1f, (zi + zo) * 0.5f, 1.8f, 1.4f, 0.85f, 3.2f, 0);
+    }
+  }
+}
+
 /* ---------------------------------------------------------------- budowa */
 void city_build(MapDef *m) {
   Mp = m; Mw = m->w; Mh = m->h;
@@ -586,6 +816,7 @@ void city_build(MapDef *m) {
     memcpy(chunks, bigSlot.ch, sizeof(Chunk) * bigSlot.nch); nchunks = bigSlot.nch;
     memcpy(clights, bigSlot.l, sizeof(CLight) * bigSlot.nl); nclights = bigSlot.nl;
     memcpy(vents, bigSlot.v, sizeof vents); nvents = bigSlot.nv;
+    hasRail = bigSlot.rail; railX0 = bigSlot.rail3[0]; railX1 = bigSlot.rail3[1]; railZc = bigSlot.rail3[2];
     curIsBig = 1;
     return;
   }
@@ -593,6 +824,7 @@ void city_build(MapDef *m) {
   neonIdx = 0;
   if (!mb.v) mb_init(&mb);
   mb_reset(&mb);
+  compute_hdist();
   for (int z = 0; z < Mh; z++)
     for (int x = 0; x < Mw; x++) {
       int c = tile(x, z);
@@ -682,6 +914,8 @@ void city_build(MapDef *m) {
         addlight(x + 0.5f, Mp->ceil - 0.25f, z + 1.6f, r, g, b, 4.5f, 0);
       }
   cars();
+  roof_extras();
+  elevated_rail();
   street_furniture();
   steam_vents();
   skyline();
@@ -696,6 +930,7 @@ void city_build(MapDef *m) {
       memcpy(bigSlot.ch, chunks, sizeof(Chunk) * nchunks); bigSlot.nch = nchunks;
       memcpy(bigSlot.l, clights, sizeof(CLight) * nclights); bigSlot.nl = nclights;
       memcpy(bigSlot.v, vents, sizeof vents); bigSlot.nv = nvents;
+      bigSlot.rail = hasRail; bigSlot.rail3[0] = railX0; bigSlot.rail3[1] = railX1; bigSlot.rail3[2] = railZc;
       curIsBig = 1;
     }
     if (getenv("KX_STAT")) fprintf(stderr, "miasto: %d wierzchołków, %d kwartałów, %d świateł\n", mb.n, nchunks, nclights);
@@ -735,6 +970,9 @@ static void split_chunks(void) {
 void city_lights(float time) {
   for (int i = 0; i < nclights; i++) {
     CLight *l = &clights[i];
+    if (l->kind == 4) continue; /* lampy ostrzegawcze: tylko poświata */
+    float dx = l->x - g_camPos.x, dz = l->z - g_camPos.z;
+    if (dx * dx + dz * dz > 48.0f * 48.0f) continue;
     float k = 1;
     if (l->kind == 2) k = 0.8f + 0.2f * sinf(time * 11 + l->phase) * sinf(time * 7.3f + l->phase * 2);
     if (l->kind == 1) k = (fmodf(time * 0.37f + l->phase, 9.0f) < 0.12f) ? 0.2f : 1.0f; /* mrugający neon */
@@ -749,6 +987,7 @@ void city_glows(void) {
       if (Mp->night) r_cone(l->x, l->y - 0.08f, l->z, 0.07f, 1.05f, l->y - 0.08f, l->r, l->g, l->b);
     }
     if (l->kind == 1) r_glow(l->x, l->y, l->z, 0.9f, l->r * 0.2f, l->g * 0.2f, l->b * 0.2f);
+    if (l->kind == 4 && fmodf((float)g_time * 0.8f + l->phase, 1.0f) < 0.5f) r_glow(l->x, l->y, l->z, Mp->night ? 2.2f : 1.0f, l->r * 0.5f, l->g * 0.5f, l->b * 0.5f);
   }
 }
 /* para z kanałów: kłęby wznoszące się i znoszone wiatrem */

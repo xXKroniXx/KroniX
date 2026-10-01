@@ -215,6 +215,28 @@ void mb_arch_z(MB *b, V3 c, float r, float thick, float hw, float a0, float a1, 
   }
 }
 
+void mb_beam(MB *b, V3 a, V3 c, float hw) {
+  V3 d = v3sub(c, a);
+  float len = sqrtf(v3dot(d, d));
+  if (len < 1e-5f) return;
+  V3 f = v3mul(d, 1.0f / len);
+  V3 up = fabsf(f.y) > 0.9f ? v3(1, 0, 0) : v3(0, 1, 0);
+  V3 s = v3norm(v3cross(up, f)), u = v3cross(f, s);
+  V3 P[8];
+  for (int i = 0; i < 8; i++) {
+    float sx = (i & 1) ? hw : -hw, sy = (i & 2) ? hw : -hw;
+    V3 base = (i & 4) ? c : a;
+    P[i] = v3add(base, v3add(v3mul(s, sx), v3mul(u, sy)));
+  }
+  /* cztery ściany boczne + dwa denka; kolejność wierzchołków daje normalne na zewnątrz */
+  mb_quad(b, P[0], P[1], P[5], P[4], 0, 0, hw * 2, len);
+  mb_quad(b, P[1], P[3], P[7], P[5], 0, 0, hw * 2, len);
+  mb_quad(b, P[2], P[6], P[7], P[3], 0, 0, len, hw * 2);
+  mb_quad(b, P[0], P[4], P[6], P[2], 0, 0, len, hw * 2);
+  mb_quad(b, P[0], P[2], P[3], P[1], 0, 0, hw * 2, hw * 2);
+  mb_quad(b, P[4], P[5], P[7], P[6], 0, 0, hw * 2, hw * 2);
+}
+
 void mb_rbox(MB *b, V3 mn, V3 mx, float e) {
   float sx = mx.x - mn.x, sy = mx.y - mn.y, sz = mx.z - mn.z;
   float lim = (sx < sy ? (sx < sz ? sx : sz) : (sy < sz ? sy : sz)) * 0.45f;

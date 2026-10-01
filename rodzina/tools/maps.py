@@ -607,6 +607,20 @@ for x in range(89, 129):
         ch = ',' if k in (0, 1, 5, 6) else '.'
         if k == 3 and x % 3 != 0: ch = '-'
         city[y][x] = ch
+# przecznice Loopu: State Street (na północ, do Grand) i Dearborn (na południe, do Chinatown)
+vstreet(99, 19, 47, width=5)
+vstreet(114, 55, 85, width=5)
+for x in range(100, 103):          # wjazdy przez chodniki (State)
+    for y in (17, 18, 48, 49): city[y][x] = '.'
+for x in range(115, 118):          # wjazdy przez chodniki (Dearborn)
+    for y in (53, 54, 86, 87): city[y][x] = '.'
+# kolejka nadziemna (the "L") nad ulicą główną Loopu: filary na wewnętrznych chodnikach
+L_PILLARS = []
+for x in range(91, 128, 4):
+    if 99 <= x <= 103 or 114 <= x <= 118: continue
+    for y in (49, 53):
+        city[y][x] = 'J'
+        L_PILLARS.append((x, y))
 # Michigan Avenue (pionowa, nad jeziorem) i Grant Park
 vstreet(129, 24, 92)
 for y in range(8, 102):
@@ -645,9 +659,9 @@ for y in range(1, MH - 1):
         inside = any(ox <= x < ox + w and oy <= y < oy + h for (ox, oy, w, h) in PARTS.values())
         if inside: continue
         c = city[y][x]
-        if c == ',' and (x * 7 + y * 3) % 23 == 0 and not any(city[y + dy][x + dx] in 'LT' for dx in (-1, 0, 1) for dy in (-1, 0, 1)):
+        if c == ',' and (x * 7 + y * 3) % 23 == 0 and not any(city[y + dy][x + dx] in 'LTJ' for dx in (-1, 0, 1) for dy in (-1, 0, 1)):
             # latarnia tylko na zewnętrznym chodniku (sąsiaduje z budynkiem)
-            if any(city[y + dy][x + dx] not in ',.-|LT"~' for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+            if any(city[y + dy][x + dx] not in ',.-|LTJ"~' for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
                 city[y][x] = 'L'
         elif c == '.' and (x * 13 + y * 5) % 17 == 0 and SIDE(x, y):
             # zaparkowane auto — tylko w bocznych uliczkach (główne arterie należą do ruchu)

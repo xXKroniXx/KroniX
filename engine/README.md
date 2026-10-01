@@ -53,6 +53,10 @@ r_frame_end();                          // HDR → bloom → ACES → ekran
 d2_begin(); d2_text(FONT_SERIF, 32, x, y, "Tekst", kolor); d2_end();
 ```
 
+Budowniczy siatek: `mb_box`, `mb_rbox` (fazowany), `mb_cyl`/`mb_cyl_x`/`mb_cyl_z`, `mb_sphere`,
+`mb_quad`/`mb_quad_world`, `mb_arch_z` (łuk), `mb_beam` (belka między dwoma punktami),
+`mb_append_tf` (wklejanie z macierzą). Kolor i warstwa ustawiane przez `mb_paint(kolor, warstwa)`.
+
 Wierzchołek ma kolor (alfa = emisja), warstwę tekstury, kość i flagi (`VF_ALPHATEST`,
 `VF_UNLIT`, `VF_NOFOG`, `VF_WATER`, `VF_FOLIAGE`, `VF_FIRE`). Kanał alfa tekstury = połysk.
 

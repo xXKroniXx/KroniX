@@ -323,6 +323,7 @@ void kx_game_init(int argc, char **argv) {
     humans_build();
     weapons_build();
     cars_build();
+    streetlife_build();
     humans_portraits_build();
   }
   settings_load();

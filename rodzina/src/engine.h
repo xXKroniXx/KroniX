@@ -34,7 +34,7 @@ extern int g_shake;
 enum { SFX_BLIP, SFX_OK, SFX_CANCEL, SFX_HIT, SFX_CRIT, SFX_FIRE, SFX_HEAL, SFX_DOOR,
        SFX_CHEST, SFX_LEVEL, SFX_ENCOUNTER, SFX_FLEE, SFX_DIE, SFX_MAGIC, SFX_TEXT,
        SFX_PISTOL, SFX_TOMMY, SFX_SHOTGUN, SFX_PUNCH, SFX_RELOAD, SFX_EMPTY, SFX_STEP, SFX_HURT,
-       SFX_HORN, SFX_PHONE, SFX_GLASS, SFX_BELL, SFX_TYPE, SFX_PAPER, SFX_CAR, SFX_COUNT };
+       SFX_HORN, SFX_PHONE, SFX_GLASS, SFX_BELL, SFX_TYPE, SFX_PAPER, SFX_CAR, SFX_TRAIN, SFX_COUNT };
 void game_audio_setup(void); /* sounds.c: rejestruje utwory i efekty w silniku */
 int art_exists(const char *name);
 extern int g_headbob;   /* kołysanie kamery przy chodzeniu: 0 wył., 1 słabe, 2 normalne */
@@ -222,6 +222,12 @@ int cars_enter(void);
 int cars_block(float x, float z, float r);
 int car_player(void);
 void cars_showcase(void);
+/* streetlife.c: przechodnie i kolejka nadziemna */
+void streetlife_build(void);
+void streetlife_map(void);
+void streetlife_update(void);
+void streetlife_lights(int night);
+void streetlife_draw(void);
 void combat_damage_ent(Ent *e, int dmg);
 /* znacznik celu misji: mapa+kafel albo NPC (id); map<0 i id NULL = brak */
 void world_marker_set(int map, int x, int y, const char *npcId);
