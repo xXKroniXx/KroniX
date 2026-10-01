@@ -1,0 +1,126 @@
+# Ścieżka lojalna: wysokie zaufanie Dona -> Rada wybiera Tomka, Vito zostaje prawą ręką.
+debug newgame
+autoplay 2
+untilidle
+choose 0
+debug script s_mama
+untilidle
+debug warp piekarnia 5 5
+choose 0
+debug script s_zbiry_piek
+untilidle
+expect PIEKARNIA_OK 1
+debug warp polonia 16 4
+choose 0 0
+debug script s_vito_polonia
+untilidle
+choose 0
+debug script s_bronek
+untilidle
+debug warp trattoria 17 4
+choose 0
+debug script s_don
+untilidle
+expect DON_POZNANY 1
+debug script s_luigi
+untilidle
+choose 1
+debug script s_rosa
+untilidle
+choose 0
+debug script s_paddy
+untilidle
+expect HARACZ_N 3
+debug script s_don
+untilidle
+expect HARACZ_OK 1
+debug warp italia 30 7
+choose 0
+debug script s_kierowca
+untilidle
+expect map 7
+debug script s_gino_doki
+untilidle
+expect DOKI_WALKA_OK 1
+choose 0 2
+debug script s_mickey
+untilidle
+debug script s_gino_doki
+untilidle
+expect DOKI_OK 1
+debug warp trattoria 17 4
+debug script s_don
+untilidle
+debug script s_kelner
+untilidle
+debug script s_lucia
+untilidle
+expect SZCZUR_KONFRONTACJA 1
+debug warp italia 30 7
+choose 2
+debug script s_kierowca
+untilidle
+expect SZCZUR_OK 1
+expect WALSH 1
+debug warp trattoria 17 4
+debug script s_don
+untilidle
+expect MISJA_TRIADA 1
+debug warp italia 30 7
+choose 1
+debug script s_kierowca
+untilidle
+choose 0 0
+debug script s_lee
+untilidle
+expect TRIADA_OK 1
+debug warp trattoria 17 4
+debug script s_don
+untilidle
+expect MISJA_BROWAR 1
+debug warp italia 30 7
+choose 2
+debug script s_kierowca
+untilidle
+choose 0 0
+debug script s_vito_browar
+untilidle
+expect BROWAR_OK 1
+debug warp trattoria 17 4
+debug script s_don
+untilidle
+expect MISJA_URODZINY 1
+choose 0
+debug script s_kane
+untilidle
+debug script s_don
+untilidle
+expect DON_NIE_ZYJE 1
+expect PIERSCIEN 1
+choose 0
+debug script s_enzo
+untilidle
+choose 0 0
+debug script s_vito_pogrzeb
+untilidle
+log po przejęciu:
+debug dump
+expect SZEF 1
+expect VITO_ZYJE 1
+expect mode 7
+debug endday
+debug endday
+debug endday
+debug endday
+debug endday
+expect mode 7
+debug save
+debug load
+expect SZEF 1
+debug mode world
+debug script s_ksiega
+wait 5
+expect mode 7
+debug set _UKONCZONO 1
+expect _UKONCZONO 1
+quit

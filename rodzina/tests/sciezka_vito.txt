@@ -1,0 +1,90 @@
+# Ścieżka nieufna: niskie zaufanie -> Rada wybiera Vito, który ginie; rodzina i tak trafia do Tomka.
+debug newgame
+autoplay 2
+untilidle
+choose 1
+debug script s_mama
+untilidle
+debug warp piekarnia 5 5
+choose 1
+debug script s_zbiry_piek
+untilidle
+expect PIEKARNIA_KUPIONA 1
+debug warp polonia 16 4
+choose 1 1
+debug script s_vito_polonia
+untilidle
+debug warp trattoria 17 4
+choose 1
+debug script s_don
+untilidle
+debug script s_luigi
+untilidle
+choose 1
+debug script s_rosa
+untilidle
+choose 2
+debug script s_paddy
+untilidle
+debug script s_don
+untilidle
+debug warp italia 30 7
+choose 0
+debug script s_kierowca
+untilidle
+debug script s_gino_doki
+untilidle
+choose 1
+debug script s_mickey
+untilidle
+expect MICKEY_ZYJE 1
+debug script s_gino_doki
+untilidle
+debug warp trattoria 17 4
+debug script s_don
+untilidle
+debug script s_lucia
+untilidle
+debug script s_kelner
+untilidle
+debug warp italia 30 7
+choose 1
+debug script s_kierowca
+untilidle
+expect STEFEK_OUT 1
+debug warp trattoria 17 4
+debug script s_don
+untilidle
+choose 1
+debug script s_lee
+untilidle
+expect TRIADA_WROG 1
+debug script s_don
+untilidle
+choose 0 1
+debug script s_vito_browar
+untilidle
+expect BROWAR_OK 1
+debug script s_don
+untilidle
+choose 2
+debug script s_kane
+untilidle
+choose 1
+debug script s_don
+untilidle
+expect DON_NIE_ZYJE 1
+choose 1
+debug script s_enzo
+untilidle
+choose 0
+debug script s_vito_pogrzeb
+untilidle
+log po przejęciu:
+debug dump
+expect SZEF 1
+expect VITO_ZYJE 0
+expect mode 7
+debug set _UKONCZONO 1
+expect _UKONCZONO 1
+quit

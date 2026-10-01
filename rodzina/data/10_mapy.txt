@@ -1,0 +1,390 @@
+# Mapy 3D — wygenerowane przez tools/maps.py, legenda kafli w src/world3d.c
+
+@map dom
+name "Mieszkanie Kowalskich"
+music polonia
+night 120
+interior 1.5
+bg wood
+tiles
+iiiiiiiiii
+iB___i_f_i
+i________i
+i__t_____i
+i___i__u_i
+i________i
+iiiiDiiiii
+endtiles
+npc mama 7 3 mama left s_mama
+obj zdjecie 3 3 papers down s_zdjecie
+warp 4 6 polonia 5 2 down
+
+@map polonia
+name "Polonia — Back of the Yards"
+music polonia
+night 120
+rain 1
+district 2
+entry 31 5 left
+tiles
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRRwDwRRRRRGGaDaGGRRRRRRRwwDwwRRR
+R,,,,,,,,,,,L,,,,,,,,,,,,L,,,,,,,R
+R,,,,,,,,,,,,,,,,,,,,,,,,,,,,,Xk,R
+R........c..............c.........
+R---------------------------------
+R.....c..........C................
+R,k,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,R
+R,,T,,,,,,,,L,,,,,,,,T,,,,,,L,,,,R
+RRRRRRRRWDWRRRRRRRRRRwwDwwRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+endtiles
+warp 5 1 dom 4 5 up
+warp 15 1 piekarnia 5 5 up
+warp 33 4 italia 1 5 right
+warp 33 5 italia 1 5 right
+warp 33 6 italia 1 5 right
+npc bronek 26 3 bronek down s_bronek
+npc menel 4 7 menel up s_menel wander
+npc robotnik 18 7 robotnik up s_robotnik wander
+npc zoska 9 8 zoska up s_zoska
+npc vito_p 16 3 vito down s_vito_polonia if PIEKARNIA_OK ifnot DON_POZNANY
+
+@map piekarnia
+name "Piekarnia Wiśniewskiego"
+music polonia
+night 120
+interior 1.6
+bg wood
+tiles
+QQQQQQQQQQQQ
+Qbbbbb_SSS_Q
+Q__________Q
+Q__________Q
+Q_X____t_k_Q
+Q__________Q
+Q__________Q
+QQQQQDQQQQQQ
+endtiles
+warp 5 7 polonia 15 2 down
+npc piekarz 3 2 piekarz down s_piekarz
+npc zb1 4 3 sal down s_zbiry_piek if MISJA_PIEKARNIA ifnot PIEKARNIA_OK
+npc zb2 6 3 enzo down s_zbiry_piek if MISJA_PIEKARNIA ifnot PIEKARNIA_OK
+
+@map italia
+name "Mała Italia"
+music italia
+night 120
+district 1
+entry 26 6 left
+tiles
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRwwwGaDaGwwwRRRRRgggDgggRRRRwGDGwR
+R,,,,,,,,,,,tt,,,,,,,,,,,,,,,,,,,,,R
+R,,,L,,,,,,,,,,,,L,,,,,,,,,,,,L,,,,R
+..........c..........c.............R
+-----------------------------------R
+..............c.................C..R
+R,,,,,,,,,,,,,L,,,,,,,,,,,,,,,,,,,,R
+R,T,,,,,,,,,,,,,,,,T,,L,,,,,,,,,,,TR
+RRRRRwwGDGwwRRRRRRRRRRRRwwaDawwRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+endtiles
+warp 0 4 polonia 32 5 left
+warp 0 5 polonia 32 5 left
+warp 0 6 polonia 32 5 left
+warp 8 1 trattoria 6 8 up
+warp 22 1 kosciol 7 11 up
+warp 32 1 sklep 4 5 up
+npc vito 9 2 vito down s_vito if DON_POZNANY ifnot DON_NIE_ZYJE
+npc luigi 8 8 pan up s_luigi
+npc rosa 12 7 pani up s_rosa
+npc paddy 27 8 paddy up s_paddy
+npc stefek 31 7 stefek up s_kierowca if DON_POZNANY ifnot STEFEK_OUT
+npc kierowca2 31 7 mafioso up s_kierowca if STEFEK_OUT
+npc gliniarz 20 2 gliniarz down s_gliniarz wander
+npc pani2 25 7 pani up s_przechodzien wander
+
+@map sklep
+name "Sklep z narzędziami Gina"
+music italia
+night 120
+interior 1.5
+bg wood
+tiles
+iiiiiiiiii
+iuuSSSuu_i
+i________i
+i_bbbbb__i
+i________i
+i________i
+iiiiDiiiii
+endtiles
+warp 4 6 italia 32 2 down
+npc gino 4 2 gino down s_gino
+
+@map trattoria
+name "Trattoria Bella Napoli"
+music italia
+night 120
+interior 1.8
+tiles
+jjjjjjjjjjjjjjjjjjjjjj
+jSSSSqqqqqqqqqjuuuuuuj
+jqqqqqqqqqqqqqjrrrrrrj
+jbbbbqqtqqqtqqjrrdddrj
+jqqqqqqqqqqqqqjrrrrrrj
+jqqqqqqtqqqtqqqrrrrrrj
+jqqqqqqqqqqqqqjrrrrrrj
+jPqqqqqtqqqtqqjrrrrfrj
+jqqqqqqqqqqqqqjjjjjjjj
+jjjjjjDjjjjjjjjjjjjjjj
+endtiles
+warp 6 9 italia 8 2 down
+npc don 18 2 don down s_don ifnot DON_NIE_ZYJE
+npc kelner 2 2 kelner down s_kelner
+npc lucia 10 6 lucia left s_lucia
+npc vito_hq 8 4 vito down s_vito_hq if SZEF if VITO_ZYJE
+npc bronek_hq 12 7 bronek up s_bronek_hq if SZEF if BRONEK
+npc kane 5 6 kane right s_kane if MISJA_URODZINY ifnot STRZELANINA
+npc gosc1 9 2 pan down s_gosc if MISJA_URODZINY ifnot STRZELANINA
+npc gosc2 12 4 pani left s_gosc if MISJA_URODZINY ifnot STRZELANINA
+obj ksiega 18 3 ledger up s_ksiega if SZEF
+
+@map kosciol
+name "Kościół św. Rocha"
+music kosciol
+night 120
+interior 2.6
+bg stone
+tiles
+###############
+#_____AAA_____#
+g_____________g
+#_hhhh___hhhh_#
+g_____________g
+#_hhhh___hhhh_#
+g_____________g
+#_hhhh___hhhh_#
+g_____________g
+#_hhhh___hhhh_#
+g_____________g
+#_____________#
+#######D#######
+endtiles
+warp 7 12 italia 22 2 down
+npc ksiadz 7 2 ksiadz down s_ksiadz
+npc lucia_k 5 4 lucia down s_lucia_pogrzeb if MISJA_POGRZEB ifnot POGRZEB_OK
+npc vito_k 9 4 vito down s_vito_pogrzeb if MISJA_POGRZEB ifnot POGRZEB_OK
+npc enzo_k 11 8 enzo up s_enzo if MISJA_POGRZEB ifnot POGRZEB_OK
+npc babcia 3 6 mama down s_babcia
+
+@map doki
+name "Doki nad rzeką"
+music doki
+night 120
+rain 1
+district 3
+floors 2
+entry 1 6 right
+tiles
+MMMMMMMMMMMMMMMMMMMMMM==~~~~~~
+Mooooooooooooooooooooo==~~~~~~
+MoXXoookkooooooXXooook==~~~~~~
+MoXXoooooooooooXoookoo==~~~m~~
+MoooooooooooXooooooooo==~~~~~~
+MoooLoooooooooooooLooo========
+ooooooooCCoooooooooooo========
+oooooooooooooooooooooo========
+Mooooooooooooooooooooo==~~~~~~
+MoooooooooooooooXXoooo==~~m~~~
+MoocoooooXXoooooXooooo==~~~~~~
+MooookkooooookooooooXo==~~~~~~
+MoooooooooooLooooooooo==~~~~~~
+MMMMMMMMMMMMMMMMMMMMMM==~~~~~~
+endtiles
+warp 0 6 italia 30 6 left
+warp 0 7 italia 30 6 left
+npc gino_d 12 6 gino left s_gino_doki if MISJA_DOKI ifnot DOKI_OK
+npc dokowiec 20 7 dokowiec left s_dokowiec wander
+npc mickey 18 7 mickey left s_mickey if DOKI_WALKA_OK ifnot MICKEY_DONE
+
+@map chinatown
+name "Chinatown"
+music chiny
+night 120
+district 5
+entry 2 5 right
+tiles
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRaGaRRRaaDaaRRRRGGaDaGGRRRRRR
+R,,L,,,,,L,,,,,L,,,,,L,,,,,L,R
+R,,,,,,,,,,,,,,,,,,,,,,,,,,,,R
+..............c..............R
+-----------------------------R
+......................c......R
+R,,,,,,,,,,,,,,,,,,,,,,,,,,,,R
+R,,,,,L,,,,,,L,,,,,,,,,,L,,,,R
+RRRRGaGaGRRRRRRaGGGaRRRRRRRRRR
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+endtiles
+warp 0 4 italia 30 6 left
+warp 0 5 italia 30 6 left
+warp 0 6 italia 30 6 left
+warp 10 1 herbaciarnia 6 7 up
+npc straz_t 11 2 triada down s_straz_triady
+npc chinka 18 7 pani up s_przechodzien wander
+npc sprzedawca 20 2 triada down s_sprzedawca
+
+@map herbaciarnia
+name "Herbaciarnia Złoty Smok"
+music chiny
+night 120
+interior 1.7
+tiles
+zzzzzzzzzzzzzz
+z__j_______j_z
+z_t____d_____z
+z_____rrr____z
+z_t___rrr__t_z
+z_____rrr____z
+z_t__________z
+z____________z
+zzzzzzDzzzzzzz
+endtiles
+warp 6 8 chinatown 10 2 down
+npc lee 7 1 lee down s_lee
+npc tri1 4 2 triada down s_straz_triady
+npc tri2 10 2 triada down s_straz_triady
+
+@map browar
+name "Levee — browar Russo"
+music akcja
+night 120
+interior 2.4
+district 8
+entry 13 14 up
+tiles
+MMMMMMMMMMMMMMMMMMMMMMMMMMMM
+MooooooooooooooooooooooooooM
+MoooooooooooooooooooooXXoooM
+MoooVooVooVoooooXXooooXooooM
+MoooooooooooooooXookkooooooM
+MooooooooooooooooooooooookoM
+MooooooooooooooooooooooooooM
+MoooVooVooVooooooooooooooooM
+MooooooooooooooMMMMooMMMMMoM
+MooooooooooooooooooooooooooM
+MooooooooooooooooooooooooooM
+MoooooCCooooXXooooooooooXooM
+MooXXoookkooooooooXoooooXooM
+MooooooooooooookooookooooooM
+MooooooooooooooooooooooooooM
+MMMMMMMMMMMMMooMMMMMMMMMMMMM
+endtiles
+warp 13 15 italia 30 6 left
+warp 14 15 italia 30 6 left
+npc vito_b 12 13 vito up s_vito_browar if MISJA_BROWAR ifnot BROWAR_OK
+npc robotnik_b 21 12 robotnik left s_robotnik_browar if BROWAR_OK
+
+@map op_ulica
+name "Zaułek"
+music akcja
+night 140
+rain 1
+floors 4
+entry 3 12 up
+tiles
+WWWWWWWWWWWWWWWWWWWWWWWWWWWW
+WRRRRRRRRRRRRRRRRRRRRRRRRRRW
+WR::::::L:::::::::::::::::RW
+WR::XX::::::::::::::XX::::RW
+WR:::::::X::::c:::::::::::RW
+WR::::::::::::::k:::::::::RW
+WRWWWWW:WWWW::::::::::::X:RW
+WR::::::::::::X::::k::L:::RW
+WR:k::::::k:::::::::::::::RW
+WR::::::::::::::WWWWW:WWWWRW
+WR::::::::::X:::::::::::::RW
+WR::::XX::CC:::::::::::k::RW
+WR:::::::::::::L::X:::::::RW
+WR:FFFFF:::::k::::::::::::RW
+WRRRRRRRRRRRRRRRRRRRRRRRRRRW
+WWWWWWWWWWWWWWWWWWWWWWWWWWWW
+endtiles
+
+@map op_magazyn
+name "Magazyn"
+music akcja
+night 120
+interior 2.6
+entry 2 15 up
+tiles
+MMMMMMMMMMMMMMMMMMMMMMMMMM
+MooooooooooooooooooooooooM
+MooooooooooooooooooooooVoM
+MoooXXooooXXooooXXooookooM
+MoooXXooooXXooooXXooookooM
+MoooXXooooXXooooXXoooooooM
+MoooXXooooXXooooXXoooooooM
+MooooooooooooooooooooooooM
+MokoooookoooookooooVokoooM
+MooooooooooooooooooooooooM
+MoooXkooooXkooooXkoooooooM
+MoooXkooooXkooooXkoooooooM
+MoooXkooooXkooooXkoooooooM
+MoooXkooooXkooooXkoooooooM
+MoooooooooooooooooooookooM
+MookooooooCCoooooooooooooM
+MooooooooooooooooooooooooM
+MMMMMMMMMMMMMMMMMMMMMMMMMM
+endtiles
+
+@map op_bank
+name "First National Bank"
+music akcja
+interior 2.4
+entry 11 13 up
+tiles
+QQQQQQQQQQQQQQQQQQQQQQQQ
+QIIIIIIIIIqqqqqqqqqqqQQQ
+QqqXqqqmqIqqqqqqqqqqqqQQ
+QqqqqqqqqIqqdqqqdqqqqqqQ
+QqmqqXqqqIqqqqqqqqqqqqqQ
+QIIIIqIIIIqqqqqqqqqqqqqQ
+Qqqqqqqqqqqqqqqqqqqqqq_Q
+Qbbbbbbbbbbbqqqbbbbbbb_Q
+Qqqqqqqqqqqqqqqqqqqqqq_Q
+QqqtqqqqqqqqqqqqqqqqtqqQ
+QqqqqqqqhhhhhqqqqqqqqqqQ
+QqqqqqqqqqqqqqqqqqqqqqqQ
+QqqtqqqqhhhhhqqqqqqqtqqQ
+QqqqqqqqqqqqqqqqqqqqqqqQ
+QQQQQQQQQQQDQQQQQQQQQQQQ
+endtiles
+
+@map op_hq
+name "Rezydencja"
+music boss
+night 120
+interior 1.9
+entry 9 14 up
+tiles
+jjjjjjjjjjjjjjjjjjjjjjjjjj
+juuuurrrrrrjrrrrrrrrrrfrrj
+jrrrrrrrrrrjrrrrrrrrrrrrrj
+jrrrddrrrrrjrrttrrrrttrrrj
+jrrrrrrrrrrrrrrrrrrrrrrrrj
+jrrrrrrrrrrjrrrrrrrrrrrrrj
+jjjjjjrjjjjjjjjjjrjjjjjjjj
+jqqqqqqqqqqqqqqqqqqqqqqqqj
+jqqPqqqqqqqqqqqqqqqqqqqqqj
+jqqqqqqqtqqqqqqqtqqqqqqbbj
+jqqqqqqqqqqqqqqqqqqqqqqqqj
+jjjjjjjjqqqjjjjjjjjjjjjjjj
+jrrrrrrrqqqrrrrrrrrrrrrrrj
+jrrhhrrrrrrrrrrrrrrhhrrrrj
+jrrrrrrrrrrrrrrrrrrrrrrrrj
+jjjjjjjjjjjDjjjjjjjjjjjjjj
+endtiles
+

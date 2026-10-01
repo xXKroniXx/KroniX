@@ -1,0 +1,233 @@
+# KroniX: Rodzina — dane gry (Chicago 1932–1934)
+# Pliki data/*.txt są sklejane w kolejności nazw i wbudowywane w .exe.
+
+@game
+title "KroniX: Rodzina"
+start dom 2 2 right s_intro
+hq trattoria 17 4 up
+stat ZAUFANIE "Zaufanie Dona"
+stat REL_IRL "Irlandczycy"
+stat REL_TRI "Triada"
+stat REL_KAN "Victor Kane"
+
+speaker nar "" -
+speaker tomek "Tomek" tomek
+speaker mama "Mama" mama
+speaker bronek "Bronek" bronek
+speaker zoska "Zośka" zoska
+speaker menel "Kulawy Józek" menel
+speaker robotnik "Robotnik" robotnik
+speaker piekarz "Pan Wiśniewski" piekarz
+speaker zbir "Zbir Russo" sal
+speaker zbir2 "Drugi zbir" enzo
+speaker vito "Vito Marino" vito
+speaker don "Don Salvatore" don
+speaker lucia "Lucia" lucia
+speaker kelner "Kelner Beppe" kelner
+speaker luigi "Luigi" pan
+speaker rosa "Signora Rosa" pani
+speaker paddy "Paddy O'Hara" paddy
+speaker stefek "Stefek" stefek
+speaker gino "Gino" gino
+speaker tony "Kierowca Tony" mafioso
+speaker glina "Posterunkowy" gliniarz
+speaker mickey "Mickey" mickey
+speaker dokowiec "Dokowiec" dokowiec
+speaker walsh "Detektyw Walsh" walsh
+speaker lee "Lee Wong" lee
+speaker triada "Strażnik Triady" triada
+speaker kane "Victor Kane" kane
+speaker ksiadz "Ojciec Bernardo" ksiadz
+speaker enzo "Enzo" enzo
+speaker russo "Carmine Russo" russo
+speaker gosc "Gość" pan
+speaker babcia "Nonna Carla" mama
+speaker capo "Capo Fabrizio" lucky
+
+# ---------------------------------------------------------------- przedmioty
+@item apteczka
+name "Apteczka"
+desc "Bandaże i jodyna. Przywraca 50 zdrowia."
+type heal
+power 50
+price 60
+
+@item whisky
+name "Whisky"
+desc "Kanadyjska. Przywraca 25 zdrowia."
+type heal
+power 25
+price 25
+
+@item chleb
+name "Chleb od Wiśniewskiego"
+desc "Jeszcze ciepły. Przywraca 15 zdrowia."
+type heal
+power 15
+price 5
+
+@item naboje_p
+name "Naboje .45 (pistolet)"
+desc "14 naboi do Colta."
+type ammo
+power 1
+price 30
+
+@item naboje_s
+name "Śrut (strzelba)"
+desc "8 ładunków do strzelby."
+type ammo
+power 2
+price 45
+
+@item naboje_t
+name "Magazynek bębnowy"
+desc "50 naboi do Thompsona."
+type ammo
+power 3
+price 80
+
+@item kamizelka
+name "Kamizelka kuloodporna"
+desc "Pochłania połowę obrażeń. +50 pancerza."
+type armor
+power 50
+price 250
+
+@item pistolet
+name "Colt M1911"
+desc "Pistolet. 7 naboi w magazynku."
+type weapon
+power 1
+price 150
+
+@item strzelba
+name "Strzelba Winchester"
+desc "Potężna z bliska."
+type weapon
+power 2
+price 450
+
+@item tommy
+name "Thompson M1928"
+desc "Maszynka do pisania. 50 naboi w bębnie."
+type weapon
+power 3
+price 1200
+
+@item koperta
+name "Koperta z haraczem"
+desc "Pieniądze z Małej Italii dla Dona."
+type key
+
+@item pierscien
+name "Pierścień Dona"
+desc "Sygnet z herbem rodziny Marino."
+type key
+
+# ---------------------------------------------------------------- wrogowie (stats HP OBRAŻENIA CELNOŚĆ SZYBKOŚĆ KASA)
+@enemy zbir
+name "Zbir"
+sprite zbir
+stats 35 8 40 10 10
+weapon pistol
+
+@enemy zbir2
+name "Bandzior"
+sprite zbir2
+stats 30 7 55 12 5
+weapon fists
+
+@enemy rus_bandzior
+name "Pięściarz Russo"
+sprite sal
+stats 28 6 55 12 5
+weapon fists
+
+@enemy rus_zbir
+name "Żołnierz Russo"
+sprite sal
+stats 40 9 45 10 15
+weapon pistol
+
+@enemy rus_tommy
+name "Cyngiel Russo"
+sprite enzo
+stats 50 7 35 9 25
+weapon tommy
+
+@enemy rus_boss
+name "Carmine Russo"
+sprite russo
+stats 170 12 55 9 400
+weapon tommy
+boss 1
+
+@enemy irl_zbir
+name "Irlandczyk"
+sprite zbir2
+stats 40 9 45 11 15
+weapon pistol
+
+@enemy irl_shot
+name "Irlandczyk ze strzelbą"
+sprite paddy
+stats 45 16 50 9 20
+weapon shotgun
+
+@enemy irl_boss
+name "Liam O'Donnell"
+sprite sean
+stats 150 16 55 10 300
+weapon shotgun
+boss 1
+
+@enemy tri_zbir
+name "Wojownik Triady"
+sprite triada
+stats 35 10 50 13 15
+weapon pistol
+
+@enemy tri_boss
+name "Lee Wong"
+sprite lee
+stats 140 12 60 11 300
+weapon pistol
+boss 1
+
+@enemy kan_zbir
+name "Ochroniarz Kane'a"
+sprite ochroniarz
+stats 45 9 45 10 20
+weapon pistol
+
+@enemy kan_boss
+name "Victor Kane"
+sprite kane
+stats 140 11 50 9 500
+weapon tommy
+boss 1
+
+@enemy glina
+name "Policjant"
+sprite gliniarz
+stats 40 9 45 10 0
+weapon pistol
+
+@enemy straznik
+name "Strażnik bankowy"
+sprite doyle
+stats 45 15 45 9 0
+weapon shotgun
+
+@enemy nasz
+name "Żołnierz Rodziny"
+sprite mafioso
+stats 70 10 50 11 0
+weapon tommy
+
+@enemy vito_ally
+name "Vito"
+sprite vito
+stats 120 12 55 11 0
+weapon tommy

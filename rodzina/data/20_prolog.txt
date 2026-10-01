@@ -1,0 +1,1120 @@
+# ====================================================================== PROLOG: POLONIA
+@script s_intro
+music polonia
+set ZAUFANIE 20
+set REL_RUS -30
+set VITO_ZYJE 1
+set GORACZKA 15
+wait 20
+fade in
+say - "{s}Chicago, październik 1932.{-} Polonia — dzielnica rzeźni, kominów i ludzi, którym skończyła się praca."
+say - "Od kiedy zamknęli rzeźnię Armoura, połowa ulicy żyje z długów. Druga połowa z tego, co da się ukraść."
+say - "Ty jesteś Tomek Kowalski. Dwadzieścia trzy lata, dwie pięści i matka, która martwi się za was oboje."
+say - "{y}Sterowanie:{-} WASD — ruch, mysz — rozglądanie się, E — rozmowa i drzwi, LPM — strzał, R — przeładowanie, Shift — bieg, Esc — menu."
+objective "Porozmawiaj z mamą"
+quest glowne "Porozmawiaj z mamą."
+
+@script s_mama
+as mama
+if SZEF szef
+if DON_NIE_ZYJE pogrzeb
+if DON_POZNANY wlosi
+if MISJA_PIEKARNIA juz
+"Tomek, dobrze, że jesteś. Pan Wiśniewski z piekarni znowu miał gości."
+"Ci Włosi od Russo. Przychodzą co tydzień i biorą więcej, niż on zarabia."
+menu
+ opt "Pójdę do niego. Zobaczę, co się da zrobić." idz
+ opt "To nie nasza sprawa, mamo." nienasza
+endmenu
+:nienasza
+"Nie nasza? Wiśniewski dawał ci chleb na krechę przez całą zimę. Pamiętasz?"
+"Idź. Tylko nie rób głupot."
+goto start
+:idz
+"Tylko uważaj na siebie. Masz w sobie za dużo ojca."
+:start
+set MISJA_PIEKARNIA 1
+objective "Idź do piekarni Wiśniewskiego (drzwi ze szklaną witryną)"
+quest glowne "Ludzie Russo nękają Pana Wiśniewskiego. Idź do piekarni po drugiej stronie ulicy."
+end
+:juz
+"Piekarnia jest na tej samej ulicy, za witryną. Idź, synku."
+end
+:wlosi
+"Ludzie gadają, że chodzisz do Włochów. Do tego... Dona."
+menu
+ opt "Płacą dobrze. Wreszcie spłacimy czynsz." kasa
+ opt "Chcę, żeby nikt już nie bił Wiśniewskiego." pomoc
+endmenu
+:kasa
+"Pieniądze. Twój ojciec też mówił, że to tylko na chwilę."
+end
+:pomoc
+"Dobre serce w złym miejscu. Módl się, żeby wystarczyło."
+end
+:pogrzeb
+"Słyszałam o Donie. Matka Boska ma go w opiece, choć nie wiem, czy zasłużył."
+"A ty? Ty jesteś cały? To najważniejsze."
+end
+:szef
+"Teraz ty jesteś tym, do którego wszyscy przychodzą po pomoc. Pamiętaj, skąd jesteś."
+end
+
+@script s_zdjecie
+say - "Zdjęcie ojca w mundurze. Zginął w Argonne, kiedy miałeś dziewięć lat."
+"Na odwrocie, jego ręką: {y}„Rodzina to jedyne, czego nie można kupić.”{-}"
+
+@script s_piekarz
+as piekarz
+if PIEKARNIA_OK dzieki
+if MISJA_PIEKARNIA strach
+"Dzień dobry, Tomku. Dzisiaj tylko razowy, białego nie starczyło."
+end
+:strach
+"Tomek... Oni tu są. Mówią, że podwajają opłatę. Nie mam z czego."
+"Nie wtrącaj się, chłopcze. To ludzie Russo. Oni nie żartują."
+end
+:dzieki
+"Bóg ci zapłać, Tomku. Weź chleb, weź ile chcesz."
+end
+
+@script s_zbiry_piek
+as zbir
+"Na co się gapisz, Polaczku? Pan piekarz właśnie płaci za ochronę."
+as zbir2
+"Ochronę przed takimi jak ty, he he."
+menu
+ opt "Zostawcie go w spokoju. Wynocha." walka
+ opt "Ile jest winien? Zapłacę za niego." placi ifgold 20
+ opt "Już wychodzę." wyjdz
+endmenu
+:wyjdz
+as zbir
+"Grzeczny chłopiec."
+end
+:placi
+cash -20
+as zbir
+"Dwadzieścia dolców? Ha. Na dziś wystarczy. Za tydzień wrócimy, piekarzu."
+set PIEKARNIA_OK 1
+set PIEKARNIA_KUPIONA 1
+goto po
+:walka
+as zbir
+"Polaczek chce oberwać. Bierz go, Carlo!"
+music walka
+set PIEKARNIA_OK 1
+spawn rus_bandzior 4 3
+spawn rus_bandzior 6 3
+objective "Pobij ludzi Russo (LPM — pięści)"
+waitkill
+music polonia
+add ZAUFANIE 10
+set BIJATYKA 1
+:po
+as piekarz
+"Tomku... Na litość boską. Russo tego nie zapomni."
+"Weź chleb. Weź wszystko."
+give chleb 2
+objective "Wyjdź na ulicę"
+quest glowne "Pomogłeś Wiśniewskiemu. Na ulicy ktoś na ciebie czeka."
+
+@script s_vito_polonia
+as vito
+if DON_SZUKA juz
+"Ty jesteś ten Polak, co tak ładnie obił ludzi Russo?"
+ifnot BIJATYKA zaplacil
+"Widziałem przez szybę. Lewy prosty jak u Dempseya."
+goto dalej
+:zaplacil
+"Słyszałem, że zapłaciłeś za piekarza. Hojny gest. Głupi, ale hojny."
+:dalej
+"Vito Marino. Mój wuj to Don Salvatore Marino. Może słyszałeś."
+menu
+ opt "Każdy w Chicago słyszał." kazdy
+ opt "Czego chcesz?" czego
+endmenu
+:kazdy
+add ZAUFANIE 2
+"Tym lepiej. Oszczędzimy sobie wstępów."
+:czego
+"Russo myśli, że Polonia to jego podwórko. Don myśli inaczej."
+"Don chce cię poznać. Trattoria Bella Napoli, Mała Italia — idź ulicą na wschód."
+menu
+ opt "Przyjdę." przyjde
+ opt "Nie pracuję dla Włochów." nie
+endmenu
+:nie
+"Tak mówi każdy, kto jeszcze nie wie, ile płacimy. Drzwi są otwarte."
+goto koniec
+:przyjde
+"Dobrze. Don nie lubi czekać."
+:koniec
+set DON_SZUKA 1
+objective "Idź do trattorii Bella Napoli w Małej Italii (na wschód)"
+quest glowne "Don Salvatore chce cię poznać. Trattoria Bella Napoli w Małej Italii — ulicą na wschód."
+end
+:juz
+"Trattoria Bella Napoli. Na wschód, potem pierwsze drzwi z markizą."
+
+@script s_bronek
+as bronek
+if SZEF szef
+if BRONEK juz
+"Tomek! Słyszałem, co zrobiłeś w piekarni. Cała ulica gada."
+ifnot DON_POZNANY nowy
+"Mówią też, że chodzisz do Włochów. Do Dona Marino."
+menu
+ opt "Chodź ze mną. Przyda mi się ktoś, komu ufam." zabierz
+ opt "Lepiej się trzymaj z daleka, Bronek." zostaw
+endmenu
+:zabierz
+"Ja? Kowal z Polonii u Włochów?"
+"...A, do diabła. Lepsze to niż kucie podków dla rzeźni, której już nie ma."
+"Ale jak już coś zaczniesz na swoje — wołaj mnie pierwszego."
+set BRONEK 1
+toast "Bronek dołączy do ciebie, gdy przejmiesz rodzinę"
+end
+:zostaw
+"Może i masz rację. Uważaj na siebie."
+end
+:nowy
+"Uważaj. Ludzie Russo mają długą pamięć."
+end
+:juz
+"Pamiętaj — jak zaczniesz swoje, wołaj mnie."
+end
+:szef
+"Szefie. Brzmi dziwnie, co? Ale pasuje do ciebie."
+
+@script s_menel
+as menel
+if JOZEK_DOSTAL dzieki
+"Panie Tomku... Na kawałek chleba. Od tygodnia nic nie jadłem."
+menu
+ opt "Masz, Józek. Dwa dolce." daj ifgold 2
+ opt "Weź chleb." chleb ifhas chleb
+ opt "Nie mam." nie
+endmenu
+:daj
+cash -2
+goto ok
+:chleb
+take chleb
+:ok
+set JOZEK_DOSTAL 1
+add POLONIA 1
+"Bóg zapłać. Wie pan... ja tu wszystko widzę. Jak będzie pan czegoś potrzebował — Kulawy Józek wie."
+end
+:nie
+"Rozumiem. Teraz nikt nie ma."
+end
+:dzieki
+"Polonia pamięta, kto jej pomagał, panie Tomku."
+
+@script s_robotnik
+as robotnik
+if SZEF szef
+"Rzeźnia zamknięta, fabryka zamknięta. Został tylko bimber i Włosi."
+end
+:szef
+"Słyszałem, że twoi ludzie płacą za robotę w browarze. Masz miejsce dla jeszcze jednego?"
+
+@script s_zoska
+as zoska
+if SZEF szef
+"Tomek! Do baru nie wejdziesz, zamknęli nas za sprzedawanie piwa."
+"Ale jakbyś miał skąd brać whisky... ja mam klientów."
+add POLONIA 1
+end
+:szef
+"Słyszałam! Tomek Kowalski, szef rodziny. Jak ci mogę mówić, „Don Tomasso”?"
+
+# ====================================================================== MAŁA ITALIA
+@script s_vito
+as vito
+if MISJA_BROWAR browar
+"Wuj jest w środku. Zachowuj się."
+end
+:browar
+"Gotowy na browar? Jedziemy, kiedy powiesz. Kierowca czeka przy aucie."
+
+@script s_luigi
+as luigi
+if HARACZ_LUIGI juz
+if MISJA_HARACZ placi
+"Buongiorno. Najlepsza oliwa w Chicago — dla przyjaciół Dona taniej."
+end
+:placi
+"Ach, nowy człowiek Dona. Proszę, wszystko się zgadza. Sto dolarów."
+"Pozdrów Dona. Niech Bóg ma go w opiece."
+set HARACZ_LUIGI 1
+add HARACZ_N 1
+call s_haracz_check
+end
+:juz
+"Wszystko zapłacone, signore."
+
+@script s_rosa
+as rosa
+if HARACZ_ROSA juz
+if MISJA_HARACZ placi
+"Kwiaty dla dziewczyny, młody człowieku?"
+end
+:placi
+"Pieniądze dla Dona... Mam tylko połowę. Mój Paolo jest chory, lekarz kosztuje."
+menu
+ opt "Wezmę połowę. Resztę oddasz, jak Paolo wyzdrowieje." polowa
+ opt "Don mówił: całość. Przykro mi." calosc
+ opt "Dołożę z własnej kieszeni ($50)." doloz ifgold 50
+endmenu
+:polowa
+"Grazie, grazie... Nie zapomnę ci tego."
+set ROSA_POLOWA 1
+goto ok
+:calosc
+"Dobrze... Masz. Niech ci Bóg wybaczy."
+add ZAUFANIE 3
+goto ok
+:doloz
+cash -50
+"Ty... dlaczego? Jesteś inny niż oni."
+:ok
+set HARACZ_ROSA 1
+add HARACZ_N 1
+call s_haracz_check
+end
+:juz
+"Niech Madonna cię strzeże."
+
+@script s_paddy
+as paddy
+if HARACZ_PADDY juz
+if MISJA_HARACZ placi
+"Pub zamknięty, chłopcze. Prohibicja. Pijemy herbatę. Bardzo mocną herbatę."
+end
+:placi
+"Haracz dla Marino? Ha! Płacę O'Donnellowi z North Side, nie wam."
+"Jeden Irlandczyk w Małej Italii i już wam przeszkadza?"
+menu
+ opt "Albo płacisz, albo twój pub spłonie. Wybieraj." grozba
+ opt "Dobra. Dorzucę za ciebie z własnej kieszeni ($50)." doloz ifgold 50
+ opt "Powiem Donowi, że odmówiłeś." odpusc
+endmenu
+:grozba
+"...Szlag. Masz. Ale O'Donnell się o tym dowie."
+add REL_IRL -10
+add ZAUFANIE 5
+set PADDY_ZASTRASZONY 1
+goto ok
+:doloz
+cash -50
+"Hę? Płacisz za mnie? Albo jesteś głupi, albo sprytniejszy, niż wyglądasz."
+"Zapamiętam to, Polaku. O'Donnell też się dowie — że jest w tej rodzinie ktoś rozsądny."
+add REL_IRL 10
+goto ok
+:odpusc
+"Powiedz. Niech Don sam przyjdzie."
+set PADDY_ODMOWIL 1
+:ok
+set HARACZ_PADDY 1
+add HARACZ_N 1
+call s_haracz_check
+end
+:juz
+"Herbaty?"
+
+@script s_haracz_check
+iflt HARACZ_N 3 nie
+give koperta
+objective "Wróć z haraczem do Dona (trattoria)"
+quest glowne "Zebrałeś haracz. Zanieś kopertę Donowi."
+:nie
+
+@script s_kierowca
+ifnot STEFEK_OUT stefek
+as tony
+goto menu
+:stefek
+as stefek
+if SZCZUR_KONFRONTACJA szczur
+:menu
+if SZEF szef
+"Dokąd jedziemy?"
+menu
+ opt "Doki" doki if MISJA_DOKI
+ opt "Chinatown" chiny if MISJA_TRIADA
+ opt "Browar Russo w Levee" browar if MISJA_BROWAR
+ opt "Zostaję tutaj" nic
+endmenu
+goto nic
+:szef
+"Dokąd, szefie?"
+menu
+ opt "Doki" doki
+ opt "Chinatown" chiny
+ opt "Levee (browar)" browar
+ opt "Polonia" polonia
+ opt "Zostaję tutaj" nic
+endmenu
+:nic
+end
+:doki
+fade out
+warp doki 1 6 right
+fade in
+end
+:chiny
+fade out
+warp chinatown 2 5 right
+fade in
+end
+:browar
+fade out
+warp browar 13 14 up
+fade in
+end
+:polonia
+fade out
+warp polonia 31 5 left
+fade in
+end
+:szczur
+call s_szczur_stefek
+
+@script s_gliniarz
+as glina
+if SZEF szef
+"Rozejść się, rozejść. Nie ma tu nic do oglądania."
+end
+:szef
+"Dzień dobry, panie Kowalski. Wszystko spokojnie. Tak jak pan lubi."
+
+@script s_przechodzien
+say - "Przechodzień spieszy się i unika twojego wzroku."
+
+@script s_gino
+as gino
+"Narzędzia, gwoździe... i inne rzeczy, dla tych, co wiedzą, o co pytać."
+ifnot DON_POZNANY nie
+shop apteczka whisky naboje_p naboje_s naboje_t kamizelka pistolet strzelba tommy
+end
+:nie
+"Ty jesteś nowy. Wróć, jak Don za ciebie poręczy."
+
+@script s_kelner
+as kelner
+if SZEF szef
+if MISJA_SZCZUR szczur
+"Espresso? Grappa? Dla przyjaciół Dona grappa jest herbatą, capisce?"
+end
+:szczur
+"Stefek, kierowca? Ostatnio płaci za wszystko nowiutkimi banknotami."
+"Skąd chłopak od kierownicy ma tyle forsy, hm?"
+ifnot TROP_KELNER nowy
+end
+:nowy
+set TROP_KELNER 1
+add SZCZUR_TROP 1
+call s_szczur_check
+end
+:szef
+"Szefie. To co zwykle? Espresso, bez cukru, z odrobiną strachu dla konkurencji."
+
+# ====================================================================== DON SALVATORE
+@script s_don
+as don
+if MISJA_URODZINY urodziny
+if BROWAR_OK po_browarze
+if MISJA_BROWAR browar_trwa
+if TRIADA_OK po_triadzie
+if MISJA_TRIADA triada_trwa
+if SZCZUR_OK po_szczurze
+if MISJA_SZCZUR szczur_trwa
+if DOKI_OK po_dokach
+if MISJA_DOKI doki_trwa
+if HARACZ_OK po_haraczu
+if MISJA_HARACZ haracz_trwa
+# ---------------------------------- pierwsze spotkanie
+music italia
+"Siadaj, chłopcze. Ty jesteś Tomasz. Polak z Polonii, który nie boi się ludzi Russo."
+"Wiesz, czym różni się rodzina od gangu?"
+menu
+ opt "Gang bierze. Rodzina daje i bierze." daje
+ opt "Rodzina ma lepsze garnitury." garnitury
+ opt "Nie wiem, Don Salvatore." niewiem
+endmenu
+:daje
+add ZAUFANIE 5
+"Bene. Rodzina daje ochronę, pracę, sprawiedliwość, kiedy policja śpi. I bierze za to szacunek."
+goto dalej
+:garnitury
+"Ha! Też. Ale głównie tym, że w rodzinie się nie zdradza."
+goto dalej
+:niewiem
+add ZAUFANIE 2
+"Uczciwa odpowiedź. Rzadka w tym mieście. Rodzina to ludzie, którzy się nie zdradzają."
+:dalej
+"Russo chce Polonii, chce Doków, chce wszystkiego. Pies, który myśli, że jest wilkiem."
+"Potrzebuję ludzi, którzy nie mają długów u Russo. I którzy umieją używać pięści."
+"Zaczniesz od czegoś prostego. Haracz z mojej ulicy: Luigi z oliwą, Signora Rosa od kwiatów i Paddy O'Hara z pubu."
+"Weź to. Na wszelki wypadek."
+weapon pistol 21
+set DON_POZNANY 1
+set MISJA_HARACZ 1
+objective "Zbierz haracz: Luigi, Signora Rosa, Paddy O'Hara (ulica przed trattorią)"
+quest glowne "Don Salvatore zlecił ci zebranie haraczu od Luigiego, Signory Rosy i Paddy'ego O'Hary."
+say - "{y}Wskazówka:{-} 1–4 albo kółko myszy zmienia broń. U Gina (sklep z narzędziami) kupisz amunicję i apteczki."
+end
+:haracz_trwa
+iflt HARACZ_N 3 jeszcze
+take koperta
+"Koperta... Policzmy."
+if ROSA_POLOWA rosa
+goto paddy
+:rosa
+"Rosa dała połowę? Jej syn jest chory, wiem o tym. Dobrze zrobiłeś. Ludzie muszą wiedzieć, że Don ma serce."
+add ZAUFANIE 5
+:paddy
+if PADDY_ODMOWIL paddyodm
+if PADDY_ZASTRASZONY paddyzas
+"A Irlandczyk zapłacił bez gadania? Ciekawe..."
+goto zaplata
+:paddyodm
+"Paddy odmówił? I ty po prostu wyszedłeś?"
+"Chłopcze, w tej rodzinie słowo „nie” jest początkiem rozmowy, a nie jej końcem."
+add ZAUFANIE -5
+goto zaplata
+:paddyzas
+"Paddy zapłacił, bo się bał. Dobrze. Strach to też szacunek, tylko tańszy."
+:zaplata
+cash 150
+add ZAUFANIE 10
+set HARACZ_OK 1
+"Masz swoją dolę. A teraz prawdziwa robota."
+goto po_haraczu
+:jeszcze
+"Luigi, Rosa i Paddy. Wszyscy troje. Wróć, kiedy skończysz."
+end
+# ---------------------------------- doki
+:po_haraczu
+if MISJA_DOKI doki_trwa
+"Dziś w nocy w dokach przypływa łódź z Kanady. Dwieście skrzyń whisky."
+"Gino pilnuje załadunku. Jedź z nim i dopilnuj, żeby nikt nie przeszkodził."
+"Stefek, mój kierowca, zawiezie cię. Czeka przy samochodzie na ulicy."
+set MISJA_DOKI 1
+objective "Jedź do doków (kierowca przy aucie na ulicy) i pomóż Ginowi"
+quest glowne "Dopilnuj transportu whisky w dokach. Kierowca czeka przy aucie na ulicy."
+end
+:doki_trwa
+"Doki, chłopcze. Whisky sama się nie załaduje."
+end
+:po_dokach
+if MISJA_SZCZUR szczur_trwa
+"Irlandczycy czekali na nas. Wiedzieli o łodzi. O godzinie. O miejscu."
+if INFO_RUSSO info
+goto szczur
+:info
+"Russo zapłacił im za cynk, mówisz? A skąd Russo wiedział? Tylko pięć osób znało godzinę."
+:szczur
+"W mojej rodzinie jest szczur, Tomaszu. Znajdź go."
+"Popytaj. Beppe przy barze słyszy wszystko. Moja córka Lucia widzi więcej, niż mówi."
+set MISJA_SZCZUR 1
+add ZAUFANIE 10
+cash 200
+objective "Znajdź szczura: popytaj Beppe (bar) i Lucię"
+quest glowne "Ktoś sypie. Popytaj w trattorii — kelner Beppe, Lucia."
+end
+:szczur_trwa
+"Szczur, Tomaszu. Znajdź go."
+end
+:po_szczurze
+if MISJA_TRIADA triada_trwa
+if STEFEK_ZABITY zabity
+if WALSH podwojny
+"Puściłeś go wolno. Hm. Miłosierdzie to luksus, Tomaszu. Nie wiem, czy nas na niego stać."
+goto triada
+:zabity
+"Stefek nie żyje. Szkoda chłopaka. Ale rodzina, która nie karze zdrady, przestaje być rodziną."
+add ZAUFANIE 5
+goto triada
+:podwojny
+"Stefek będzie karmił Walsha naszymi bajkami? Ha! Sprytne. Bardzo sprytne."
+"Detektyw, który myśli, że ma informatora, to detektyw, którego mamy w kieszeni."
+add ZAUFANIE 10
+:triada
+"Russo zbroi się. Kupuje Thompsony od wojska i ludzi od każdego, kto ma pusty żołądek."
+"Potrzebujemy przyjaciół. Lee Wong z Chinatown nienawidzi Russo bardziej niż ja."
+"Jedź do niego. Herbaciarnia Złoty Smok. Bądź uprzejmy — Lee ceni maniery bardziej niż pieniądze."
+set MISJA_TRIADA 1
+objective "Jedź do Chinatown i porozmawiaj z Lee Wongiem (herbaciarnia)"
+quest glowne "Zdobądź poparcie Triady. Lee Wong czeka w herbaciarni Złoty Smok w Chinatown."
+end
+:triada_trwa
+"Lee Wong. Chinatown. Pamiętaj o manierach."
+end
+:po_triadzie
+if MISJA_BROWAR browar_trwa
+if TRIADA_WROG triadawrog
+"Lee jest z nami? Doskonale. Teraz możemy uderzyć."
+goto browar
+:triadawrog
+"Obraziłeś Lee Wonga?! Matko Boska. Mam nadzieję, że przynajmniej wiesz, co robisz."
+add ZAUFANIE -5
+:browar
+"Russo warzy piwo w Levee. Stary browar przy torach. Z tego żyje połowa jego ludzi."
+"Ty i Vito. Dziś w nocy. Niech Russo zobaczy, co się dzieje, gdy podnosi rękę na Marino."
+weapon tommy 100
+armor 50
+set MISJA_BROWAR 1
+objective "Jedź z Vito do browaru Russo w Levee (kierowca)"
+quest glowne "Uderz w browar Russo w Levee. Vito jedzie z tobą."
+say - "{y}Otrzymujesz Thompsona i kamizelkę kuloodporną.{-} Tommy strzela seriami — przytrzymaj LPM."
+end
+:browar_trwa
+"Browar Russo. Ty i Vito. Nie każ mi czekać."
+end
+:po_browarze
+"Słyszałem o browarze. Pół Levee widziało łunę... albo ciężarówkę pełną piwa, zależy kogo pytać."
+"Jestem z ciebie dumny, Tomaszu. Mówię to rzadko. Zapamiętaj."
+"Za tydzień kończę sześćdziesiąt lat. Cała rodzina przyjdzie. Ty też. Jesteś jednym z nas."
+add ZAUFANIE 10
+fade out
+say - "Tydzień później..."
+set MISJA_URODZINY 1
+music italia
+fade in
+objective "Urodziny Dona. Porozmawiaj z gośćmi (Victor Kane czeka w sali)"
+quest glowne "Urodziny Dona. Gość, Victor Kane, chce z tobą rozmawiać."
+end
+# ---------------------------------- urodziny
+:urodziny
+if STRZELANINA atak
+ifnot KANE_ROZMOWA kane
+"Tomaszu! Wypij ze mną. Sześćdziesiąt lat, a ja wciąż mam wszystkie zęby. I wszystkich wrogów."
+"Za rodzinę! Salute!"
+set STRZELANINA 1
+shake 10
+sfx tommy
+say - "{r}Szyba w drzwiach eksploduje. Serie z Thompsonów.{-}"
+:atak
+music boss
+as vito
+"LUDZIE RUSSO! Na ziemię! Bronić Dona!"
+spawn rus_tommy 4 7
+spawn rus_tommy 9 8
+spawn rus_zbir 2 6
+spawn rus_zbir 12 8
+spawn rus_zbir 7 8
+spawn vito_ally 8 4 ally
+objective "Odeprzyj atak ludzi Russo!"
+waitkill
+music pogrzeb
+set DON_NIE_ZYJE 1
+say - "Cisza. Dym. Potłuczone szkło chrzęści pod butami."
+say - "Don Salvatore leży przy swoim biurku. Biała koszula robi się czerwona."
+as don
+"Tomasz... chodź tu... bliżej."
+ifge ZAUFANIE 60 ufa
+"Vito... Vito musi... poprowadzić rodzinę. Pomóż mu... obiecaj..."
+menu
+ opt "Obiecuję, Don Salvatore." obiecuje
+ opt "Nie mów nic. Lekarz zaraz będzie." lekarz
+endmenu
+:obiecuje
+add ZAUFANIE 5
+"Dobry... chłopak..."
+goto smierc
+:lekarz
+"Lekarz... Ha... Za późno na lekarzy..."
+goto smierc
+:ufa
+"Rodzina... Vito ma gorącą głowę... Lucia jest kobietą... a capo... capo się boją..."
+"Ty... nie boisz się. I nie zdradzasz. Weź... pierścień."
+give pierscien
+set PIERSCIEN 1
+"Niech... Rada... wie..."
+:smierc
+say - "Don Salvatore Marino umiera 14 listopada 1932 roku, w swoje sześćdziesiąte urodziny."
+as lucia
+"Papà... PAPÀ!"
+set MISJA_POGRZEB 1
+fade out
+say - "Trzy dni później. Kościół św. Rocha."
+warp kosciol 7 11 up
+music pogrzeb
+fade in
+objective "Pogrzeb Dona. Porozmawiaj z Lucią i Vito"
+quest glowne "Pogrzeb Dona Salvatore w kościele św. Rocha."
+end
+:kane
+"Tomaszu, poznaj Victora Kane'a. Bardzo... wpływowy człowiek. Chce cię poznać."
+end
+
+@script s_kane
+as kane
+if KANE_ROZMOWA juz
+"A więc to pan jest tym młodym Polakiem. Victor Kane. Interesy, polityka, nieruchomości."
+"W tym mieście są dwa rodzaje ludzi, panie Kowalski: ci, którzy mają przyjaciół w ratuszu, i ci, którzy siedzą w więzieniu."
+"Chciałbym być pańskim przyjacielem. Takie przyjaźnie... procentują."
+menu
+ opt "Przyjmuję wizytówkę. Przyjaciół nigdy dość." przyjmij
+ opt "Ile kosztuje pańska przyjaźń?" ile
+ opt "Nie lubię polityków. Ani ich przyjaciół." odmow
+endmenu
+:przyjmij
+add REL_KAN 30
+"Wiedziałem, że się dogadamy. Proszę dzwonić o każdej porze."
+goto koniec
+:ile
+add REL_KAN 10
+"Ha! Praktyczny. Tanio, panie Kowalski. Odrobinę lojalności w odpowiednim momencie."
+goto koniec
+:odmow
+add REL_KAN -20
+"Szkoda. Ludzie, którzy nie lubią polityków, zwykle szybko ich potrzebują."
+:koniec
+set KANE_ROZMOWA 1
+objective "Porozmawiaj z Donem w gabinecie"
+end
+:juz
+"Proszę się bawić, panie Kowalski. Wieczór jest jeszcze młody."
+
+@script s_gosc
+as gosc
+"Sto lat dla Dona! Albo i dwieście!"
+
+@script s_lucia
+as lucia
+if SZEF szef
+if MISJA_SZCZUR szczur
+"Ty jesteś ten nowy. Ojciec dużo o tobie mówi. To rzadkie."
+end
+:szczur
+ifnot TROP_LUCIA nowy
+"Stefek. Rozmawiał z kimś w płaszczu przy kościele. Wyglądał na gliniarza."
+end
+:nowy
+"Szukasz szczura? Nie patrz tak, w tym domu ściany mają uszy, a ja jestem ścianą."
+"W zeszły czwartek widziałam Stefka przy kościele. Rozmawiał z mężczyzną w płaszczu. Wyglądał na gliniarza."
+set TROP_LUCIA 1
+add SZCZUR_TROP 1
+call s_szczur_check
+end
+:szef
+ifge SPOTKANIA_LUCII 1 rada
+"Ojciec patrzy na nas z góry. Nie zawiedź go, Tomaszu."
+add SPOTKANIA_LUCII 1
+end
+:rada
+"Pamiętaj o Księdze ojca na biurku. Pieniądze, ludzie, dzielnice — wszystko jest w środku."
+"I nie ufaj Russo. Nigdy. Nawet gdyby przyszedł z kwiatami."
+
+@script s_szczur_check
+iflt SZCZUR_TROP 2 nie
+set SZCZUR_KONFRONTACJA 1
+objective "Wszystko wskazuje na Stefka. Znajdź go przy samochodzie"
+quest glowne "Stefek — kierowca Dona — rozmawia z policją. Porozmawiaj z nim przy samochodzie."
+:nie
+
+@script s_szczur_stefek
+as stefek
+"Tomek? Co jest? Patrzysz na mnie jak..."
+"...Wiesz. Wiesz, prawda?"
+"To Walsh! Detektyw Walsh! Złapali mojego brata z bimbrem. Dziesięć lat w Joliet albo... albo mu coś powiem."
+"Nie chciałem, Tomek! Przysięgam na matkę!"
+menu
+ opt "Rodzina nie wybacza, Stefek." zabij
+ opt "Zniknij z Chicago. Dziś. Jeśli cię jeszcze zobaczę..." pusc
+ opt "Od dziś będziesz mówił Walshowi to, co my ci każemy." podwojny
+endmenu
+:zabij
+"Nie... Tomek, nie...!"
+sfx pistol
+shake 4
+say - "Strzał odbija się echem od kamienic. Ktoś na ulicy zaciąga zasłony."
+set STEFEK_ZABITY 1
+add ZAUFANIE 10
+add GORACZKA 10
+goto koniec
+:pusc
+"Dziękuję... Dziękuję, Tomek! Nigdy cię nie zapomnę!"
+add POLONIA 1
+goto koniec
+:podwojny
+"Ja... tak. Tak! Zrobię wszystko!"
+"Walsh myśli, że jestem jego. Będzie myślał dalej."
+set WALSH 1
+add GORACZKA -10
+:koniec
+set STEFEK_OUT 1
+set SZCZUR_OK 1
+clear SZCZUR_KONFRONTACJA
+objective "Wróć do Dona"
+quest glowne "Sprawa szczura załatwiona. Wróć do Dona."
+
+# ====================================================================== DOKI
+@script s_gino_doki
+as gino
+if DOKI_WALKA_OK po
+"Tomek, dobrze, że jesteś. Ładujemy ostatnie skrzynie na ciężarówkę."
+"Coś mi się nie podoba. Za cicho jak na doki. Nawet szczury się pochowały."
+"Rozejrzyj się i..."
+shake 6
+sfx shotgun
+"IRLANDCZYCY! Za skrzynie!"
+music walka
+set DOKI_ATAK 1
+spawn irl_zbir 17 4
+spawn irl_zbir 20 9
+spawn irl_zbir 19 11
+spawn irl_shot 21 5
+spawn irl_zbir 11 11
+spawn irl_zbir 14 7
+objective "Odeprzyj atak Irlandczyków!"
+waitkill
+music doki
+set DOKI_WALKA_OK 1
+as gino
+"Madonna... Wiedzieli. Wiedzieli dokładnie, kiedy przypłyniemy."
+"Jeden jeszcze dycha — tam, przy nabrzeżu. Zrób z nim, co uważasz."
+objective "Zdecyduj o losie rannego Irlandczyka (przy nabrzeżu)"
+end
+:po
+ifnot MICKEY_DONE czeka
+set DOKI_OK 1
+"Whisky bezpieczna. Wracaj do Dona, ja dowiozę towar."
+objective "Wróć do Dona (kierowca czeka na ulicy w Małej Italii)"
+quest glowne "Transport uratowany. Wróć do Dona."
+end
+:czeka
+"Ten chłopak przy nabrzeżu. Zajmij się nim."
+
+@script s_mickey
+as mickey
+"Nie strzelaj... proszę... Mam siedemnaście lat..."
+:menu
+menu
+ opt "Kto wam powiedział o transporcie?" pytaj ifnot INFO_RUSSO
+ opt "Wracaj do O'Donnella. Powiedz mu, że Marino się nie boją." pusc
+ opt "Przykro mi, młody." zabij
+endmenu
+:pytaj
+"Nie wiem! ...Dobra, dobra! Słyszałem, jak Liam mówił, że cynk przyszedł od Russo."
+"Russo zapłacił nam za robotę, żebyście myśleli, że to tylko Irlandczycy!"
+set INFO_RUSSO 1
+goto menu
+:pusc
+"Dziękuję... Nie zapomnę. O'Donnell też się dowie."
+add REL_IRL 30
+set MICKEY_ZYJE 1
+goto koniec
+:zabij
+sfx pistol
+say - "Chłopak nie zdążył się przeżegnać."
+add REL_IRL -30
+add ZAUFANIE 5
+:koniec
+set MICKEY_DONE 1
+objective "Wróć do Gina"
+
+@script s_dokowiec
+as dokowiec
+"Nic nie widziałem. Nic nie słyszałem. Mam pięcioro dzieci, panie."
+
+
+# ====================================================================== CHINATOWN
+@script s_straz_triady
+as triada
+if SZEF szef
+ifnot MISJA_TRIADA nie
+"Pan Wong cię oczekuje. Zdejmij kapelusz w środku."
+end
+:nie
+"Tu nie ma nic dla ciebie, gwailo."
+end
+:szef
+"Pan Wong pozdrawia głowę rodziny Marino."
+
+@script s_sprzedawca
+as triada
+"Herbata, jedwab, porcelana. Inne towary — na zapleczu, dla zaufanych."
+
+@script s_lee
+as lee
+if SZEF szef
+if TRIADA_OK juz
+ifnot MISJA_TRIADA nie
+"Usiądź, panie Kowalski. Herbata? Jaśminowa. Uspokaja nerwy przed trudnymi rozmowami."
+"Don Salvatore przysyła Polaka, żeby rozmawiał z Chińczykiem o Włochu. Chicago jest zabawnym miastem."
+"Czego chce ode mnie Don?"
+menu
+ opt "Wspólnego wroga. Russo zagraża nam obu." wrog
+ opt "Pomóżcie nam, albo będziecie następni." grozba
+ opt "Najpierw: czego pan potrzebuje, panie Wong?" czego
+endmenu
+:wrog
+"Wspólny wróg to dobry początek przyjaźni. Ale tylko początek."
+add REL_TRI 15
+goto czego
+:grozba
+"..."
+"Groźba w moim domu, przy mojej herbacie. Don Salvatore źle wybrał posłańca."
+"Wyjdź, zanim moi ludzie przypomną ci o manierach."
+add REL_TRI -30
+set TRIADA_WROG 1
+goto koniec
+:czego
+"Ludzie Russo spalili moją pralnię na Wentworth. Zginęło dwóch moich kuzynów."
+"Jeśli spłoni się browar Russo — Triada będzie pamiętać, kto to zrobił."
+menu
+ opt "Daję słowo. Browar spłonie." slowo
+ opt "Nie obiecuję tego, czego nie wiem." szczerze
+endmenu
+:slowo
+"Słowo człowieka, który dopiero zaczyna — to zawsze ciekawa inwestycja."
+set OBIETNICA_TRI 1
+add REL_TRI 15
+goto koniec
+:szczerze
+"Szczerość. Rzadki towar. Cenię go wyżej niż obietnice."
+add REL_TRI 20
+:koniec
+set TRIADA_OK 1
+objective "Wróć do Dona"
+quest glowne "Rozmowa z Lee Wongiem zakończona. Wróć do Dona."
+end
+:juz
+"Herbata wystygła, panie Kowalski. Do zobaczenia."
+end
+:nie
+"Nie przypominam sobie, żebym pana zapraszał."
+end
+:szef
+"Głowa rodziny Marino. Jak szybko płynie czas... Herbaty?"
+"Moja oferta jest stała: szacunek za szacunek. Rozmawiajmy przez Księgę, jak ludzie interesu."
+
+# ====================================================================== BROWAR
+@script s_vito_browar
+as vito
+"Za tymi kadziami jest ich z tuzin. Może więcej."
+"Wchodzimy razem. Ty z lewej, ja z prawej. Jak wujek mówi: najpierw kule, potem rozmowa."
+menu
+ opt "Idziemy." idz
+ opt "Daj mi chwilę." czekaj
+endmenu
+:czekaj
+"Chwilę. Nie więcej."
+end
+:idz
+set BROWAR_START 1
+music akcja
+spawn rus_zbir 5 5
+spawn rus_zbir 9 5
+spawn rus_tommy 12 4
+spawn rus_zbir 18 3
+spawn rus_tommy 21 6
+spawn rus_zbir 24 4
+spawn rus_zbir 20 10
+spawn rus_zbir 6 9
+spawn rus_tommy 11 9
+spawn nasz 13 12 ally
+spawn nasz 14 13 ally
+"Chłopcy, za Tomkiem! Ja pilnuję wyjścia!"
+objective "Oczyść browar z ludzi Russo"
+waitkill
+music doki
+as vito
+"Czysto. Madonna, ile tu kadzi... Russo warzy tu połowę piwa w Chicago."
+"Co robimy? Pal czy bierzemy ciężarówkę? Pełna beczek, warta fortunę."
+menu
+ opt "Pal. Niech Russo zobaczy łunę z drugiego końca miasta." pal
+ opt "Bierzemy ciężarówkę. Pieniądze to też broń." bierz
+endmenu
+:pal
+say - "Benzyna, zapałka. Stary browar płonie jak pochodnia."
+shake 8
+add GORACZKA 10
+add ZAUFANIE 5
+if OBIETNICA_TRI tri
+goto koniec
+:tri
+add REL_TRI 20
+toast "Lee Wong usłyszy o tym"
+goto koniec
+:bierz
+cash 600
+add GORACZKA 5
+if OBIETNICA_TRI zlamane
+goto koniec
+:zlamane
+add REL_TRI -15
+toast "Obiecałeś Lee Wongowi, że browar spłonie..."
+:koniec
+set BROWAR_OK 1
+set REL_RUS -80
+objective "Wróć do Dona"
+quest glowne "Browar Russo załatwiony. Wróć do Dona."
+
+@script s_robotnik_browar
+as robotnik
+"Pracowałem tu dla Russo. Teraz nie wiem, dla kogo pracuję. Może dla pana?"
+
+# ====================================================================== POGRZEB I RADA
+@script s_ksiadz
+as ksiadz
+if SZEF szef
+if MISJA_POGRZEB pogrzeb
+"Niech będzie pochwalony. Dom Boży jest otwarty dla każdego. Nawet dla ludzi Dona."
+end
+:pogrzeb
+"Requiescat in pace. Don Salvatore dał na ten dach więcej niż połowa parafii razem wzięta."
+"Bóg go osądzi. My możemy tylko się modlić... i nie powtarzać jego błędów."
+end
+:szef
+"Synu, ludzie w parafii mówią, że ulice są spokojniejsze. Oby to nie była cisza przed burzą."
+
+@script s_babcia
+as babcia
+"Znałam Salvatore, kiedy był chłopcem i kradł pomarańcze z wozu. Dobrze skończył. I źle."
+
+@script s_lucia_pogrzeb
+as lucia
+"Zabili go na jego własnych urodzinach. Przy torcie. Przy mnie."
+"Russo przysłał wieniec. Wieniec, Tomaszu. Ktoś od niego jest tu, w kościele. Enzo."
+set LUCIA_POGRZEB 1
+end
+
+@script s_enzo
+as enzo
+if ENZO_DONE juz
+"Pan Russo przesyła najszczersze kondolencje. Wielka strata dla całego Chicago."
+"Pan Russo ma nadzieję, że teraz, gdy Don odszedł... rodzina Marino będzie rozsądniejsza."
+menu
+ opt "Powiedz Russo, że przyjdziemy po niego. Wszyscy." grozba
+ opt "Zabiję cię tu, przy ołtarzu." zabij
+ opt "Wynoś się, zanim zmienię zdanie." wynos
+endmenu
+:grozba
+"Przekażę. Pan Russo lubi... wyzwania."
+add ZAUFANIE 5
+goto koniec
+:zabij
+as ksiadz
+"NIE W DOMU BOŻYM! Tomaszu, na litość boską!"
+as enzo
+"Ha. Widzisz? Nawet ksiądz wie, że jesteś tylko chłopcem z Polonii."
+add ZAUFANIE -5
+goto koniec
+:wynos
+"Już mnie nie ma, signore."
+:koniec
+set ENZO_DONE 1
+end
+:juz
+"Pan Russo czeka na odpowiedź... cierpliwie."
+
+@script s_vito_pogrzeb
+as vito
+"Wuj nie żyje, a Russo przysyła wieńce. Rozerwę go na kawałki gołymi rękami."
+"Wieczorem Rada. Wszyscy capo w trattorii. Zdecydują, kto poprowadzi rodzinę."
+menu
+ opt "Chodźmy." idz
+ opt "Jeszcze chwila." czekaj
+endmenu
+:czekaj
+"Nie spóźnij się."
+end
+:idz
+set POGRZEB_OK 1
+fade out
+say - "Tego samego wieczoru. Trattoria Bella Napoli, gabinet Dona."
+warp trattoria 17 4 up
+music biuro
+fade in
+as capo
+"Rodzina potrzebuje głowy. Russo nie będzie czekał, aż się pokłócimy."
+ifge ZAUFANIE 60 tomek
+# ------------- Rada wybiera Vito
+as capo
+"Vito jest krwią z krwi Dona. Niech prowadzi."
+as vito
+"Przyjmuję. Pierwsza rzecz — Russo zapłaci."
+as lucia
+"Vito... Ojciec mówił, że masz gorącą głowę."
+as vito
+"Ojciec nie żyje, Lucia."
+fade out
+say - "Vito prowadził rodzinę przez trzy miesiące. Każdy tydzień przynosił nowy pogrzeb."
+say - "W lutym 1933 roku samochód Vito wjechał w zasadzkę na moście Halsted. Nikt z niego nie wysiadł."
+set VITO_ZYJE 0
+say - "Rada zebrała się drugi raz. Tym razem wszyscy patrzyli na ciebie."
+fade in
+as lucia
+"Ojciec ci ufał, Tomaszu. Pod koniec chyba bardziej niż komukolwiek."
+"Rodzina jest w rozsypce. Weź ją. Zanim weźmie ją Russo."
+goto przejecie
+:tomek
+as capo
+"Don przed śmiercią rozmawiał z Polakiem. Nie z Vito. Z Polakiem."
+if PIERSCIEN pierscien
+goto glos
+:pierscien
+say - "Kładziesz na stole sygnet Dona. W gabinecie robi się cicho."
+as capo
+"Pierścień. Don dał mu pierścień."
+:glos
+as lucia
+"Ojciec mówił: Vito ma gorącą głowę. Tomasz ma zimną. Rodzina potrzebuje zimnej."
+as vito
+"..."
+"Polak na czele rodziny Marino. Wuj chyba oszalał."
+menu
+ opt "Vito, potrzebuję cię. Bądź moją prawą ręką." prawa
+ opt "Możesz odejść, jeśli chcesz. Nikt cię nie zatrzyma." odejdz
+endmenu
+:prawa
+"...Prawą ręką. Hm."
+"Dobrze. Dla wuja. Ale Russo jest mój."
+set VITO_ZYJE 1
+goto przejecie
+:odejdz
+"Odejść? To moja rodzina, Polaku. Zostaję. Ale będę patrzył ci na ręce."
+set VITO_ZYJE 1
+add VITO_UPARTY 1
+:przejecie
+fade out
+set SZEF 1
+set DON_NIE_ZYJE 1
+say - "{y}Rodzina Marino jest twoja.{-}"
+say - "Jest wiosna 1933 roku. Rodzina jest osłabiona: kilku żołnierzy, trzy lokale i wrogowie z każdej strony."
+say - "Russo z Levee i Doków. Irlandczycy O'Donnella z North Side. Triada w Chinatown. Victor Kane z Cicero i jego przyjaciele w ratuszu."
+music biuro
+fade in
+as lucia
+"To Księga ojca. Leży na biurku. Wszystko, co mamy, i wszystko, co możemy mieć."
+"{y}Tab{-} albo Księga na biurku — zarządzanie rodziną. Kupuj biznesy, werbuj ludzi, wysyłaj ich na akcje."
+"Z innymi rodzinami możesz walczyć albo się dogadać. Przejmij je — siłą albo słowem."
+"I uważaj na gorączkę. Gdy policja się zagrzeje, federalni zaczną liczyć twoje pieniądze."
+objective "Zarządzaj rodziną (Tab). Przejmij Chicago."
+quest glowne "Odbuduj rodzinę Marino. Pokonaj albo podporządkuj sobie Russo, Irlandczyków, Triadę i Kane'a. Kontroluj co najmniej 5 dzielnic."
+tycoon start
+
+# ====================================================================== OKRES TYCOON
+@script s_ksiega
+say - "Księga Rodziny. Skórzana okładka, wytarta od palców Dona."
+tycoon open
+
+@script s_vito_hq
+as vito
+if VITO_UPARTY uparty
+"Russo. Kiedy idziemy po Russo? Daj mi tylko słowo — i ludzi."
+"Zamach na bossa to akcja z Księgi. Weź mnie ze sobą, kiedy pójdziesz osobiście."
+end
+:uparty
+"Szefie. Wciąż patrzę ci na ręce. Na razie są czyste. Na razie."
+
+@script s_bronek_hq
+as bronek
+"Kowal z Polonii w trattorii Marino. Matka by nie uwierzyła."
+"Moi chłopcy z Polonii są gotowi. Wystarczy, że wpiszesz ich do Księgi."

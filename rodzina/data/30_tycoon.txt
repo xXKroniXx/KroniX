@@ -1,0 +1,68 @@
+# ====================================================================== OKRES TYCOON: wydarzenia fabularne
+# Skrypty tyc_koniec_<rodzina> uruchamia Księga, gdy rodzina zostaje rozbita albo przyłączona.
+# tyc_final — po spełnieniu warunków zwycięstwa (zmienna _PODBOJ = ile rodzin rozbito/przyłączono).
+
+@script tyc_koniec_rus
+music pogrzeb
+as lucia
+"Tomaszu... Słyszałam. Rodzina Russo już nie istnieje."
+"Carmine Russo zabił mojego ojca na jego urodzinach. Przy torcie. Przy mnie."
+menu
+ opt "Twój ojciec jest pomszczony, Lucio." pomszczony
+ opt "To nie była zemsta. To był interes." interes
+endmenu
+:pomszczony
+"Pomszczony... Myślałam, że poczuję coś więcej. Ulgę. Radość."
+"Czuję tylko, że jest ciszej. Może to wystarczy."
+goto koniec
+:interes
+"Interes. Mówisz zupełnie jak on."
+"Może dlatego ci ufał."
+:koniec
+ifnot VITO_ZYJE bez_vito
+as vito
+"Russo jest skończony. Wuj może spać spokojnie. A ja wreszcie się upiję."
+:bez_vito
+music biuro
+tycoon open
+
+@script tyc_koniec_irl
+as bronek
+"Szefie, Irlandczycy z North Side są skończeni. O'Donnell się poddał... albo zniknął, zależy, kogo pytać."
+if MICKEY_ZYJE mickey
+goto koniec
+:mickey
+"A, i jeszcze coś. Jakiś rudy chłopak, Mickey, pyta o ciebie. Mówi, że kiedyś darowałeś mu życie w dokach."
+"Chce dla ciebie pracować. Mówi, że jest ci winien."
+cash 300
+toast "Mickey przyniósł $300 z irlandzkiej kasy"
+:koniec
+tycoon open
+
+@script tyc_koniec_tri
+as lucia
+"Lee Wong przysłał herbatę. Jaśminową. I list."
+say - "{s}„Szacunek za szacunek. Chinatown pamięta. — L.W.”{-}"
+tycoon open
+
+@script tyc_koniec_kan
+as lucia
+"Victor Kane spakował walizki. Podobno jedzie do Miami, „odpocząć od polityki”."
+"Jego przyjaciele z ratusza nagle bardzo chcą być twoimi przyjaciółmi."
+tycoon open
+
+@script tyc_final
+music koniec
+say - "Chicago, 1934."
+as lucia
+"Wszyscy przyszli, Tomaszu. Irlandczycy, Chińczycy, ludzie z Cicero. Nawet radni."
+"Czekają w sali. Na ciebie."
+ifge _PODBOJ 3 krew
+# ------------- zakończenie pokojowe
+"Ojciec marzył o tym przez trzydzieści lat. Żeby rodziny przestały się zabijać i zaczęły liczyć pieniądze."
+"Ty zrobiłeś to w niecałe dwa."
+ending "KOMISJA" "Zamiast wojny — stół. Bossowie wszystkich rodzin Chicago siadają do rozmów w trattorii Bella Napoli, a ty im przewodniczysz.\n\nMiasto zarabia, ulice są spokojniejsze niż od lat. Gazety piszą o „cudzie Kowalskiego”, a nikt nie potrafi wyjaśnić, na czym polega.\n\nDon Salvatore byłby dumny. Twoja matka — trochę mniej. Ale w niedzielę siedzisz w pierwszej ławce u św. Rocha i nikt już nie mówi na ciebie „Polaczek”.\n\nKONIEC"
+:krew
+"Ojciec rządził strachem i szacunkiem. Ty rządzisz już tylko strachem."
+"Uważaj, Tomaszu. Królowie, których wszyscy się boją, rzadko umierają w łóżku."
+ending "CAPO DI TUTTI CAPI" "Chicago należy do ciebie. Każda melina, każdy bukmacher, każdy gliniarz z komisariatu przy Maxwell Street.\n\nRodziny, które kiedyś dzieliły miasto, są wspomnieniem. Ich ludzie noszą teraz twoje kolory i boją się twojego nazwiska.\n\nAle nocami nie śpisz. Sprawdzasz zamki. Pamiętasz, jak skończył Don Salvatore — przy torcie, w swoje urodziny.\n\nKONIEC"
