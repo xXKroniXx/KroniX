@@ -1,4 +1,4 @@
-/* Ładowanie wskaźników funkcji OpenGL. */
+/* KroniX Engine — Ładowanie wskaźników funkcji OpenGL. */
 #include "glapi.h"
 
 #define GLDEF(ret, name, args) PFN_##name name;

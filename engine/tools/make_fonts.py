@@ -1,4 +1,4 @@
-"""Generuje atlas czcionek SDF (signed distance field) -> src/font_data.c
+"""Generuje atlas czcionek SDF (signed distance field) -> engine/gfx/font_data.c
 
 Czcionki: Liberation Sans (Regular, Bold) i Liberation Serif (Bold) — licencja SIL OFL 1.1,
 symbole z DejaVu Sans (licencja Bitstream Vera / public domain).
@@ -9,7 +9,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUT = os.path.join(HERE, '..', 'src', 'font_data.c')
+OUT = os.path.join(HERE, '..', 'gfx', 'font_data.c')
 FD = '/usr/share/fonts/truetype/'
 FONTS = [
     ('sans', FD + 'liberation/LiberationSans-Regular.ttf'),

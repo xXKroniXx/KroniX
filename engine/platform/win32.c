@@ -1,10 +1,12 @@
-/* Platforma Windows: okno z kontekstem OpenGL 3.3 core (WGL), klawiatura + mysz (raw input)
+/* KroniX Engine — Platforma Windows: okno z kontekstem OpenGL 3.3 core (WGL), klawiatura + mysz (raw input)
  * + pad XInput, dźwięk waveOut. Logika w stałym kroku 60 Hz, rysowanie raz na klatkę ekranu. */
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <mmsystem.h>
 #undef RGB
-#include "engine.h"
+#include "kx.h"
+#include "render.h"
+#include "kx_audio.h"
 #include "glapi.h"
 
 static HWND hwnd;
@@ -340,7 +342,7 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmd, int show) {
   SwapBuffers(hdc);
 
   g_render = 1;
-  game_init(__argc, __argv);
+  kx_game_init(__argc, __argv);
   if (g_glError[0]) {
     char b[1400];
     snprintf(b, sizeof b, "Błąd shaderów karty graficznej:\n\n%s", g_glError);
@@ -379,16 +381,16 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmd, int show) {
     int steps = 0;
     while (acc >= step) {
       map_input();
-      game_frame();
+      kx_game_frame();
       acc -= step;
       steps++;
       if (g_fullscreen_toggle) { g_fullscreen_toggle = 0; toggle_fullscreen(); }
     }
     audio_pump();
-    if (captured) game_look(); /* obrót myszą w każdej klatce ekranu — bez szarpania */
+    if (captured) kx_game_look(); /* obrót myszą w każdej klatce ekranu — bez szarpania */
     g_alpha = (float)(acc / step);
     (void)steps;
-    game_draw();   /* z vsync SwapBuffers czeka na odświeżenie ekranu: rysujemy w tempie monitora */
+    kx_game_draw();   /* z vsync SwapBuffers czeka na odświeżenie ekranu: rysujemy w tempie monitora */
     SwapBuffers(hdc);
     if (!g_cfg.vsync) {
       /* bez vsync: ogranicz do ~144 FPS, żeby nie palić procesora */

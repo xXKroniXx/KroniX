@@ -1,4 +1,4 @@
-/* Matematyka 3D i budowanie siatek (prymitywy low-poly w stylu indie). */
+/* KroniX Engine — Matematyka 3D i budowanie siatek (prymitywy low-poly w stylu indie). */
 #include "render.h"
 #include "glapi.h"
 #include <stdlib.h>

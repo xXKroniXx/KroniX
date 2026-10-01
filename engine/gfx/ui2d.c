@@ -1,4 +1,4 @@
-/* UI 2D: wsadowe rysowanie w wirtualnej przestrzeni 1280x720 — zaokrąglone panele (SDF),
+/* KroniX Engine — UI 2D: wsadowe rysowanie w wirtualnej przestrzeni 1280x720 — zaokrąglone panele (SDF),
  * miękkie cienie, gradienty, obrazy i tekst SDF (ostry w każdej rozdzielczości). */
 #include "render.h"
 #include "glapi.h"

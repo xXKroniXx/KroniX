@@ -1,54 +1,13 @@
-/* KroniX: Rodzina — wspólny nagłówek silnika.
- * Rdzeń jest niezależny od platformy: rysuje do bufora `fb` (480x270, ARGB),
- * czyta przyciski i ruch myszy, generuje dźwięk w `audio_render`. */
+/* KroniX: Rodzina — nagłówek gry (dane fabuły, świat, walka, tycoon).
+ * Silnik (okno, grafika, UI, dźwięk) jest w ../engine — patrz engine/README.md. */
 #ifndef ENGINE_H
 #define ENGINE_H
 
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
+#include "kx.h"
+#include "kx_audio.h"
 
 #define SCREEN_W UI_W
 #define SCREEN_H UI_H
-#define AUDIO_RATE 44100 /* stereo, próbki przeplatane L,P */
-typedef uint32_t u32;
-typedef uint8_t u8;
-
-#define RGB(r, g, b) ((u32)(0xFF000000u | ((u32)(r) << 16) | ((u32)(g) << 8) | (u32)(b)))
-#define PI_F 3.14159265f
-#define CLAMP(v, a, b) ((v) < (a) ? (a) : (v) > (b) ? (b) : (v))
-
-/* ------------------------------------------------------------------ platforma */
-enum {
-  BTN_UP, BTN_DOWN, BTN_LEFT, BTN_RIGHT, /* menu + ruch przód/tył */
-  BTN_A, BTN_B, BTN_RUN, BTN_FIRE, BTN_RELOAD,
-  BTN_SL, BTN_SR, BTN_TL, BTN_TR,       /* krok w bok (A/D), obrót (strzałki) */
-  BTN_TAB, BTN_W1, BTN_W2, BTN_W3, BTN_W4, BTN_WNEXT, BTN_N,
-  BTN_COUNT
-};
-
-extern int g_btn_raw[BTN_COUNT];
-extern float g_mouse_dx, g_mouse_dy; /* ruch myszy w tej klatce (piksele) */
-extern int g_mouse_x, g_mouse_y;      /* pozycja kursora w buforze (-1 poza) */
-extern int g_want_mouse_capture;      /* rdzeń prosi o przechwycenie myszy (tryb FPP) */
-extern int g_quit;
-extern int g_fullscreen_toggle;
-extern char g_data_dir[512];
-
-void game_init(int argc, char **argv);
-void game_frame(void);
-void audio_render(int16_t *out, int n);
-
-typedef struct {
-  int held[BTN_COUNT], pressed[BTN_COUNT], rep[BTN_COUNT], holdT[BTN_COUNT];
-  float mdx, mdy;
-  int click, mx, my;
-} Input;
-extern Input in;
-void input_update(void);
-void input_clear(void);
 
 /* ------------------------------------------------------------------ grafika (GPU) */
 #include "render.h"
@@ -65,12 +24,9 @@ void input_clear(void);
 #define UI_BLUE 0xFF7FB2F0u
 #define UI_PANEL 0xE8141016u
 #define UI_PANEL2 0xF01C1820u
-int utf8_next(const char **p);
 void ui_panel(float x, float y, float w, float h);        /* panel art-deco z cieniem */
 void ui_button(float x, float y, float w, float h, const char *label, int selected, int enabled);
 void ui_cursor(void);
-extern int g_render;          /* czy jest kontekst GL (testy bez okna: 0) */
-void game_draw(void);         /* rysuje klatkę (platforma woła po aktualizacjach) */
 void gfx_shake(int amount);
 extern int g_shake;
 
@@ -79,22 +35,9 @@ enum { SFX_BLIP, SFX_OK, SFX_CANCEL, SFX_HIT, SFX_CRIT, SFX_FIRE, SFX_HEAL, SFX_
        SFX_CHEST, SFX_LEVEL, SFX_ENCOUNTER, SFX_FLEE, SFX_DIE, SFX_MAGIC, SFX_TEXT,
        SFX_PISTOL, SFX_TOMMY, SFX_SHOTGUN, SFX_PUNCH, SFX_RELOAD, SFX_EMPTY, SFX_STEP, SFX_HURT,
        SFX_HORN, SFX_PHONE, SFX_GLASS, SFX_BELL, SFX_TYPE, SFX_PAPER, SFX_CAR, SFX_COUNT };
-void audio_init(void);
-void music_play(const char *name);
-void sfx_play(int id);
-void sfx_play_at(int id, float dist);
-void sfx_play_pan(int id, float gain, float pan);
-/* tło dźwiękowe: rodzaj miejsca, deszcz 0..1, akustyka 0 plener / 1 pokój / 2 hala */
-enum { AMB_NONE, AMB_STREET, AMB_HARBOR, AMB_ROOM, AMB_CROWD, AMB_OFFICE, AMB_CHURCH, AMB_WAREHOUSE };
-void audio_ambience(int kind, float rain, float space);
-int sfx_find(const char *name);
-int music_exists(const char *name);
+void game_audio_setup(void); /* sounds.c: rejestruje utwory i efekty w silniku */
 int art_exists(const char *name);
-extern int g_volume;
-extern int g_mouse_sens;
 extern int g_headbob;   /* kołysanie kamery przy chodzeniu: 0 wył., 1 słabe, 2 normalne */
-extern float g_alpha;  /* 0..1: położenie klatki między krokami logiki */
-void game_look(void);  /* platforma: obrót myszą w każdej wyświetlanej klatce */
 void world_look(float dx, float dy);
 
 /* ------------------------------------------------------------------ dane fabuły */
@@ -278,7 +221,6 @@ int cars_enter(void);
 int cars_block(float x, float z, float r);
 int car_player(void);
 void combat_damage_ent(Ent *e, int dmg);
-void audio_engine(float rpm, float gain);
 /* znacznik celu misji: mapa+kafel albo NPC (id); map<0 i id NULL = brak */
 void world_marker_set(int map, int x, int y, const char *npcId);
 int world_marker_pos(float *x, float *z); /* pozycja na bieżącej mapie (albo drzwi prowadzące do celu) */

@@ -1,4 +1,4 @@
-/* Minimalny, własny loader OpenGL 3.3 core (bez zewnętrznych nagłówków).
+/* KroniX Engine — Minimalny, własny loader OpenGL 3.3 core (bez zewnętrznych nagłówków).
  * Funkcje ładowane w gl_load(): Windows — wglGetProcAddress/opengl32.dll,
  * Linux (testy) — OSMesaGetProcAddress. */
 #ifndef GLAPI_H

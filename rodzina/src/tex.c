@@ -1,179 +1,14 @@
-/* Proceduralne tekstury HD (512x512) w „malowanym” stylu: szum fraktalny, relief z mapy wysokości,
- * napisy z atlasu czcionek. Kanał alfa = połysk (lub wycięcie dla krat, liści, markiz). */
+/* KroniX: Rodzina — warstwy tekstur gry (cegła, asfalt, szyldy, plakaty...). Narzędzia
+ * proceduralne (szum, relief, napisy) są w silniku: engine/gfx/kx_proc.h. */
+#define KXP_SHORT_NAMES
+#include "kx_proc.h"
 #include "assets.h"
 #include "font_data.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
-#define N TEXSZ
-typedef struct { float r, g, b, a; } C4;
-static C4 *I;           /* bieżący obraz */
-static float *Hm;       /* mapa wysokości do reliefu */
-static uint8_t *atlasA; /* zdekodowany atlas czcionek */
-
-/* ---------------------------------------------------------------- szum (zawijany) */
-static uint32_t hsh(int x, int y, int s) {
-  uint32_t h = (uint32_t)x * 374761393u + (uint32_t)y * 668265263u + (uint32_t)s * 2246822519u;
-  h = (h ^ (h >> 13)) * 1274126177u;
-  return h ^ (h >> 16);
-}
-static float rnd01(int x, int y, int s) { return (hsh(x, y, s) & 0xFFFFFF) / 16777216.0f; }
-static float smooth(float t) { return t * t * (3 - 2 * t); }
-static float vnoise(float x, float y, int per, int seed) {
-  int xi = (int)floorf(x), yi = (int)floorf(y);
-  float fx = smooth(x - xi), fy = smooth(y - yi);
-  int x0 = ((xi % per) + per) % per, y0 = ((yi % per) + per) % per, x1 = (x0 + 1) % per, y1 = (y0 + 1) % per;
-  float a = rnd01(x0, y0, seed), b = rnd01(x1, y0, seed), c = rnd01(x0, y1, seed), d = rnd01(x1, y1, seed);
-  return a + (b - a) * fx + (c - a) * fy + (a - b - c + d) * fx * fy;
-}
-/* u,v w [0,1), per = liczba komórek bazowej oktawy */
-static float fbm(float u, float v, int per, int oct, int seed) {
-  float s = 0, amp = 0.5f, tot = 0;
-  for (int o = 0; o < oct; o++) {
-    s += vnoise(u * per, v * per, per, seed + o * 31) * amp;
-    tot += amp;
-    amp *= 0.5f;
-    per *= 2;
-  }
-  return s / tot;
-}
-/* Worley: odległość do najbliższego punktu i id komórki */
-static float worley(float u, float v, int per, int seed, float *f2, int *cid) {
-  float x = u * per, y = v * per;
-  int xi = (int)floorf(x), yi = (int)floorf(y);
-  float d1 = 9, d2 = 9;
-  int id = 0;
-  for (int j = -1; j <= 1; j++)
-    for (int i = -1; i <= 1; i++) {
-      int cx = xi + i, cy = yi + j;
-      int wx = ((cx % per) + per) % per, wy = ((cy % per) + per) % per;
-      float px = cx + rnd01(wx, wy, seed) * 0.8f + 0.1f, py = cy + rnd01(wx, wy, seed + 7) * 0.8f + 0.1f;
-      float dx = px - x, dy = py - y, d = sqrtf(dx * dx + dy * dy);
-      if (d < d1) { d2 = d1; d1 = d; id = wx * 977 + wy; }
-      else if (d < d2) d2 = d;
-    }
-  if (f2) *f2 = d2;
-  if (cid) *cid = id;
-  return d1;
-}
-
-/* ---------------------------------------------------------------- operacje na obrazie */
-static C4 rgb(uint32_t c) { C4 r = {((c >> 16) & 255) / 255.0f, ((c >> 8) & 255) / 255.0f, (c & 255) / 255.0f, 1}; return r; }
-static C4 mixc(C4 a, C4 b, float t) { C4 r = {a.r + (b.r - a.r) * t, a.g + (b.g - a.g) * t, a.b + (b.b - a.b) * t, a.a + (b.a - a.a) * t}; return r; }
-static C4 mulc(C4 a, float s) { C4 r = {a.r * s, a.g * s, a.b * s, a.a}; return r; }
-#define PX(x, y) I[(((y) & (N - 1)) * N) + ((x) & (N - 1))]
-#define HX(x, y) Hm[(((y) & (N - 1)) * N) + ((x) & (N - 1))]
-
-static void fill(C4 c, float gloss) {
-  for (int i = 0; i < N * N; i++) { I[i] = c; I[i].a = gloss; Hm[i] = 0; }
-}
-static void rectc(int x0, int y0, int w, int h, C4 c, float hgt, int setH) {
-  for (int y = y0; y < y0 + h; y++)
-    for (int x = x0; x < x0 + w; x++) {
-      float a = PX(x, y).a;
-      PX(x, y) = c;
-      PX(x, y).a = c.a >= 0 ? c.a : a;
-      if (setH) HX(x, y) = hgt;
-    }
-}
-static void blendrect(int x0, int y0, int w, int h, C4 c, float t) {
-  for (int y = y0; y < y0 + h; y++)
-    for (int x = x0; x < x0 + w; x++) { float a = PX(x, y).a; PX(x, y) = mixc(PX(x, y), c, t); PX(x, y).a = a; }
-}
-static void disc(float cx, float cy, float r, C4 c, float t) {
-  for (int y = (int)(cy - r - 1); y <= (int)(cy + r + 1); y++)
-    for (int x = (int)(cx - r - 1); x <= (int)(cx + r + 1); x++) {
-      float d = sqrtf((x + 0.5f - cx) * (x + 0.5f - cx) + (y + 0.5f - cy) * (y + 0.5f - cy));
-      float k = r + 0.5f - d;
-      if (k <= 0) continue;
-      if (k > 1) k = 1;
-      float a = PX(x, y).a;
-      PX(x, y) = mixc(PX(x, y), c, k * t);
-      PX(x, y).a = a;
-    }
-}
-/* relief: oświetlenie z mapy wysokości (światło z lewej-góry) */
-static void relief(float strength, float ao) {
-  for (int y = 0; y < N; y++)
-    for (int x = 0; x < N; x++) {
-      float dx = HX(x + 1, y) - HX(x - 1, y), dy = HX(x, y + 1) - HX(x, y - 1);
-      float l = 1.0f + (-dx * 0.6f - dy * 0.8f) * strength;
-      float occ = 1.0f - ao * (1.0f - HX(x, y));
-      if (l < 0.3f) l = 0.3f;
-      if (l > 1.6f) l = 1.6f;
-      C4 *p = &PX(x, y);
-      p->r *= l * occ; p->g *= l * occ; p->b *= l * occ;
-    }
-}
-static void grain(float amt, int per, int seed) {
-  for (int y = 0; y < N; y++)
-    for (int x = 0; x < N; x++) {
-      float n = fbm((float)x / N, (float)y / N, per, 4, seed) - 0.5f;
-      C4 *p = &PX(x, y);
-      float s = 1 + n * amt;
-      p->r *= s; p->g *= s; p->b *= s;
-    }
-}
-static void speckle(float amt, int seed) {
-  for (int y = 0; y < N; y++)
-    for (int x = 0; x < N; x++) {
-      float n = rnd01(x, y, seed) - 0.5f;
-      C4 *p = &PX(x, y);
-      p->r += n * amt; p->g += n * amt; p->b += n * amt;
-    }
-}
-
-/* ---------------------------------------------------------------- tekst w teksturze */
-static const FontGlyph *fglyph(int font, int cp) {
-  for (int i = 0; i < FONT_NGLYPHS; i++) if (FONT_GLYPHS[i].font == font && FONT_GLYPHS[i].cp == cp) return &FONT_GLYPHS[i];
-  return NULL;
-}
-static int utf8n(const char **p) {
-  const unsigned char *s = (const unsigned char *)*p;
-  int c = *s;
-  if (c < 0x80) { *p += 1; return c; }
-  if ((c & 0xE0) == 0xC0) { *p += 2; return ((c & 0x1F) << 6) | (s[1] & 0x3F); }
-  if ((c & 0xF0) == 0xE0) { *p += 3; return ((c & 0x0F) << 12) | ((s[1] & 0x3F) << 6) | (s[2] & 0x3F); }
-  *p += 1;
-  return '?';
-}
-static float text_w(int font, float size, const char *s, float track) {
-  float w = 0, sc = size / FONT_BASE;
-  while (*s) { const FontGlyph *g = fglyph(font, utf8n(&s)); if (g) w += g->adv * sc + track; }
-  return w;
-}
-/* rysuje tekst (y = linia bazowa); glow > 0 = poświata neonu */
-static void text_draw(int font, float size, float x, float yb, const char *s, C4 col, float track, float bold) {
-  float sc = size / FONT_BASE;
-  while (*s) {
-    const FontGlyph *g = fglyph(font, utf8n(&s));
-    if (!g) continue;
-    if (g->w > 0) {
-      float gx = x + g->xoff * sc, gy = yb + (g->yoff + FONT_METRICS[font][0]) * sc - FONT_METRICS[font][0] * sc;
-      int x0 = (int)floorf(gx), y0 = (int)floorf(gy), x1 = (int)ceilf(gx + g->w * sc), y1 = (int)ceilf(gy + g->h * sc);
-      for (int py = y0; py < y1; py++)
-        for (int px = x0; px < x1; px++) {
-          if (px < 0 || py < 0 || px >= N || py >= N) continue;
-          float u = (px + 0.5f - gx) / sc, v = (py + 0.5f - gy) / sc;
-          int ax = g->x + (int)u, ay = g->y + (int)v;
-          if (u < 0 || v < 0 || u >= g->w || v >= g->h) continue;
-          float d = atlasA[ay * FONT_ATLAS_W + ax] / 255.0f;
-          float edge = 0.5f - bold;
-          float a = (d - edge) * (FONT_SPREAD * sc * 2.0f) + 0.5f;
-          if (a <= 0) continue;
-          if (a > 1) a = 1;
-          float keep = PX(px, py).a;
-          PX(px, py) = mixc(PX(px, py), col, a);
-          PX(px, py).a = keep;
-        }
-    }
-    x += g->adv * sc + track;
-  }
-}
-static void text_center(int font, float size, float cx, float yb, const char *s, C4 col, float track, float bold) {
-  text_draw(font, size, cx - text_w(font, size, s, track) * 0.5f, yb, s, col, track, bold);
-}
 
 /* ---------------------------------------------------------------- warstwy */
 static void t_white(void) { fill(rgb(0xE8E8E8), 0.25f); grain(0.06f, 8, 1); }
@@ -1033,14 +868,8 @@ static void t_neon(void) {
 
 /* ---------------------------------------------------------------- generacja */
 void tex_generate(void) {
-  I = (C4 *)malloc(sizeof(C4) * N * N);
-  Hm = (float *)malloc(sizeof(float) * N * N);
-  int na = FONT_ATLAS_W * FONT_ATLAS_H;
-  atlasA = (uint8_t *)malloc(na);
-  int o = 0;
-  for (int i = 0; i + 1 < FONT_RLE_LEN && o < na; i += 2)
-    for (int k = 0; k < FONT_RLE[i + 1] && o < na; k++) atlasA[o++] = FONT_RLE[i];
-  uint8_t *all = (uint8_t *)malloc((size_t)N * N * 4 * L_COUNT);
+  kxp_begin();
+  kxp_layers_begin(L_COUNT);
   for (int L = 0; L < L_COUNT; L++) {
     switch (L) {
       case L_WHITE: t_white(); break;
@@ -1100,31 +929,8 @@ void tex_generate(void) {
       case L_FIRE: t_fire(); break;
       case L_GRAVEL: t_gravel(); break;
     }
-    uint8_t *dst = all + (size_t)L * N * N * 4;
-    for (int i = 0; i < N * N; i++) {
-      float c[4] = {I[i].r, I[i].g, I[i].b, I[i].a};
-      for (int k = 0; k < 4; k++) dst[i * 4 + k] = (uint8_t)(c[k] < 0 ? 0 : c[k] > 1 ? 255 : c[k] * 255 + 0.5f);
-    }
+    kxp_layer_store(L);
   }
-  const char *dump = getenv("KRONIX_DUMP_TEX");
-  if (dump) { /* podgląd: wszystkie warstwy w siatce 8 kolumn, pomniejszone 4x, PPM */
-    int cols = 8, rows = (L_COUNT + 7) / 8, s = N / 4;
-    FILE *f = fopen(dump, "wb");
-    if (f) {
-      fprintf(f, "P6 %d %d 255\n", cols * s, rows * s);
-      for (int y = 0; y < rows * s; y++)
-        for (int x = 0; x < cols * s; x++) {
-          int L = (y / s) * cols + x / s;
-          uint8_t px[3] = {40, 40, 40};
-          if (L < L_COUNT) { uint8_t *q = all + ((size_t)L * N * N + (size_t)((y % s) * 4) * N + (x % s) * 4) * 4; px[0] = q[0]; px[1] = q[1]; px[2] = q[2]; }
-          fwrite(px, 1, 3, f);
-        }
-      fclose(f);
-    }
-  }
-  r_set_world_textures(r_texarray(L_COUNT, all));
-  free(all);
-  free(I);
-  free(Hm);
-  free(atlasA);
+  r_set_world_textures(kxp_layers_finish(getenv("KRONIX_DUMP_TEX")));
+  kxp_end();
 }

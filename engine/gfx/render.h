@@ -1,4 +1,4 @@
-/* Renderer GPU (OpenGL 3.3 core): matematyka, budowanie siatek, oświetlenie, postprocess, UI 2D. */
+/* KroniX Engine — Renderer GPU (OpenGL 3.3 core): matematyka, budowanie siatek, oświetlenie, postprocess, UI 2D. */
 #ifndef RENDER_H
 #define RENDER_H
 #include <math.h>

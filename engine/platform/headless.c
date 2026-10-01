@@ -1,6 +1,8 @@
-/* Platforma bez okna (Linux): testy automatyczne, walidacja fabuły i — z --render —
+/* KroniX Engine — Platforma bez okna (Linux): testy automatyczne, walidacja fabuły i — z --render —
  * rysowanie przez OSMesa (OpenGL programowy) do zrzutów ekranu. */
-#include "engine.h"
+#include "kx.h"
+#include "render.h"
+#include "kx_audio.h"
 #include "glapi.h"
 #include <math.h>
 #include <time.h>
@@ -13,11 +15,13 @@ static void *gp(const char *n) { return OSMesaGetProcAddress(n); }
 
 int main(int argc, char **argv) {
   snprintf(g_data_dir, sizeof g_data_dir, "./");
-  long maxFrames = 60L * 60 * 30;
+  long maxFrames = 60L * 60 * 30, shotAt = -1;
+  const char *shotPath = NULL;
   int w = 1280, h = 720;
   for (int i = 1; i < argc; i++) {
     if (!strcmp(argv[i], "--frames") && i + 1 < argc) maxFrames = atol(argv[++i]);
     else if (!strcmp(argv[i], "--render")) g_render = 1;
+    else if (!strcmp(argv[i], "--shot") && i + 2 < argc) { shotAt = atol(argv[++i]); shotPath = argv[++i]; } /* zrzut po N klatkach */
     else if (!strcmp(argv[i], "--size") && i + 2 < argc) { w = atoi(argv[++i]); h = atoi(argv[++i]); }
   }
   if (g_render) {
@@ -32,7 +36,7 @@ int main(int argc, char **argv) {
     }
     g_winW = w; g_winH = h;
   }
-  game_init(argc, argv);
+  kx_game_init(argc, argv);
   for (int i = 1; i + 3 < argc; i++)
     if (!strcmp(argv[i], "--wav")) { /* --wav utwór|sfx:nazwa|amb:N sekundy plik.wav */
       const char *what = argv[i + 1];
@@ -55,7 +59,8 @@ int main(int argc, char **argv) {
   static int16_t audio[AUDIO_RATE / 60 * 2 + 16];
   for (long f = 0; f < maxFrames && !g_quit; f++) {
     g_mouse_dx = g_mouse_dy = 0;
-    game_frame();
+    kx_game_frame();
+    if (f == shotAt && g_render && shotPath) { kx_game_draw(); r_screenshot(shotPath); g_quit = 1; }
     audio_render(audio, AUDIO_RATE / 60);
   }
   return 0;

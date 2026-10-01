@@ -1,4 +1,4 @@
-/* Renderer: shadery świata (światła per-piksel, mgła, mokra nawierzchnia, emisja), niebo,
+/* KroniX Engine — Renderer: shadery świata (światła per-piksel, mgła, mokra nawierzchnia, emisja), niebo,
  * deszcz, poświaty, HDR + MSAA + bloom + tonemapping (ACES) + korekcja barw, render do tekstur. */
 #include "render.h"
 #include "glapi.h"

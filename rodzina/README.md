@@ -116,6 +116,7 @@ Pad Xbox: lewa gałka — ruch, prawa — rozglądanie, RT — strzał, A — ak
 ./build.sh          # build/kronix_test (Linux, testy) + KroniX_Rodzina.exe (mingw-w64)
 sh tests/run.sh     # walidacja fabuły, obie ścieżki prologu, symulacja tycoona
 python3 tools/maps.py   # regeneracja data/10_mapy.txt
+# silnik: ../engine (README tam), przykład: ../engine/examples/demo
 ./build/kronix_test --simtycoon 200   # symulacja 200 dni imperium z prostą AI gracza
 ```
 

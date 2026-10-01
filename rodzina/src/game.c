@@ -2,23 +2,14 @@
 #include "engine.h"
 #include <time.h>
 
-int g_btn_raw[BTN_COUNT];
-float g_mouse_dx, g_mouse_dy;
-int g_mouse_x = -1, g_mouse_y = -1, g_want_mouse_capture;
-int g_quit, g_fullscreen_toggle;
-char g_data_dir[512];
-int g_mouse_sens = 5;
 int g_headbob = 0;
-float g_alpha = 1.0f;
 
-void game_look(void) {
+void kx_game_look(void) {
   if (g_mode != MODE_WORLD || !g_want_mouse_capture) return;
   float sens = g_mouse_sens / 5.0f;
   world_look(g_mouse_dx * sens, g_mouse_dy * sens);
   g_mouse_dx = g_mouse_dy = 0;
 }
-int g_render;
-Input in;
 Hero H;
 int g_mode = MODE_TITLE;
 long g_frame;
@@ -29,27 +20,6 @@ int g_autofade;
 extern int g_forceChoice;
 extern int g_forceQ[64], g_forceN, g_forceI;
 extern const char STORY_TXT[];
-
-/* ---------------------------------------------------------------- input */
-void input_update(void) {
-  for (int b = 0; b < BTN_COUNT; b++) {
-    int h = g_btn_raw[b] != 0;
-    in.pressed[b] = h && !in.held[b];
-    in.holdT[b] = h ? in.holdT[b] + 1 : 0;
-    in.held[b] = h;
-    in.rep[b] = in.pressed[b] || (in.holdT[b] > 18 && (in.holdT[b] - 18) % 5 == 0);
-  }
-  float sens = g_mouse_sens / 5.0f;
-  in.mdx = g_mouse_dx * sens;
-  in.mdy = g_mouse_dy * sens;
-  g_mouse_dx = g_mouse_dy = 0;
-  in.click = in.pressed[BTN_FIRE];
-  in.mx = g_mouse_x; in.my = g_mouse_y;
-}
-void input_clear(void) {
-  for (int b = 0; b < BTN_COUNT; b++) in.pressed[b] = in.rep[b] = 0;
-  in.click = 0;
-}
 
 /* ---------------------------------------------------------------- bohater */
 void hero_new(void) {
@@ -273,7 +243,7 @@ void testdrv_frame(void) {
       return;
     }
     if (!strcmp(cmd, "mouse")) { int fr = 10; sscanf(arg, "%f %f %d", &tdMouseX, &tdMouseY, &fr); g_mouse_dx = tdMouseX; g_mouse_dy = tdMouseY; tdWait = fr; return; }
-    if (!strcmp(cmd, "shot")) { if (g_render) { game_draw(); r_screenshot(arg); } continue; }
+    if (!strcmp(cmd, "shot")) { if (g_render) { kx_game_draw(); r_screenshot(arg); } continue; }
     if (!strcmp(cmd, "debug")) { game_debug(arg); continue; }
     if (!strcmp(cmd, "autoplay")) { g_autoplay = atoi(arg); continue; }
     if (!strcmp(cmd, "choose")) {
@@ -317,7 +287,7 @@ int story_fuzz(int rounds) {
       script_start(i, NULL);
       int f;
       for (f = 0; f < 20000; f++) {
-        game_frame();
+        kx_game_frame();
         if (g_mode == MODE_TYCOON || g_mode == MODE_TRAVEL || g_mode == MODE_SHOP || g_mode == MODE_ENDING) game_set_mode(MODE_WORLD);
         if (!script_running()) break;
       }
@@ -341,7 +311,7 @@ static char *read_file(const char *path) {
   return b;
 }
 
-void game_init(int argc, char **argv) {
+void kx_game_init(int argc, char **argv) {
   srand((unsigned)time(NULL));
   if (g_render) {
     r_resize(g_winW, g_winH);
@@ -354,6 +324,7 @@ void game_init(int argc, char **argv) {
     humans_portraits_build();
   }
   settings_load();
+  game_audio_setup();
   audio_init();
   combat_init();
   const char *storyPath = NULL;
@@ -384,20 +355,10 @@ void game_init(int argc, char **argv) {
 int g_shake;
 void gfx_shake(int amount) { if (amount > g_shake) g_shake = amount; }
 
-int utf8_next(const char **p) {
-  const unsigned char *s = (const unsigned char *)*p;
-  int c = *s;
-  if (c < 0x80) { *p += 1; return c; }
-  if ((c & 0xE0) == 0xC0 && s[1]) { *p += 2; return ((c & 0x1F) << 6) | (s[1] & 0x3F); }
-  if ((c & 0xF0) == 0xE0 && s[1] && s[2]) { *p += 3; return ((c & 0x0F) << 12) | ((s[1] & 0x3F) << 6) | (s[2] & 0x3F); }
-  *p += 1;
-  return '?';
-}
-
 int art_exists(const char *name) { return human_find(name) >= 0 || objmodel_find(name) >= 0; }
 
 /* logika jednej klatki (60 Hz) */
-void game_frame(void) {
+void kx_game_frame(void) {
   if (g_testdrv) testdrv_frame();
   input_update();
   switch (g_mode) {
@@ -421,7 +382,7 @@ void game_frame(void) {
 }
 
 /* rysowanie klatki: scena 3D + postprocess, potem UI 2D */
-void game_draw(void) {
+void kx_game_draw(void) {
   if (!g_render) return;
   g_time = (g_frame - 1 + (g_alpha < 0 ? 0 : g_alpha > 1 ? 1 : g_alpha)) / 60.0f;
   int world = g_mode == MODE_WORLD || g_mode == MODE_MENU || g_mode == MODE_SHOP || g_mode == MODE_GAMEOVER || g_mode == MODE_TITLE;
