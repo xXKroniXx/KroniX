@@ -8,6 +8,15 @@ int g_mouse_x = -1, g_mouse_y = -1, g_want_mouse_capture;
 int g_quit, g_fullscreen_toggle;
 char g_data_dir[512];
 int g_mouse_sens = 5;
+int g_headbob = 0;
+float g_alpha = 1.0f;
+
+void game_look(void) {
+  if (g_mode != MODE_WORLD || !g_want_mouse_capture) return;
+  float sens = g_mouse_sens / 5.0f;
+  world_look(g_mouse_dx * sens, g_mouse_dy * sens);
+  g_mouse_dx = g_mouse_dy = 0;
+}
 int g_render;
 Input in;
 Hero H;
@@ -412,7 +421,7 @@ void game_frame(void) {
 /* rysowanie klatki: scena 3D + postprocess, potem UI 2D */
 void game_draw(void) {
   if (!g_render) return;
-  g_time = g_frame / 60.0f;
+  g_time = (g_frame - 1 + (g_alpha < 0 ? 0 : g_alpha > 1 ? 1 : g_alpha)) / 60.0f;
   int world = g_mode == MODE_WORLD || g_mode == MODE_MENU || g_mode == MODE_SHOP || g_mode == MODE_GAMEOVER || g_mode == MODE_TITLE;
   float sy = 0, sp = 0;
   if (g_shake > 0) { sy = ((rand() % 200) - 100) / 100.0f * 0.004f * g_shake; sp = ((rand() % 200) - 100) / 100.0f * 0.003f * g_shake; W.yaw += sy; W.pitch += sp; }

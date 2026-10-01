@@ -385,12 +385,11 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmd, int show) {
       if (g_fullscreen_toggle) { g_fullscreen_toggle = 0; toggle_fullscreen(); }
     }
     audio_pump();
-    if (steps > 0 || !g_cfg.vsync) {
-      game_draw();
-      SwapBuffers(hdc);
-    } else {
-      Sleep(1);
-    }
+    if (captured) game_look(); /* obrót myszą w każdej klatce ekranu — bez szarpania */
+    g_alpha = (float)(acc / step);
+    (void)steps;
+    game_draw();   /* z vsync SwapBuffers czeka na odświeżenie ekranu: rysujemy w tempie monitora */
+    SwapBuffers(hdc);
     if (!g_cfg.vsync) {
       /* bez vsync: ogranicz do ~144 FPS, żeby nie palić procesora */
       QueryPerformanceCounter(&now);

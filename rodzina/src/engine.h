@@ -92,6 +92,10 @@ int music_exists(const char *name);
 int art_exists(const char *name);
 extern int g_volume;
 extern int g_mouse_sens;
+extern int g_headbob;   /* kołysanie kamery przy chodzeniu: 0 wył., 1 słabe, 2 normalne */
+extern float g_alpha;  /* 0..1: położenie klatki między krokami logiki */
+void game_look(void);  /* platforma: obrót myszą w każdej wyświetlanej klatce */
+void world_look(float dx, float dy);
 
 /* ------------------------------------------------------------------ dane fabuły */
 #define MAX_MAPS 32
@@ -242,6 +246,7 @@ typedef struct {
   int map;
   Ent ents[MAX_ENTS]; int n;
   float px, pz, yaw, pitch, bob, bobT;
+  float ppx, ppz, pbob; /* poprzedni krok logiki (interpolacja rysowania) */
   int time, trans, tMap, tX, tY, tDir, grace;
   int bannerT;
   int hurtT, flashT;

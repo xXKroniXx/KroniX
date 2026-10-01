@@ -102,6 +102,7 @@ void world_load_map(int map, int tx, int ty, int dir) {
     e->animT = (rand() % 1000) / 100.0f;
   }
   W.px = tx + 0.5f; W.pz = ty + 0.5f;
+  W.ppx = W.px; W.ppz = W.pz; W.pbob = W.bob = 0;
   W.yaw = dir_angle(dir); W.pitch = 0;
   W.grace = 30;
   W.bannerT = 170;
@@ -251,6 +252,12 @@ static void check_tile_events(void) {
   }
 }
 
+void world_look(float dx, float dy) {
+  W.yaw -= dx * 0.0032f;
+  W.pitch -= dy * 0.0032f;
+  W.pitch = CLAMP(W.pitch, -0.9f, 0.9f);
+}
+
 static void update_player(void) {
   float spd = (in.held[BTN_RUN] ? 2.9f : 1.7f) / 60.0f;
   float fx = sinf(W.yaw), fz = cosf(W.yaw);
@@ -261,18 +268,18 @@ static void update_player(void) {
   if (in.held[BTN_SR]) { mx += rx; mz += rz; }
   if (in.held[BTN_SL]) { mx -= rx; mz -= rz; }
   float ml = sqrtf(mx * mx + mz * mz);
+  W.ppx = W.px; W.ppz = W.pz; W.pbob = W.bob;
   if (ml > 0.01f) {
     move_circle(&W.px, &W.pz, mx / ml * spd, mz / ml * spd, PR, NULL);
     W.bobT += in.held[BTN_RUN] ? 0.2f : 0.13f;
     if ((int)(W.bobT / PI_F) != (int)((W.bobT - 0.13f) / PI_F)) sfx_play(SFX_STEP);
   }
-  W.bob = ml > 0.01f ? sinf(W.bobT * 2) * 0.012f : W.bob * 0.8f;
+  static const float BOB[3] = {0, 0.005f, 0.012f};
+  W.bob = ml > 0.01f ? sinf(W.bobT * 2) * BOB[CLAMP(g_headbob, 0, 2)] : W.bob * 0.8f;
   float turn = 2.4f / 60.0f;
   if (in.held[BTN_TL]) W.yaw += turn;
   if (in.held[BTN_TR]) W.yaw -= turn;
-  W.yaw -= in.mdx * 0.0032f;
-  W.pitch -= in.mdy * 0.0032f;
-  W.pitch = CLAMP(W.pitch, -0.9f, 0.9f);
+  world_look(in.mdx, in.mdy);
   check_tile_events();
   if (W.trans || script_running()) return;
   if (in.pressed[BTN_A]) {
@@ -436,16 +443,24 @@ static void draw_ent(Ent *e) {
 void world_draw(void) {
   MapDef *m = M();
   REnv env = env_for_map(m);
-  float gy = world_ground(W.px, W.pz);
+  /* interpolacja między krokami logiki (płynność przy monitorach > 60 Hz) */
+  float a = g_alpha < 0 ? 0 : g_alpha > 1 ? 1 : g_alpha;
+  if (fabsf(W.px - W.ppx) + fabsf(W.pz - W.ppz) > 1.0f) a = 1;
+  float cx = W.ppx + (W.px - W.ppx) * a, cz = W.ppz + (W.pz - W.ppz) * a, cb = W.pbob + (W.bob - W.pbob) * a;
+  float gy = world_ground(cx, cz);
   static float camY;
+  static double lastT;
   float target = gy + 0.78f;
   if (fabsf(camY - target) > 0.5f) camY = target;
-  camY += (target - camY) * 0.25f;
-  RCam cam = {v3(W.px, camY + W.bob, W.pz), W.yaw, W.pitch, (float)g_cfg.fov};
+  float dt = (float)(g_time - lastT);
+  lastT = g_time;
+  if (dt < 0 || dt > 0.1f) dt = 1.0f / 60;
+  camY += (target - camY) * (1 - powf(0.75f, dt * 60)); /* wygładzanie krawężników niezależne od FPS */
+  RCam cam = {v3(cx, camY + cb, cz), W.yaw, W.pitch, (float)g_cfg.fov};
   r_frame_begin(&cam, &env);
   city_lights(g_time);
   combat_lights();
-  r_light(W.px, camY + 0.3f, W.pz, 0.22f, 0.2f, 0.18f, 4.0f); /* delikatne doświetlenie wokół gracza */
+  r_light(cx, camY + 0.3f, cz, 0.22f, 0.2f, 0.18f, 4.0f); /* delikatne doświetlenie wokół gracza */
   r_lights_commit();
   city_draw();
   for (int i = 0; i < W.n; i++) {

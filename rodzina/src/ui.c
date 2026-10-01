@@ -115,7 +115,7 @@ void settings_save(void) {
   settings_path(p, sizeof p);
   FILE *f = fopen(p, "w");
   if (!f) return;
-  fprintf(f, "glosnosc %d\nmysz %d\njakosc %d\nfov %d\n", g_volume, g_mouse_sens, g_quality, g_cfg.fov);
+  fprintf(f, "glosnosc %d\nmysz %d\njakosc %d\nfov %d\nkolysanie %d\n", g_volume, g_mouse_sens, g_quality, g_cfg.fov, g_headbob);
   fclose(f);
 }
 void settings_load(void) {
@@ -129,6 +129,7 @@ void settings_load(void) {
     else if (!strcmp(k, "mysz")) g_mouse_sens = CLAMP(v, 1, 10);
     else if (!strcmp(k, "jakosc")) g_quality = CLAMP(v, 0, 3);
     else if (!strcmp(k, "fov")) g_cfg.fov = CLAMP(v, 60, 100);
+    else if (!strcmp(k, "kolysanie")) g_headbob = CLAMP(v, 0, 2);
   }
   fclose(f);
   quality_apply(g_quality);
@@ -138,7 +139,7 @@ void settings_load(void) {
 static Menu pm;
 static int pSub, pItemCur, pOptCur, pQuestScroll;
 static int itemList[MAX_ITEMS], nItemList;
-#define NOPTS 5
+#define NOPTS 6
 
 void ui_open_pause(void) {
   menu_init(&pm);
@@ -188,7 +189,8 @@ static void opt_change(int d) {
     case 1: g_mouse_sens = CLAMP(g_mouse_sens + d, 1, 10); break;
     case 2: quality_apply(g_quality + d); break;
     case 3: g_cfg.fov = CLAMP(g_cfg.fov + d * 5, 60, 100); break;
-    case 4: if (d) g_fullscreen_toggle = 1; break;
+    case 4: g_headbob = CLAMP(g_headbob + d, 0, 2); break;
+    case 5: if (d) g_fullscreen_toggle = 1; break;
   }
   sfx_play(SFX_BLIP);
   settings_save();
@@ -220,7 +222,7 @@ void ui_pause_update(void) {
     if (in.rep[BTN_DOWN]) { pOptCur = (pOptCur + 1) % NOPTS; sfx_play(SFX_BLIP); }
     /* mysz: wiersze opcji */
     for (int i = 0; i < NOPTS; i++) {
-      float y = 168 + i * 58;
+      float y = 178 + i * 50;
       if (in.mx >= 450 && in.mx < 1140 && in.my >= y && in.my < y + 48) {
         pOptCur = i;
         if (in.click) opt_change(in.mx > 900 ? 1 : -1);
@@ -228,7 +230,7 @@ void ui_pause_update(void) {
     }
     if (in.rep[BTN_LEFT]) opt_change(-1);
     if (in.rep[BTN_RIGHT]) opt_change(1);
-    if (in.pressed[BTN_A] && pOptCur == 4) opt_change(1);
+    if (in.pressed[BTN_A] && pOptCur == 5) opt_change(1);
   } else if (pSub == 4) {
     if (in.pressed[BTN_B]) { pSub = 0; sfx_play(SFX_CANCEL); }
     if (in.pressed[BTN_A] || in.click) { ui_title_enter(); }
@@ -337,9 +339,9 @@ void ui_pause_draw(void) {
     if (!H.nq) d2_text_sh(FONT_SANS, 20, x, y + 60, "Brak wpisów.", UI_GREY);
   } else if (view == 3) {
     d2_text_sh(FONT_SERIF, 30, x, y, "Opcje", UI_GOLD);
-    const char *names[NOPTS] = {"Głośność", "Czułość myszy", "Jakość grafiki", "Pole widzenia", "Pełny ekran (F11)"};
+    const char *names[NOPTS] = {"Głośność", "Czułość myszy", "Jakość grafiki", "Pole widzenia", "Kołysanie kamery", "Pełny ekran (F11)"};
     for (int i = 0; i < NOPTS; i++) {
-      float ry = 168 + i * 58;
+      float ry = 178 + i * 50;
       int sel = pSub == 3 && pOptCur == i;
       d2_rrect(450, ry, 690, 48, 10, sel ? 0xC0362A1A : 0x80141016);
       if (sel) d2_rrect_line(450, ry, 690, 48, 10, 1.5f, UI_GOLD);
@@ -349,16 +351,17 @@ void ui_pause_draw(void) {
       if (i == 1) snprintf(v, sizeof v, "%d", g_mouse_sens);
       if (i == 2) snprintf(v, sizeof v, "%s", QNAMES[g_quality]);
       if (i == 3) snprintf(v, sizeof v, "%d°", g_cfg.fov);
-      if (i == 4) snprintf(v, sizeof v, "przełącz");
+      if (i == 4) snprintf(v, sizeof v, "%s", g_headbob == 0 ? "wyłączone" : g_headbob == 1 ? "słabe" : "normalne");
+      if (i == 5) snprintf(v, sizeof v, "przełącz");
       if (i <= 1) bar_h(760, ry + 18, 200, (float)(i == 0 ? g_volume : g_mouse_sens), 10, 0xFFE8C860, 0xFFB08A30);
       d2_text_c(FONT_BOLD, 20, 1060, ry + 12, v, UI_CREAM);
-      d2_text(FONT_SANS, 20, 990, ry + 12, "\xe2\x86\x90", UI_DIM);
-      d2_text(FONT_SANS, 20, 1112, ry + 12, "\xe2\x86\x92", UI_DIM);
+      d2_text(FONT_SANS, 20, 966, ry + 12, "\xe2\x86\x90", UI_DIM);
+      d2_text(FONT_SANS, 20, 1128, ry + 12, "\xe2\x86\x92", UI_DIM);
     }
-    d2_text_sh(FONT_SERIF, 20, x, 470, "Sterowanie", UI_GOLD);
-    d2_text_sh(FONT_SANS, 16, x, 500, "WASD — ruch   Mysz — rozglądanie   Shift — bieg   E — rozmowa / drzwi", UI_GREY);
-    d2_text_sh(FONT_SANS, 16, x, 524, "LPM — strzał   R — przeładowanie   1-4 / kółko — broń   Esc — menu", UI_GREY);
-    d2_text_sh(FONT_SANS, 16, x, 548, "Tab — Księga Rodziny   N — koniec dnia   F11 / Alt+Enter — pełny ekran", UI_GREY);
+    d2_text_sh(FONT_SERIF, 20, x, 486, "Sterowanie", UI_GOLD);
+    d2_text_sh(FONT_SANS, 16, x, 514, "WASD — ruch   Mysz — rozglądanie   Shift — bieg   E — rozmowa / drzwi", UI_GREY);
+    d2_text_sh(FONT_SANS, 16, x, 536, "LPM — strzał   R — przeładowanie   1-4 / kółko — broń   Esc — menu", UI_GREY);
+    d2_text_sh(FONT_SANS, 16, x, 558, "Tab — Księga Rodziny   N — koniec dnia   F11 / Alt+Enter — pełny ekran", UI_GREY);
   } else if (view == 4) {
     d2_text_sh(FONT_SERIF, 32, x, y + 40, "Wrócić do menu głównego?", UI_GOLD);
     d2_text_sh(FONT_SANS, 20, x, y + 100, "Niezapisany postęp przepadnie.", UI_CREAM);
@@ -460,6 +463,7 @@ void ui_title_update(void) {
     float len = m->w - 6.0f;
     float u = fmodf(t * 0.35f, len * 2);
     if (u > len) u = len * 2 - u;
+    W.ppx = W.px; W.ppz = W.pz; W.pbob = W.bob = 0;
     W.px = 3 + u;
     W.pz = m->h * 0.5f + sinf(t * 0.2f) * 0.6f;
     W.yaw = 1.5708f + sinf(t * 0.13f) * 0.5f;
