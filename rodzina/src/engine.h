@@ -221,6 +221,7 @@ int cars_near(void);
 int cars_enter(void);
 int cars_block(float x, float z, float r);
 int car_player(void);
+void cars_showcase(void);
 void combat_damage_ent(Ent *e, int dmg);
 /* znacznik celu misji: mapa+kafel albo NPC (id); map<0 i id NULL = brak */
 void world_marker_set(int map, int x, int y, const char *npcId);

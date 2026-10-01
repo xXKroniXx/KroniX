@@ -445,6 +445,40 @@ static void t_metal(void) {
       PX(x, y) = c;
     }
 }
+/* lakier samochodowy: jasna baza (kolor z wierzchołka), lekka skórka pomarańczy */
+static void t_paint(void) {
+  for (int y = 0; y < N; y++)
+    for (int x = 0; x < N; x++) {
+      float u = (float)x / N, v = (float)y / N;
+      float n = fbm(u, v, 12, 3, 171);
+      C4 c = mixc(rgb(0xE4E4E4), rgb(0xF4F4F4), n);
+      c.a = 0.82f + 0.08f * n;
+      PX(x, y) = c;
+    }
+}
+/* chrom: jasny, z pionowym gradientem odbicia nieba */
+static void t_chrome(void) {
+  for (int y = 0; y < N; y++)
+    for (int x = 0; x < N; x++) {
+      float v = (float)y / N;
+      float b = 0.55f + 0.4f * (v < 0.5f ? 1 - v * 1.4f : (v - 0.5f) * 1.2f);
+      C4 c = mixc(rgb(0x6A7078), rgb(0xF4F6F8), b);
+      c.a = 0.95f;
+      PX(x, y) = c;
+    }
+}
+/* opona: guma z bieżnikiem */
+static void t_tire(void) {
+  for (int y = 0; y < N; y++)
+    for (int x = 0; x < N; x++) {
+      float u = (float)x / N, v = (float)y / N;
+      int tread = ((int)(u * 32) + (int)(v * 4)) & 1;
+      C4 c = mixc(rgb(0x2A2A2A), rgb(0x3A3A3A), fbm(u, v, 8, 3, 181));
+      if (tread) c = mulc(c, 0.75f);
+      c.a = 0.2f;
+      PX(x, y) = c;
+    }
+}
 static void t_brass(void) {
   for (int y = 0; y < N; y++)
     for (int x = 0; x < N; x++) {
@@ -928,6 +962,9 @@ void tex_generate(void) {
       case L_PAINTING: t_painting(); break;
       case L_FIRE: t_fire(); break;
       case L_GRAVEL: t_gravel(); break;
+      case L_PAINT: t_paint(); break;
+      case L_CHROME: t_chrome(); break;
+      case L_TIRE: t_tire(); break;
     }
     kxp_layer_store(L);
   }

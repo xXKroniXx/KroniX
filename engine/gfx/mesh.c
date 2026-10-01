@@ -200,6 +200,21 @@ static void quad_out(MB *b, V3 a, V3 c, V3 d, V3 f, V3 ctr) {
 }
 
 /* fazowany prostopadłościan (miękkie krawędzie, wygląd „indie low-poly”) */
+void mb_arch_z(MB *b, V3 c, float r, float thick, float hw, float a0, float a1, int seg) {
+  float ri = r - thick;
+  for (int i = 0; i < seg; i++) {
+    float t0 = a0 + (a1 - a0) * i / seg, t1 = a0 + (a1 - a0) * (i + 1) / seg;
+    float c0 = cosf(t0), s0 = sinf(t0), c1 = cosf(t1), s1 = sinf(t1);
+#define AP(cs, sn, rr, zz) v3(c.x + (cs) * (rr), c.y + (sn) * (rr), c.z + (zz))
+    float u0 = (float)i / seg, u1 = (float)(i + 1) / seg;
+    mb_quad(b, AP(c0, s0, r, -hw), AP(c1, s1, r, -hw), AP(c1, s1, r, hw), AP(c0, s0, r, hw), u0, 0, u1, 1);
+    mb_quad(b, AP(c0, s0, ri, hw), AP(c1, s1, ri, hw), AP(c1, s1, ri, -hw), AP(c0, s0, ri, -hw), u0, 0, u1, 1);
+    mb_quad(b, AP(c0, s0, ri, hw), AP(c0, s0, r, hw), AP(c1, s1, r, hw), AP(c1, s1, ri, hw), u0, 0, u1, 0.1f);
+    mb_quad(b, AP(c0, s0, ri, -hw), AP(c1, s1, ri, -hw), AP(c1, s1, r, -hw), AP(c0, s0, r, -hw), u0, 0, u1, 0.1f);
+#undef AP
+  }
+}
+
 void mb_rbox(MB *b, V3 mn, V3 mx, float e) {
   float sx = mx.x - mn.x, sy = mx.y - mn.y, sz = mx.z - mn.z;
   float lim = (sx < sy ? (sx < sz ? sx : sz) : (sy < sz ? sy : sz)) * 0.45f;
