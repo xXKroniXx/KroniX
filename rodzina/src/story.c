@@ -373,6 +373,12 @@ static void parse_map_line(char *line) {
   else if (!strcmp(c, "rain")) m->rain = ival(1, 1);
   else if (!strcmp(c, "interior")) { m->interior = 1; m->ceil = sval(1) ? (float)atof(sval(1)) : 1.6f; }
   else if (!strcmp(c, "floors")) m->floors = ival(1, 3);
+  else if (!strcmp(c, "ambient")) {
+    static const char *AN[] = {"-", "street", "harbor", "room", "crowd", "office", "church", "warehouse"};
+    m->ambient = -1;
+    for (int k = 0; k < 8; k++) if (sval(1) && !strcmp(sval(1), AN[k])) m->ambient = k;
+    if (m->ambient < 0) { err("nieznany ambient '%s'", sval(1)); m->ambient = 0; }
+  }
   else if (!strcmp(c, "district")) m->district = ival(1, 0);
   else if (!strcmp(c, "entry")) { m->ex = ival(1, 0); m->ey = ival(2, 0); m->edir = dir_parse(sval(3)); }
   else if (!strcmp(c, "tiles")) { sec = SEC_TILES; curMapRows = 0; }

@@ -1,6 +1,7 @@
 # Mapy 3D — wygenerowane przez tools/maps.py, legenda kafli w src/world3d.c
 
 @map dom
+ambient room
 name "Mieszkanie Kowalskich"
 music polonia
 night 120
@@ -51,6 +52,7 @@ npc zoska 9 8 zoska up s_zoska
 npc vito_p 16 3 vito down s_vito_polonia if PIEKARNIA_OK ifnot DON_POZNANY
 
 @map piekarnia
+ambient room
 name "Piekarnia Wiśniewskiego"
 music polonia
 night 120
@@ -124,6 +126,7 @@ warp 4 6 italia 32 2 down
 npc gino 4 2 gino down s_gino
 
 @map trattoria
+ambient crowd
 name "Trattoria Bella Napoli"
 music italia
 night 120
@@ -152,6 +155,7 @@ npc gosc2 12 4 pani left s_gosc if MISJA_URODZINY ifnot STRZELANINA
 obj ksiega 18 3 ledger up s_ksiega if SZEF
 
 @map kosciol
+ambient church
 name "Kościół św. Rocha"
 music kosciol
 night 120
@@ -180,6 +184,7 @@ npc enzo_k 11 8 enzo up s_enzo if MISJA_POGRZEB ifnot POGRZEB_OK
 npc babcia 3 6 mama down s_babcia
 
 @map doki
+ambient harbor
 name "Doki nad rzeką"
 music doki
 night 120
@@ -237,6 +242,7 @@ npc chinka 18 7 pani up s_przechodzien wander
 npc sprzedawca 20 2 triada down s_sprzedawca
 
 @map herbaciarnia
+ambient crowd
 name "Herbaciarnia Złoty Smok"
 music chiny
 night 120
@@ -258,6 +264,7 @@ npc tri1 4 2 triada down s_straz_triady
 npc tri2 10 2 triada down s_straz_triady
 
 @map browar
+ambient warehouse
 name "Levee — browar Russo"
 music akcja
 night 120
@@ -314,6 +321,7 @@ WWWWWWWWWWWWWWWWWWWWWWWWWWWW
 endtiles
 
 @map op_magazyn
+ambient warehouse
 name "Magazyn"
 music akcja
 night 120
@@ -341,6 +349,7 @@ MMMMMMMMMMMMMMMMMMMMMMMMMM
 endtiles
 
 @map op_bank
+ambient church
 name "First National Bank"
 music akcja
 interior 2.4
@@ -364,6 +373,7 @@ QQQQQQQQQQQDQQQQQQQQQQQQ
 endtiles
 
 @map op_hq
+ambient office
 name "Rezydencja"
 music boss
 night 120

@@ -448,6 +448,7 @@ void ui_title_enter(void) {
   W.bannerT = 0;
   game_set_mode(MODE_TITLE);
   music_play("tytul");
+  audio_ambience(AMB_STREET, 1.0f, 0);
 }
 void ui_title_update(void) {
   titleT++;
@@ -542,6 +543,7 @@ void ui_ending_start(const char *title, const char *text) {
   endT = 0;
   game_set_mode(MODE_ENDING);
   music_play("koniec");
+  audio_ambience(AMB_NONE, 0.4f, 1);
   H.vars[var_find("_UKONCZONO", 1)] = 1;
 }
 void ui_ending_update(void) {

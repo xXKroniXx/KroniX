@@ -125,27 +125,27 @@ static void pad_poll(void) {
 }
 
 /* ---------------------------------------------------------------- dźwięk */
-#define NBUF 4
-#define BUFSAMP 1024
+#define NBUF 5
+#define BUFSAMP 1024 /* ramek stereo */
 static HWAVEOUT waveOut;
 static WAVEHDR hdr[NBUF];
-static int16_t abuf[NBUF][BUFSAMP];
+static int16_t abuf[NBUF][BUFSAMP * 2];
 static int audioOk;
 
 static void audio_open(void) {
   WAVEFORMATEX wf;
   memset(&wf, 0, sizeof wf);
   wf.wFormatTag = WAVE_FORMAT_PCM;
-  wf.nChannels = 1;
+  wf.nChannels = 2;
   wf.nSamplesPerSec = AUDIO_RATE;
   wf.wBitsPerSample = 16;
-  wf.nBlockAlign = 2;
-  wf.nAvgBytesPerSec = AUDIO_RATE * 2;
+  wf.nBlockAlign = 4;
+  wf.nAvgBytesPerSec = AUDIO_RATE * 4;
   if (waveOutOpen(&waveOut, WAVE_MAPPER, &wf, 0, 0, CALLBACK_NULL) != MMSYSERR_NOERROR) return;
   for (int i = 0; i < NBUF; i++) {
     memset(&hdr[i], 0, sizeof hdr[i]);
     hdr[i].lpData = (LPSTR)abuf[i];
-    hdr[i].dwBufferLength = BUFSAMP * 2;
+    hdr[i].dwBufferLength = BUFSAMP * 4;
     waveOutPrepareHeader(waveOut, &hdr[i], sizeof(WAVEHDR));
     hdr[i].dwFlags |= WHDR_DONE;
   }

@@ -46,7 +46,7 @@ put(g, 1, 1, 'B___i_f_')
 put(g, 1, 3, '__t_____')
 put(g, 1, 4, '___i__u_')
 put(g, 0, 6, 'iiiiDiiiii')
-add('dom', ['name "Mieszkanie Kowalskich"', 'music polonia', 'night 120', 'interior 1.5', 'bg wood'], g, [
+add('dom', ['ambient room', 'name "Mieszkanie Kowalskich"', 'music polonia', 'night 120', 'interior 1.5', 'bg wood'], g, [
     'npc mama 7 3 mama left s_mama',
     'obj zdjecie 3 3 papers down s_zdjecie',
     'warp 4 6 polonia 5 2 down',
@@ -92,7 +92,7 @@ put(g, 2, 4, 'X')
 put(g, 7, 4, 't')
 put(g, 9, 4, 'k')
 put(g, 0, 7, 'QQQQQDQQQQQQ')
-add('piekarnia', ['name "Piekarnia Wiśniewskiego"', 'music polonia', 'night 120', 'interior 1.6', 'bg wood'], g, [
+add('piekarnia', ['ambient room', 'name "Piekarnia Wiśniewskiego"', 'music polonia', 'night 120', 'interior 1.6', 'bg wood'], g, [
     'warp 5 7 polonia 15 2 down',
     'npc piekarz 3 2 piekarz down s_piekarz',
     'npc zb1 4 3 sal down s_zbiry_piek if MISJA_PIEKARNIA ifnot PIEKARNIA_OK',
@@ -158,7 +158,7 @@ g = [list(r) for r in [
     'jPqqqqqtqqqtqqjrrrrfrj',
     'jqqqqqqqqqqqqqjjjjjjjj',
     'jjjjjjDjjjjjjjjjjjjjjj']]
-add('trattoria', ['name "Trattoria Bella Napoli"', 'music italia', 'night 120', 'interior 1.8'], g, [
+add('trattoria', ['ambient crowd', 'name "Trattoria Bella Napoli"', 'music italia', 'night 120', 'interior 1.8'], g, [
     'warp 6 9 italia 8 2 down',
     'npc don 18 2 don down s_don ifnot DON_NIE_ZYJE',
     'npc kelner 2 2 kelner down s_kelner',
@@ -186,7 +186,7 @@ g = [list(r) for r in [
     'g_____________g',
     '#_____________#',
     '#######D#######']]
-add('kosciol', ['name "Kościół św. Rocha"', 'music kosciol', 'night 120', 'interior 2.6', 'bg stone'], g, [
+add('kosciol', ['ambient church', 'name "Kościół św. Rocha"', 'music kosciol', 'night 120', 'interior 2.6', 'bg stone'], g, [
     'warp 7 12 italia 22 2 down',
     'npc ksiadz 7 2 ksiadz down s_ksiadz',
     'npc lucia_k 5 4 lucia down s_lucia_pogrzeb if MISJA_POGRZEB ifnot POGRZEB_OK',
@@ -215,7 +215,7 @@ g[6][8] = 'C'; g[6][9] = 'C'; g[10][3] = 'c'
 for x, y in ((4, 5), (18, 5), (12, 12)):
     g[y][x] = 'L'
 g[9][26] = 'm'; g[3][27] = 'm'
-add('doki', ['name "Doki nad rzeką"', 'music doki', 'night 120', 'rain 1', 'district 3', 'floors 2', 'entry 1 6 right'], g, [
+add('doki', ['ambient harbor', 'name "Doki nad rzeką"', 'music doki', 'night 120', 'rain 1', 'district 3', 'floors 2', 'entry 1 6 right'], g, [
     'warp 0 6 italia 30 6 left', 'warp 0 7 italia 30 6 left',
     'npc gino_d 12 6 gino left s_gino_doki if MISJA_DOKI ifnot DOKI_OK',
     'npc dokowiec 20 7 dokowiec left s_dokowiec wander',
@@ -255,7 +255,7 @@ g = [list(r) for r in [
     'z_t__________z',
     'z____________z',
     'zzzzzzDzzzzzzz']]
-add('herbaciarnia', ['name "Herbaciarnia Złoty Smok"', 'music chiny', 'night 120', 'interior 1.7'], g, [
+add('herbaciarnia', ['ambient crowd', 'name "Herbaciarnia Złoty Smok"', 'music chiny', 'night 120', 'interior 1.7'], g, [
     'warp 6 8 chinatown 10 2 down',
     'npc lee 7 1 lee down s_lee',
     'npc tri1 4 2 triada down s_straz_triady',
@@ -277,7 +277,7 @@ for x, y in ((19, 4), (20, 4), (25, 5), (8, 12), (9, 12), (15, 13), (20, 13)):
     g[y][x] = 'k'
 g[11][6] = 'C'; g[11][7] = 'C'
 g[15][13] = 'o'; g[15][14] = 'o'
-add('browar', ['name "Levee — browar Russo"', 'music akcja', 'night 120', 'interior 2.4', 'district 8', 'entry 13 14 up'], g, [
+add('browar', ['ambient warehouse', 'name "Levee — browar Russo"', 'music akcja', 'night 120', 'interior 2.4', 'district 8', 'entry 13 14 up'], g, [
     'warp 13 15 italia 30 6 left', 'warp 14 15 italia 30 6 left',
     'npc vito_b 12 13 vito up s_vito_browar if MISJA_BROWAR ifnot BROWAR_OK',
     'npc robotnik_b 21 12 robotnik left s_robotnik_browar if BROWAR_OK',
@@ -316,7 +316,7 @@ for x, y in ((22, 3), (22, 4), (21, 8), (2, 8), (8, 8), (14, 8), (22, 14), (3, 1
     g[y][x] = 'k'
 g[8][19] = 'V'; g[2][23] = 'V'
 g[15][10] = 'C'; g[15][11] = 'C'
-add('op_magazyn', ['name "Magazyn"', 'music akcja', 'night 120', 'interior 2.6', 'entry 2 15 up'], g, [])
+add('op_magazyn', ['ambient warehouse', 'name "Magazyn"', 'music akcja', 'night 120', 'interior 2.6', 'entry 2 15 up'], g, [])
 
 # bank
 g = [list(r) for r in [
@@ -335,7 +335,7 @@ g = [list(r) for r in [
     'QqqtqqqqhhhhhqqqqqqqtqqQ',
     'QqqqqqqqqqqqqqqqqqqqqqqQ',
     'QQQQQQQQQQQDQQQQQQQQQQQQ']]
-add('op_bank', ['name "First National Bank"', 'music akcja', 'interior 2.4', 'entry 11 13 up'], g, [])
+add('op_bank', ['ambient church', 'name "First National Bank"', 'music akcja', 'interior 2.4', 'entry 11 13 up'], g, [])
 
 # rezydencja bossa
 g = [list(r) for r in [
@@ -355,7 +355,7 @@ g = [list(r) for r in [
     'jrrhhrrrrrrrrrrrrrrhhrrrrj',
     'jrrrrrrrrrrrrrrrrrrrrrrrrj',
     'jjjjjjjjjjjDjjjjjjjjjjjjjj']]
-add('op_hq', ['name "Rezydencja"', 'music boss', 'night 120', 'interior 1.9'], g, [])
+add('op_hq', ['ambient office', 'name "Rezydencja"', 'music boss', 'night 120', 'interior 1.9'], g, [])
 for m in maps:
     if m[0] == 'op_hq':
         m[1].append('entry 9 14 up')

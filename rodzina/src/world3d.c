@@ -73,6 +73,15 @@ static float dir_angle(int dir) {
 static EntDef spawnDefs[32];
 static int nspawn;
 
+/* muzyka i tło dźwiękowe bieżącej mapy */
+void world_audio(void) {
+  MapDef *m = M();
+  if (m->music[0]) music_play(m->music);
+  int amb = m->ambient ? m->ambient : m->interior ? AMB_ROOM : AMB_STREET;
+  float space = amb == AMB_CHURCH || amb == AMB_WAREHOUSE ? 2 : m->interior ? 1 : 0;
+  audio_ambience(amb, m->rain ? 1.0f : 0.0f, space);
+}
+
 void world_load_map(int map, int tx, int ty, int dir) {
   if (map < 0 || map >= S.nmaps) return;
   W.map = map;
@@ -96,7 +105,7 @@ void world_load_map(int map, int tx, int ty, int dir) {
   W.yaw = dir_angle(dir); W.pitch = 0;
   W.grace = 30;
   W.bannerT = 170;
-  if (m->music[0]) music_play(m->music);
+  world_audio();
   world_refresh_visibility();
 }
 

@@ -1774,6 +1774,7 @@ void tycoon_open(void) {
   }
   game_set_mode(MODE_TYCOON);
   music_play("biuro");
+  audio_ambience(AMB_OFFICE, 0.7f, 1);
   input_clear();
   if (!md && T.nev) open_events();
 }
@@ -1781,8 +1782,7 @@ void tycoon_open(void) {
 static void close_ledger(void) {
   md = 0;
   game_set_mode(MODE_WORLD);
-  MapDef *m = &S.maps[W.map];
-  if (m->music[0]) music_play(m->music);
+  world_audio();
 }
 
 void tycoon_update(void) {

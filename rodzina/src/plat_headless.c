@@ -2,6 +2,8 @@
  * rysowanie przez OSMesa (OpenGL programowy) do zrzutów ekranu. */
 #include "engine.h"
 #include "glapi.h"
+#include <math.h>
+#include <time.h>
 
 typedef struct osmesa_context *OSMesaContext;
 extern OSMesaContext OSMesaCreateContextAttribs(const int *attribList, OSMesaContext sharelist);
@@ -31,7 +33,26 @@ int main(int argc, char **argv) {
     g_winW = w; g_winH = h;
   }
   game_init(argc, argv);
-  int16_t audio[400];
+  for (int i = 1; i + 3 < argc; i++)
+    if (!strcmp(argv[i], "--wav")) { /* --wav utwór|sfx:nazwa|amb:N sekundy plik.wav */
+      const char *what = argv[i + 1];
+      int sec = atoi(argv[i + 2]), frames = sec * AUDIO_RATE;
+      if (!strncmp(what, "sfx:", 4)) { sfx_play(sfx_find(what + 4)); music_play(NULL); }
+      else if (!strncmp(what, "amb:", 4)) { music_play(NULL); audio_ambience(atoi(what + 4), what[4] == '1' ? 1.0f : 0.0f, 0); }
+      else music_play(what);
+      int16_t *pcm = malloc((size_t)frames * 4);
+      clock_t c0 = clock();
+      for (int f = 0; f < frames; f += 1024) audio_render(pcm + f * 2, frames - f < 1024 ? frames - f : 1024);
+      double el = (double)(clock() - c0) / CLOCKS_PER_SEC;
+      long peak = 0; double rms = 0;
+      for (int k = 0; k < frames * 2; k++) { long v = labs((long)pcm[k]); if (v > peak) peak = v; rms += (double)pcm[k] * pcm[k]; }
+      printf("%s: %d s, CPU %.2f s (%.1f%%), szczyt %ld, RMS %.0f\n", what, sec, el, el * 100 / sec, peak, sqrt(rms / (frames * 2.0)));
+      FILE *f = fopen(argv[i + 3], "wb");
+      unsigned hdr[11] = {0x46464952, 36 + frames * 4, 0x45564157, 0x20746d66, 16, 0x00020001, AUDIO_RATE, AUDIO_RATE * 4, 0x00100004, 0x61746164, frames * 4};
+      fwrite(hdr, 4, 11, f); fwrite(pcm, 4, frames, f); fclose(f);
+      exit(0);
+    }
+  static int16_t audio[AUDIO_RATE / 60 * 2 + 16];
   for (long f = 0; f < maxFrames && !g_quit; f++) {
     g_mouse_dx = g_mouse_dy = 0;
     game_frame();

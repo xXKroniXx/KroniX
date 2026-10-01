@@ -12,7 +12,7 @@
 
 #define SCREEN_W UI_W
 #define SCREEN_H UI_H
-#define AUDIO_RATE 22050
+#define AUDIO_RATE 44100 /* stereo, próbki przeplatane L,P */
 typedef uint32_t u32;
 typedef uint8_t u8;
 
@@ -77,11 +77,16 @@ extern int g_shake;
 /* ------------------------------------------------------------------ dźwięk */
 enum { SFX_BLIP, SFX_OK, SFX_CANCEL, SFX_HIT, SFX_CRIT, SFX_FIRE, SFX_HEAL, SFX_DOOR,
        SFX_CHEST, SFX_LEVEL, SFX_ENCOUNTER, SFX_FLEE, SFX_DIE, SFX_MAGIC, SFX_TEXT,
-       SFX_PISTOL, SFX_TOMMY, SFX_SHOTGUN, SFX_PUNCH, SFX_RELOAD, SFX_EMPTY, SFX_STEP, SFX_HURT, SFX_COUNT };
+       SFX_PISTOL, SFX_TOMMY, SFX_SHOTGUN, SFX_PUNCH, SFX_RELOAD, SFX_EMPTY, SFX_STEP, SFX_HURT,
+       SFX_HORN, SFX_PHONE, SFX_GLASS, SFX_BELL, SFX_TYPE, SFX_PAPER, SFX_CAR, SFX_COUNT };
 void audio_init(void);
 void music_play(const char *name);
 void sfx_play(int id);
 void sfx_play_at(int id, float dist);
+void sfx_play_pan(int id, float gain, float pan);
+/* tło dźwiękowe: rodzaj miejsca, deszcz 0..1, akustyka 0 plener / 1 pokój / 2 hala */
+enum { AMB_NONE, AMB_STREET, AMB_HARBOR, AMB_ROOM, AMB_CROWD, AMB_OFFICE, AMB_CHURCH, AMB_WAREHOUSE };
+void audio_ambience(int kind, float rain, float space);
 int sfx_find(const char *name);
 int music_exists(const char *name);
 int art_exists(const char *name);
@@ -121,7 +126,7 @@ typedef struct {
 
 typedef struct {
   char id[24], name[48], music[24], bg[24];
-  int w, h, night, rain, interior, floors, district;
+  int w, h, night, rain, interior, floors, district, ambient; /* ambient: AMB_* (0 = automatycznie) */
   float ceil;
   int ex, ey, edir; /* punkt wejścia przy podróży (-1 = brak) */
   u8 tiles[MAX_MAP_H][MAX_MAP_W];
@@ -243,6 +248,7 @@ typedef struct {
 } World;
 extern World W;
 
+void world_audio(void);
 void world_load_map(int map, int tx, int ty, int dir);
 void world_update(void);
 void world_draw(void);
