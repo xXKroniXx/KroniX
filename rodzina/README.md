@@ -20,6 +20,17 @@ klaksony, gwar w lokalach, zegar w gabinecie, syrena mgłowa w dokach.
 4. Wymagana karta graficzna z OpenGL 3.3 (praktycznie każda od 2010 r.). Jakość grafiki
    (Niska / Średnia / Wysoka / Ultra), pole widzenia i czułość myszy zmienisz w Opcjach.
 
+## Otwarte miasto i samochody
+
+Całe Chicago to **jedna duża mapa**: Polonia, Mała Italia, Chinatown, doki, Levee, North Side, wieżowce
+Loopu i Michigan Avenue nad jeziorem Michigan połączone alejami (Ashland, Halsted, Grand, Cermak).
+Do budynków wchodzisz drzwiami (krótkie przyciemnienie ekranu), ulice przechodzą płynnie jedna w drugą.
+
+* **Znacznik celu** — złoty słup światła, punkt na minimapie i odległość w metrach.
+* **Samochody** — podejdź do auta i naciśnij **E**. W/S — gaz/hamulec/wsteczny, A/D — skręt,
+  LPM — klakson, mysz — rozglądanie, E (po zatrzymaniu) — wysiądź. Na Racine Street przy trattorii
+  stoi Packard Rodziny. Po arteriach jeździ ruch uliczny; auto z ulicy też można „pożyczyć”.
+
 ## Fabuła (prolog w 3D)
 
 Jesteś Tomkiem Kowalskim, chłopakiem z Polonii. Stajesz w obronie piekarza nękanego przez ludzi Russo

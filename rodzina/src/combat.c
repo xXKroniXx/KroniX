@@ -88,6 +88,8 @@ static void kill_ent(Ent *e, int byPlayer) {
   }
 }
 
+static void damage_ent(Ent *e, int dmg, int byPlayer);
+void combat_damage_ent(Ent *e, int dmg) { damage_ent(e, dmg, 1); }
 static void damage_ent(Ent *e, int dmg, int byPlayer) {
   if (e->dead) return;
   e->hp -= dmg;
@@ -169,6 +171,7 @@ void combat_top_up(int w) {
 }
 
 void combat_update(void) {
+  if (car_player() >= 0) return;
   if (C.cool > 0) C.cool--;
   if (C.kick > 0) C.kick--;
   if (C.flashT > 0) C.flashT--;
@@ -487,7 +490,9 @@ void combat_draw_hud(void) {
   if (g_mode != MODE_WORLD) return;
   char b[96];
   float cx = UI_W / 2.0f, cy = UI_H / 2.0f;
+  int driving = car_player() >= 0;
   /* celownik */
+  if (!driving) {
   u32 ch = C.aimEnemy ? 0xE8F05050 : 0xD0F0F0F0;
   float sp = 7 + (C.kick > 0 ? C.kick * 0.8f : 0) + (in.held[BTN_UP] || in.held[BTN_DOWN] || in.held[BTN_SL] || in.held[BTN_SR] ? 3 : 0);
   if (H.weapon != WPN_FISTS) {
@@ -499,6 +504,7 @@ void combat_draw_hud(void) {
     u32 hc = C.hitMark > 10 ? 0xFFFF5040 : 0xFFF0E0B0;
     d2_line(cx - 14, cy - 14, cx - 6, cy - 6, 2.5f, hc); d2_line(cx + 14, cy - 14, cx + 6, cy - 6, 2.5f, hc);
     d2_line(cx - 14, cy + 14, cx - 6, cy + 6, 2.5f, hc); d2_line(cx + 14, cy + 14, cx + 6, cy + 6, 2.5f, hc);
+  }
   }
   /* zdrowie i pancerz */
   float hx = 28, hy = UI_H - 92;
@@ -520,6 +526,7 @@ void combat_draw_hud(void) {
   }
   /* broń i amunicja */
   float ax = UI_W - 300, ay = UI_H - 92;
+  if (driving) cars_hud(); else {
   d2_shadow(ax, ay, 272, 64, 12, 14, 0x90000000);
   d2_rrect(ax, ay, 272, 64, 12, 0xC8121016);
   d2_rrect_line(ax, ay, 272, 64, 12, 1.5f, 0x70E8B84A);
@@ -532,6 +539,7 @@ void combat_draw_hud(void) {
     if (C.reloadT) d2_text_sh(FONT_SANS, 15, ax + 16, ay + 38, "Przeładowanie...", UI_GREY);
     else if (H.clip[H.weapon] == 0 && H.ammo[H.weapon] == 0) d2_text_sh(FONT_SANS, 15, ax + 16, ay + 38, "Brak amunicji", UI_RED);
   } else d2_text_sh(FONT_SANS, 15, ax + 16, ay + 36, "1-4 / kółko: zmiana broni", UI_DIM);
+  }
   /* pieniądze */
   snprintf(b, sizeof b, "$ %d", H.gold);
   float mw = d2_text_w(FONT_BOLD, 24, b) + 34;
@@ -544,7 +552,7 @@ void combat_draw_hud(void) {
     if (world_marker_pos(&gx, &gz)) {
       float d = sqrtf((gx - W.px) * (gx - W.px) + (gz - W.pz) * (gz - W.pz)) * 1.9f;
       char db[32];
-      snprintf(db, sizeof db, "\xe2\x97\x86 cel: %d m", (int)d);
+      snprintf(db, sizeof db, "Cel: %d m", (int)d);
       d2_text_r(FONT_BOLD, 16, UI_W - 30, 252, db, 0xFFFFC040);
     }
   }

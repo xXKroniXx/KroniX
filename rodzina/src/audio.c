@@ -1256,6 +1256,22 @@ void sfx_play_at(int id, float dist) {
 
 void sfx_play_pan(int id, float gain, float pan) { sfx_play_ex(id, gain, pan); }
 
+/* silnik auta: ciągły dźwięk, wysokość zależna od obrotów */
+static float engRpm, engGain, engRpmT, engGainT, engPh, engPh2, engLp, engLp2;
+void audio_engine(float rpm, float gain) { engRpmT = rpm; engGainT = gain; }
+static float engine_sample(void) {
+  engRpm += (engRpmT - engRpm) * 0.0004f;
+  engGain += (engGainT - engGain) * 0.0008f;
+  if (engGain < 0.001f) return 0;
+  float f = 24 + engRpm * 62;
+  engPh += f / SR; if (engPh > 1) engPh -= 1;
+  engPh2 += f * 0.5f / SR; if (engPh2 > 1) engPh2 -= 1;
+  float x = (engPh < 0.18f ? 1.0f : -0.22f) + 0.5f * (engPh2 < 0.3f ? 1.0f : -0.3f) + rnd_f(&grng) * (0.15f + engRpm * 0.25f);
+  engLp += (x - engLp) * lp_coef(280 + engRpm * 900);
+  engLp2 += (engLp - engLp2) * lp_coef(500 + engRpm * 1200);
+  return engLp2 * engGain * (0.10f + engRpm * 0.08f);
+}
+
 /* renderuje n ramek stereo (przeplatane L,P) */
 void audio_render(int16_t *out, int n) {
   float master = g_volume / 10.0f;
@@ -1307,6 +1323,8 @@ void audio_render(int16_t *out, int n) {
     }
     float aL, aR, aS;
     ambience_sample(&aL, &aR, &aS);
+    float eng = engine_sample();
+    sfxL += eng; sfxR += eng;
     revFb += (revFbT - revFb) * 0.0001f;
     float send = (musL + musR) * 0.5f * musRev + (sfxL + sfxR) * 0.5f * (0.12f + 0.12f * ambSpace) + aS + (aL + aR) * 0.1f;
     float rl, rr;

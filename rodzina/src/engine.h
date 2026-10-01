@@ -265,6 +265,20 @@ typedef struct {
 extern World W;
 
 void world_audio(void);
+/* samochody (vehicle.c) */
+void cars_build(void);
+void cars_init_map(void);
+void cars_update(void);
+void cars_draw(void);
+void cars_lights(int night);
+void cars_hud(void);
+int cars_camera(RCam *cam, float alpha);
+int cars_near(void);
+int cars_enter(void);
+int cars_block(float x, float z, float r);
+int car_player(void);
+void combat_damage_ent(Ent *e, int dmg);
+void audio_engine(float rpm, float gain);
 /* znacznik celu misji: mapa+kafel albo NPC (id); map<0 i id NULL = brak */
 void world_marker_set(int map, int x, int y, const char *npcId);
 int world_marker_pos(float *x, float *z); /* pozycja na bieżącej mapie (albo drzwi prowadzące do celu) */

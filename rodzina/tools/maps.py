@@ -581,6 +581,11 @@ paste('polonia', 12, 46)
 paste('italia', 46, 46)
 paste('chinatown', 89, 84)
 paste('doki', 110, 8)
+for (name, (ox, oy, w, h)) in PARTS.items():
+    if name == 'doki': continue
+    for y in range(oy + 4, oy + 7):
+        for x in range(ox, ox + w):
+            if city[y][x] in 'cC': city[y][x] = '.' if y != oy + 5 else '-'
 # Polonia: otwarcie zachodniego końca ulicy na Ashland
 for y in range(46 + 2, 46 + 9):
     for x in range(10, 13):
@@ -634,6 +639,7 @@ for y in range(MH):
     city[y][0] = 'R'
 # latarnie, drzewa, zaparkowane auta na nowych ulicach
 def is_street(x, y): return city[y][x] in ',.-|'
+def SIDE(x, y): return (19 <= x <= 23 or 60 <= x <= 64) and not (46 <= y <= 56)
 for y in range(1, MH - 1):
     for x in range(1, MW - 1):
         inside = any(ox <= x < ox + w and oy <= y < oy + h for (ox, oy, w, h) in PARTS.values())
@@ -643,8 +649,8 @@ for y in range(1, MH - 1):
             # latarnia tylko na zewnętrznym chodniku (sąsiaduje z budynkiem)
             if any(city[y + dy][x + dx] not in ',.-|LT"~' for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
                 city[y][x] = 'L'
-        elif c == '.' and (x * 13 + y * 5) % 41 == 0:
-            # auto przy krawężniku
+        elif c == '.' and (x * 13 + y * 5) % 17 == 0 and SIDE(x, y):
+            # zaparkowane auto — tylko w bocznych uliczkach (główne arterie należą do ruchu)
             if any(city[y + dy][x + dx] == ',' for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
                 city[y][x] = 'c'
 
@@ -667,6 +673,8 @@ region('michigan', 129, 22, 21, 80, 'Michigan Avenue nad jeziorem', 'noc', 0, en
 for y in range(86, 93):
     city[y][118] = ',' if y in (86, 87, 91, 92) else ('.' if y != 89 else '-')
 hstreet(86, 119, 131)
+# auta Rodziny na Racine Street, tuż przy trattorii
+city[58][61] = 'c'; city[61][63] = 'c'
 # browar Russo: drzwi od Cermak Road (Levee)
 city[85][60] = 'D'
 BROWAR_DOOR = (60, 85)

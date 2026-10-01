@@ -161,6 +161,7 @@ void world_load_map(int map, int tx, int ty, int dir) {
   W.bannerT = 170;
   world_audio();
   world_refresh_visibility();
+  cars_init_map();
 }
 
 void world_spawn(const char *enemyId, int tx, int ty, int ally) {
@@ -229,9 +230,9 @@ static int blocked_circle(float x, float z, float r) {
 void move_circle(float *x, float *z, float dx, float dz, float r, Ent *self) {
   (void)0;
   float nx = *x + dx;
-  if (!blocked_circle(nx, *z, r)) *x = nx;
+  if (!blocked_circle(nx, *z, r) && !(self == NULL && cars_block(nx, *z, r))) *x = nx;
   float nz = *z + dz;
-  if (!blocked_circle(*x, nz, r)) *z = nz;
+  if (!blocked_circle(*x, nz, r) && !(self == NULL && cars_block(*x, nz, r))) *z = nz;
   /* odpychanie od postaci */
   for (int i = 0; i < W.n; i++) {
     Ent *e = &W.ents[i];
@@ -312,6 +313,15 @@ void world_look(float dx, float dy) {
 }
 
 static void update_player(void) {
+  if (car_player() >= 0) {
+    /* za kierownicą: auto prowadzi vehicle.c, tu tylko zdarzenia i menu */
+    W.bob = 0;
+    check_tile_events();
+    if (W.trans || script_running()) return;
+    if (in.pressed[BTN_B]) { ui_open_pause(); return; }
+    if (in.pressed[BTN_TAB] && tycoon_active() && !tycoon_mission_active()) { tycoon_open(); return; }
+    return;
+  }
   float spd = (in.held[BTN_RUN] ? 2.9f : 1.7f) / 60.0f;
   float fx = sinf(W.yaw), fz = cosf(W.yaw);
   float rx = -cosf(W.yaw), rz = sinf(W.yaw);
@@ -344,6 +354,7 @@ static void update_player(void) {
     }
     Ent *door = look_door();
     if (door && door->d->toMap >= 0) { start_warp(door->d); return; }
+    if (world_enemies_alive() == 0 && cars_enter()) return;
   }
   if (in.pressed[BTN_B]) { ui_open_pause(); return; }
   if (in.pressed[BTN_TAB] && tycoon_active() && !tycoon_mission_active()) { tycoon_open(); return; }
@@ -413,6 +424,7 @@ void world_update(void) {
     if (g_mode != MODE_WORLD) return;
     combat_update();
   }
+  cars_update();
   update_npcs();
   tycoon_world_tick();
 }
@@ -520,13 +532,16 @@ void world_draw(void) {
   if (dt < 0 || dt > 0.1f) dt = 1.0f / 60;
   camY += (target - camY) * (1 - powf(0.75f, dt * 60)); /* wygładzanie krawężników niezależne od FPS */
   RCam cam = {v3(cx, camY + cb, cz), W.yaw, W.pitch, (float)g_cfg.fov};
+  int driving = cars_camera(&cam, a);
   if (getenv("KX_CAM")) fprintf(stderr, "cam %.4f %.4f %.4f fov %.1f dt %.4f\n", cam.pos.x, cam.pos.y, cam.pos.z, cam.fov, dt);
   r_frame_begin(&cam, &env);
   city_lights(g_time);
   combat_lights();
-  r_light(cx, camY + 0.3f, cz, 0.22f, 0.2f, 0.18f, 4.0f); /* delikatne doświetlenie wokół gracza */
+  if (!driving) r_light(cx, camY + 0.3f, cz, 0.22f, 0.2f, 0.18f, 4.0f); /* delikatne doświetlenie wokół gracza */
+  cars_lights(m->night);
   r_lights_commit();
   city_draw();
+  cars_draw();
   for (int i = 0; i < W.n; i++) {
     Ent *e = &W.ents[i];
     if (!e->vis && !(e->dead && e->d->type == ENT_MOB)) continue;
@@ -545,7 +560,7 @@ void world_draw(void) {
   city_glows();
   r_glow_flush();
   if (env.rain > 0) r_rain(env.rain * 0.55f);
-  if (!script_blocking() && g_mode == MODE_WORLD) combat_draw_view();
+  if (!script_blocking() && g_mode == MODE_WORLD && !driving) combat_draw_view();
   float hurt = W.hurtT / 18.0f;
   r_grade(0.9f, 1.0f, 1.0f + hurt * 0.8f, 0);
   r_frame_end();
@@ -565,7 +580,9 @@ void world_draw_ui(void) {
     } else {
       Ent *door = look_door();
       if (door && door->d->toMap >= 0) snprintf(b, sizeof b, "Wejdź  \xe2\x80\x94  %s", S.maps[door->d->toMap].name);
+      else if (car_player() < 0 && cars_near() >= 0 && world_enemies_alive() == 0) snprintf(b, sizeof b, "Wsiądź do auta");
     }
+    if (car_player() >= 0) b[0] = 0;
     if (b[0]) {
       float w = d2_text_w(FONT_BOLD, 20, b) + 70;
       float x = (UI_W - w) / 2, y = UI_H / 2 + 60;

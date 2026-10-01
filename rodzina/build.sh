@@ -4,7 +4,7 @@ set -e
 cd "$(dirname "$0")"
 mkdir -p build
 python3 tools/embed.py build/story_data.c data/*.txt
-SRC="src/glapi.c src/mesh.c src/render.c src/ui2d.c src/font_data.c src/tex.c src/models.c src/human.c src/weapons.c src/city.c src/audio.c src/story.c src/script.c src/world3d.c src/combat.c src/tycoon.c src/ui.c src/game.c build/story_data.c"
+SRC="src/glapi.c src/mesh.c src/render.c src/ui2d.c src/font_data.c src/tex.c src/models.c src/human.c src/weapons.c src/city.c src/vehicle.c src/audio.c src/story.c src/script.c src/world3d.c src/combat.c src/tycoon.c src/ui.c src/game.c build/story_data.c"
 CFLAGS="-O2 -std=c99 -Wall -Wno-format-truncation -Wno-parentheses -Wno-misleading-indentation -Isrc"
 if [ "$1" != "win" ]; then
   OSM=$(ls /usr/lib/x86_64-linux-gnu/libOSMesa.so* 2>/dev/null | head -1)

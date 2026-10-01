@@ -350,6 +350,7 @@ void game_init(int argc, char **argv) {
     models_build();
     humans_build();
     weapons_build();
+    cars_build();
     humans_portraits_build();
   }
   settings_load();

@@ -23,7 +23,7 @@ static const TDef TD[] = {
   {'f', K_PROP, L_WOODFLOOR, 0, 1.0f}, {'A', K_PROP, L_STONE, 0, 0.55f}, {'Y', K_PROP, L_CLOTH, 0, 0.8f},
   {'F', K_PROP, L_SIDEWALK, 0, 0.6f}, {'I', K_PROP, L_CONCRETE, 0, 1.6f}, {'m', K_PROP, L_CONCRETE, 0, 0.9f},
   {'~', K_WATER, L_WATER}, {'T', K_BB, L_GRASS}, {'p', K_BB, L_WOODFLOOR}, {'L', K_BB, L_SIDEWALK},
-  {'c', K_CAR, L_ASPHALT}, {'C', K_CAR, L_ASPHALT},
+  {'c', K_FLOOR, L_ASPHALT}, {'C', K_CAR, L_ASPHALT},
 };
 #define NTD ((int)(sizeof(TD) / sizeof(TD[0])))
 static const TDef *tdef[128];
@@ -485,7 +485,7 @@ static void cars(void) {
     for (int x = 0; x < Mw; x++) {
       int c = tile(x, z);
       if (c == 'c') {
-        /* orientacja wzdłuż ulicy: jeśli sąsiedzi w osi X są drogą — wzdłuż X */
+        continue; /* auta 'c' są dynamiczne (vehicle.c) */
         int alongX = isfloor(x - 1, z) || isfloor(x + 1, z) || tile(x - 1, z) == 'c' || tile(x + 1, z) == 'c';
         float yaw = alongX ? ((H32(x, z, 51) % 2) ? 0 : 3.14159f) : 1.5708f;
         model_add(&mb, MD_CAR, x + 0.5f, 0, z + 0.5f, yaw, 1.0f, carColor(H32(x, z, 52)));
