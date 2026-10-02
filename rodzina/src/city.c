@@ -331,16 +331,19 @@ static void interior_face(const Face *f, int c, int tx, int tz) {
   }
   if (c == 'M' || c == '#' || c == 'x' || c == 'R' || c == 'w' || c == 'W') { mb_paint(0xFFFFFFFF, wl == L_ROOF ? L_CONCRETE : wl); fquad(f, 0, 1, 0, ch, 0); return; }
   if (c == 'z') { mb_paint(0xFFFFFFFF, L_VELVET); fquad_uv(f, 0, 1, 0, ch, 0.02f, 0, 0, 1, ch); return; }
-  /* boazeria + tapeta + listwy */
+  /* boazeria + tapeta + listwy; na zewnętrznych narożnikach (koniec ściany) listwy
+   * wydłużamy o ich głębokość, żeby zeszły się z listwami ściany prostopadłej */
+  int ux = (int)f->ux, uz = (int)f->uz;
+  float e0 = isblock(tx - ux, tz - uz) ? 0.0f : 1.0f, e1 = isblock(tx + ux, tz + uz) ? 0.0f : 1.0f;
   mb_paint(0xFFFFFFFF, L_WAINSCOT);
-  fquad_uv(f, 0, 1, 0, 0.42f, 0.03f, 0, 0.6f, 0.5f, 1.0f);
+  fquad_uv(f, -0.012f * e0, 1 + 0.012f * e1, 0, 0.42f, 0.012f, 0, 0.6f, 0.5f, 1.0f);
   mb_paint(0xFF3A2414, L_WOOD);
-  fbox(f, 0, 1, 0.42f, 0.46f, 0, 0.05f);
-  fbox(f, 0, 1, 0, 0.05f, 0, 0.04f);
-  mb_paint(0xFFFFFFFF, wl);
+  fbox(f, -0.04f * e0, 1 + 0.04f * e1, 0.42f, 0.46f, 0, 0.04f);
+  fbox(f, -0.03f * e0, 1 + 0.03f * e1, 0, 0.06f, 0, 0.03f);
+  mb_paint(0xFFFFFFFF, wl); P_.uvs = 1.8f;
   fquad(f, 0, 1, 0.46f, ch, 0);
   mb_paint(0xFFD8CCB0, L_PLASTER);
-  fbox(f, 0, 1, ch - 0.06f, ch, 0, 0.06f);
+  fbox(f, -0.06f * e0, 1 + 0.06f * e1, ch - 0.06f, ch, 0, 0.06f);
   uint32_t h = H32(tx, tz, (int)(f->nx * 3 + f->nz * 7));
   if (h % 9 == 0 && c != 'Q') {
     mb_paint(0xFFFFFFFF, L_PAINTING);
@@ -984,7 +987,7 @@ void city_glows(void) {
     CLight *l = &clights[i];
     if (l->kind == 3) {
       r_glow(l->x, l->y, l->z, 0.5f, l->r * 0.35f, l->g * 0.35f, l->b * 0.35f);
-      if (Mp->night) r_cone(l->x, l->y - 0.08f, l->z, 0.07f, 1.05f, l->y - 0.08f, l->r, l->g, l->b);
+      if (Mp->night) r_cone(l->x, l->y - 0.08f, l->z, 0.07f, 1.05f, l->y - 0.08f, l->r * 0.75f, l->g * 0.75f, l->b * 0.75f);
     }
     if (l->kind == 1) r_glow(l->x, l->y, l->z, 0.9f, l->r * 0.2f, l->g * 0.2f, l->b * 0.2f);
     if (l->kind == 4 && fmodf((float)g_time * 0.8f + l->phase, 1.0f) < 0.5f) r_glow(l->x, l->y, l->z, Mp->night ? 2.2f : 1.0f, l->r * 0.5f, l->g * 0.5f, l->b * 0.5f);

@@ -33,7 +33,7 @@ static const char *FS_WORLD =
   "#version 330 core\n"
   "in vec3 vPos; in vec3 vNrm; in vec3 vUV; in vec4 vCol; flat in int vFlags;\n"
   "uniform sampler2DArray uTex; uniform vec3 uCam; uniform int uNL;\n"
-  "uniform vec4 uLPos[16]; uniform vec4 uLCol[16];\n"
+  "uniform vec4 uLPos[16]; uniform vec4 uLCol[16]; uniform vec4 uLDir[16];\n"
   "uniform vec3 uAmbSky, uAmbGround, uSunDir, uSunCol, uFogCol; uniform float uFogDens, uWet, uTime, uExposure;\n"
   "uniform vec4 uTint; uniform int uViewModel;\n"
   "out vec4 frag;\n"
@@ -47,7 +47,7 @@ static const char *FS_WORLD =
   "  if ((vFlags & 1) != 0 && t.a < 0.5) discard;\n"
   "  vec3 alb = pow(t.rgb, vec3(2.2)) * vCol.rgb * uTint.rgb;\n"
   "  float gloss = ((vFlags & 1) != 0) ? 0.15 : t.a;\n"
-  "  vec3 N = normalize(vNrm); if (!gl_FrontFacing) N = -N;\n"
+  "  vec3 N = dot(vNrm, vNrm) > 1e-10 ? normalize(vNrm) : vec3(0.0, 1.0, 0.0); if (!gl_FrontFacing) N = -N;\n"
   "  vec3 V = normalize(uCam - vPos);\n"
   "  if ((vFlags & 2) != 0) { frag = vec4(alb * (1.0 + vCol.a*6.0), 1.0); return; }\n"
   "  if ((vFlags & 32) != 0) { float f = 0.75 + 0.25*sin(uTime*13.0+vPos.x*5.0)*sin(uTime*7.3+vPos.z*3.0); frag = vec4(alb*4.0*f, 1.0); return; }\n"
@@ -69,9 +69,11 @@ static const char *FS_WORLD =
   "    vec3 L = uLPos[i].xyz - vPos; float d = length(L); float r = uLPos[i].w;\n"
   "    if (d >= r) continue;\n"
   "    L /= d; float a = 1.0 - d/r; a *= a; a /= (1.0 + d*d*0.09);\n"
+  "    if (uLCol[i].w < 0.999) { float cs = dot(-L, uLDir[i].xyz); a *= smoothstep(uLCol[i].w, mix(uLCol[i].w, 1.0, 0.45), cs); if (a <= 0.0) continue; }\n"
   "    float ln = max(dot(N, L), 0.0);\n"
-  "    vec3 h = normalize(L + V);\n"
-  "    col += uLCol[i].rgb * a * (alb*ln + specAmt*pow(max(dot(N,h),0.0), shin)*(ln>0.0?1.0:0.0) * 2.0);\n"
+  "    vec3 h = normalize(L + V + vec3(0.0, 1e-4, 0.0));\n"
+  "    float sp = min(specAmt*pow(max(dot(N,h),0.0), shin), 3.0) * (ln>0.0?1.0:0.0);\n"
+  "    col += uLCol[i].rgb * a * (alb*ln + sp * 1.2);\n"
   "  }\n"
   "  float fres = pow(1.0 - max(dot(N, V), 0.0), 3.0);\n"
   "  col += uAmbSky * fres * 0.9 * (0.4 + alb);\n"
@@ -84,7 +86,8 @@ static const char *FS_WORLD =
   "  float refl = clamp(wet*(0.3 + 0.45*t.a) + pud*0.55, 0.0, 1.0) * smoothstep(0.85, 0.97, N.y);\n"
   "  if ((vFlags & 8) != 0) refl = 0.75;\n"
   "  refl *= 1.0 - fogF;\n"
-  "  frag = vec4(col, uViewModel == 2 ? 1.0 : (uViewModel == 1 ? 0.0 : refl));\n"
+  "  if (any(isnan(col))) col = vec3(0.0);\n"
+  "  frag = vec4(min(col, vec3(512.0)), uViewModel == 2 ? 1.0 : (uViewModel == 1 ? 0.0 : refl));\n"
   "}\n";
 
 static const char *VS_FULL =
@@ -126,9 +129,9 @@ static const char *VS_RAIN =
   "#version 330 core\n"
   "layout(location=0) in vec4 aSeed;\n"
   "uniform mat4 uVP; uniform vec3 uCam; uniform float uTime;\n"
-  "out float vA;\n"
+  "out float vA; out float vS; out float vD;\n"
   "void main(){\n"
-  "  int corner = gl_VertexID % 2;\n"
+  "  int corner = gl_VertexID % 6;\n"
   "  float box = 14.0;\n"
   "  vec3 p = aSeed.xyz * box;\n"
   "  float fall = uTime * (9.0 + aSeed.w*3.0);\n"
@@ -136,14 +139,23 @@ static const char *VS_RAIN =
   "  p.x = uCam.x + mod(p.x - uCam.x + box*0.5, box) - box*0.5 + fall*0.06;\n"
   "  p.z = uCam.z + mod(p.z - uCam.z + box*0.5, box) - box*0.5;\n"
   "  p.y += uCam.y - 3.0;\n"
-  "  if (corner == 1) { p.y += 0.22; p.x -= 0.014; }\n"
-  "  vA = corner == 1 ? 0.0 : 1.0;\n"
+  "  int side = (corner == 1 || corner == 2 || corner == 4) ? 1 : 0;\n"
+  "  int top = (corner == 2 || corner == 4 || corner == 5) ? 1 : 0;\n"
+  "  vec3 fd = normalize(vec3(-0.06, -1.0, 0.0));\n"
+  "  vec3 toC = uCam - p; float dist = length(toC);\n"
+  "  vec3 rt = normalize(cross(fd, toC));\n"
+  "  float w = 0.0022 + dist*0.0013;\n"
+  "  p += rt * (side == 1 ? w : -w);\n"
+  "  if (top == 1) p -= fd * (0.32 + aSeed.w*0.18);\n"
+  "  vA = top == 1 ? 0.0 : 1.0; vS = side == 1 ? 1.0 : -1.0;\n"
+  "  vD = dist;\n"
   "  gl_Position = uVP * vec4(p, 1.0);\n"
   "}\n";
 static const char *FS_RAIN =
   "#version 330 core\n"
-  "in float vA; uniform float uInt; out vec4 frag;\n"
-  "void main(){ frag = vec4(vec3(0.35,0.4,0.5) * (0.25 + vA*0.6) * uInt, 1.0); }\n";
+  "in float vA; in float vS; in float vD; uniform float uInt; out vec4 frag;\n"
+  "void main(){ float e = 1.0 - abs(vS); float near = 1.0 - smoothstep(9.0, 14.0, vD);\n"
+  "  frag = vec4(vec3(0.55,0.62,0.75) * e * (0.15 + vA*0.85) * uInt * near * 0.6, 1.0); }\n";
 
 static const char *FS_BRIGHT =
   "#version 330 core\n"
@@ -151,7 +163,8 @@ static const char *FS_BRIGHT =
   "void main(){ vec2 px = 1.0/vec2(textureSize(uSrc,0));\n"
   "  vec3 c = (texture(uSrc, vUV+px*vec2(-0.5,-0.5)).rgb + texture(uSrc, vUV+px*vec2(0.5,-0.5)).rgb + texture(uSrc, vUV+px*vec2(-0.5,0.5)).rgb + texture(uSrc, vUV+px*vec2(0.5,0.5)).rgb)*0.25*uExp;\n"
   "  float l = max(c.r, max(c.g, c.b)); float k = max(l - 1.0, 0.0) / max(l, 1e-4);\n"
-  "  frag = vec4(min(c * k, vec3(40.0)), 1.0); }\n";
+  "  vec3 o = min(c * k, vec3(40.0)); if (any(isnan(o))) o = vec3(0.0);\n"
+  "  frag = vec4(o, 1.0); }\n";
 static const char *FS_BLUR =
   "#version 330 core\n"
   "in vec2 vUV; uniform sampler2D uSrc; uniform vec2 uDir; out vec4 frag;\n"
@@ -203,7 +216,8 @@ static const char *FS_POST =
   "  vec3 P = vpos(vUV);\n"
   "  float jit = hash(vUV*uRes + fract(uTime)*17.0);\n"
   "  if (uAO > 0.0 && -P.z > 0.15) {\n"
-  "    vec3 N = normalize(cross(dFdx(P), dFdy(P)));\n"
+  "    vec3 cx = cross(dFdx(P), dFdy(P));\n"
+  "    vec3 N = dot(cx, cx) > 1e-14 ? normalize(cx) : vec3(0.0, 0.0, 1.0);\n"
   "    if (dot(N, P) > 0.0) N = -N;\n"
   "    float rad = 0.32, occ = 0.0;\n"
   "    float rpx = rad * uProj[1][1] / -P.z * 0.5;\n"
@@ -213,9 +227,10 @@ static const char *FS_POST =
   "      vec3 S = vpos(vUV + o); vec3 v = S - P; float dl = length(v);\n"
   "      occ += max(dot(N, v/max(dl,1e-4)) - 0.12, 0.0) * (1.0 - smoothstep(rad*0.6, rad*2.0, dl));\n"
   "    }\n"
-  "    float ao = clamp(1.0 - occ/10.0 * 2.2, 0.0, 1.0);\n"
+  "    float ao = clamp(1.0 - occ/10.0 * 2.2, 0.0, 1.0); if (isnan(ao)) ao = 1.0;\n"
   "    col *= mix(1.0, ao, uAO * 0.85);\n"
   "  }\n"
+  "  vec3 base = col;\n"
   "  if (uSSR > 0.0 && refl > 0.02) {\n"
   "    vec3 W = (uInvView * vec4(P, 1.0)).xyz;\n"
   "    /* krople deszczu: rozchodzące się kręgi zaburzają normalną */\n"
@@ -237,15 +252,19 @@ static const char *FS_POST =
   "        vec4 cb = uProj*vec4(b,1.0); huv = cb.xy/cb.w*0.5+0.5; fadeI = 1.0 - float(i)/36.0; break;\n"
   "      }\n"
   "    }\n"
-  "    if (huv.x >= 0.0) {\n"
+  "    if (huv.x >= 0.0 && huv.x <= 1.0 && huv.y >= 0.0 && huv.y <= 1.0) {\n"
   "      vec2 e = smoothstep(0.0, 0.12, huv) * smoothstep(0.0, 0.12, 1.0-huv);\n"
   "      float fres = mix(0.3, 1.0, pow(1.0 - max(dot(-V, N), 0.0), 4.0));\n"
   "      vec3 hc = texture(uSrc, huv).rgb;\n"
+  "      if (any(isnan(hc)) || any(isinf(hc))) hc = vec3(0.0);\n"
+  "      hc = min(hc, vec3(6.0));\n"
   "      float k = refl * e.x * e.y * fadeI * fres;\n"
   "      col = mix(col, hc, k*0.45) + hc * k * 0.35;\n"
   "    }\n"
   "  }\n"
-  "  frag = vec4(col, 1.0);\n"
+  "  if (any(isnan(col)) || any(isinf(col))) col = base;\n"
+  "  if (any(isnan(col)) || any(isinf(col))) col = vec3(0.0);\n"
+  "  frag = vec4(min(col, vec3(256.0)), 1.0);\n"
   "}\n";
 
 /* ---- stożki światła: addytywne, jaśniejsze przy osi i przy źródle */
@@ -258,7 +277,7 @@ static const char *VS_CONE =
 static const char *FS_CONE =
   "#version 330 core\n"
   "in vec4 vCol; in float vF; out vec4 frag;\n"
-  "void main(){ float h = vCol.a; frag = vec4(vCol.rgb * vF * pow(1.0-h, 1.8) * 0.16, 0.0); }\n";
+  "void main(){ float h = clamp(vCol.a, 0.0, 1.0); frag = vec4(vCol.rgb * vF * pow(1.0-h, 1.8) * 0.16, 0.0); }\n";
 
 /* ---- kłęby pary i dymu: miękkie, półprzezroczyste, z szumem */
 static const char *VS_PUFF =
@@ -313,7 +332,7 @@ static unsigned compile(const char *vs, const char *fs, const char *name) {
 static struct {
   unsigned world, sky, glow, rain, bright, blur, down, final, post, cone, puff;
   /* uniformy świata */
-  int wVP, wModel, wBones, wTime, wTex, wCam, wNL, wLPos, wLCol, wAmbSky, wAmbGround, wSunDir, wSunCol, wFogCol, wFogDens, wWet, wExp, wTint, wVM;
+  int wVP, wModel, wBones, wTime, wTex, wCam, wNL, wLPos, wLCol, wLDir, wAmbSky, wAmbGround, wSunDir, wSunCol, wFogCol, wFogDens, wWet, wExp, wTint, wVM;
   unsigned worldTex;
   /* bufory */
   unsigned msFbo, msColor, msDepth;
@@ -338,7 +357,7 @@ static struct {
   int msaaActive;
 } R;
 
-typedef struct { float x, y, z, r, cr, cg, cb, d2; } LightRec;
+typedef struct { float x, y, z, r, cr, cg, cb, d2, dx, dy, dz, cosOut; } LightRec;
 static LightRec lightsAll[512];
 static int nLightsAll;
 
@@ -463,7 +482,7 @@ int r_init(void) {
   glEnableVertexAttribArray(3); glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, 40, (void *)36);
   unsigned w = R.world;
   R.wVP = uloc(w, "uVP"); R.wModel = uloc(w, "uModel"); R.wBones = uloc(w, "uBones"); R.wTime = uloc(w, "uTime");
-  R.wTex = uloc(w, "uTex"); R.wCam = uloc(w, "uCam"); R.wNL = uloc(w, "uNL"); R.wLPos = uloc(w, "uLPos"); R.wLCol = uloc(w, "uLCol");
+  R.wTex = uloc(w, "uTex"); R.wCam = uloc(w, "uCam"); R.wNL = uloc(w, "uNL"); R.wLPos = uloc(w, "uLPos"); R.wLCol = uloc(w, "uLCol"); R.wLDir = uloc(w, "uLDir");
   R.wAmbSky = uloc(w, "uAmbSky"); R.wAmbGround = uloc(w, "uAmbGround"); R.wSunDir = uloc(w, "uSunDir"); R.wSunCol = uloc(w, "uSunCol");
   R.wFogCol = uloc(w, "uFogCol"); R.wFogDens = uloc(w, "uFogDens"); R.wWet = uloc(w, "uWet"); R.wExp = uloc(w, "uExposure");
   R.wTint = uloc(w, "uTint"); R.wVM = uloc(w, "uViewModel");
@@ -477,14 +496,14 @@ int r_init(void) {
   glEnableVertexAttribArray(0); glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9 * 4, (void *)0);
   glEnableVertexAttribArray(1); glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 9 * 4, (void *)12);
   glEnableVertexAttribArray(2); glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 9 * 4, (void *)20);
-  /* deszcz: 2 wierzchołki na kroplę */
-  enum { NDROP = 2400 };
-  static float seeds[NDROP * 2 * 4];
+  /* deszcz: smuga = 2 trójkąty (6 wierzchołków) na kroplę */
+  enum { NDROP = 3000 };
+  static float seeds[NDROP * 6 * 4];
   unsigned s = 12345;
   for (int i = 0; i < NDROP; i++) {
     float v[4];
     for (int k = 0; k < 4; k++) { s = s * 1664525u + 1013904223u; v[k] = (s >> 8) / 16777216.0f; }
-    for (int c = 0; c < 2; c++) memcpy(&seeds[(i * 2 + c) * 4], v, sizeof v);
+    for (int c = 0; c < 6; c++) memcpy(&seeds[(i * 6 + c) * 4], v, sizeof v);
   }
   glGenVertexArrays(1, &R.rainVao);
   glGenBuffers(1, &R.rainVbo);
@@ -644,8 +663,19 @@ void r_light(float x, float y, float z, float r, float g, float b, float radius)
   if (nLightsAll >= 512) return;
   LightRec *l = &lightsAll[nLightsAll++];
   l->x = x; l->y = y; l->z = z; l->r = radius; l->cr = r; l->cg = g; l->cb = b;
+  l->dx = 0; l->dy = -1; l->dz = 0; l->cosOut = 1;
   float dx = x - g_camPos.x, dy = y - g_camPos.y, dz = z - g_camPos.z;
   l->d2 = dx * dx + dy * dy + dz * dz;
+}
+
+void r_spot(float x, float y, float z, float dx, float dy, float dz, float cosOuter, float r, float g, float b, float radius) {
+  if (nLightsAll >= 512) return;
+  r_light(x, y, z, r, g, b, radius);
+  LightRec *l = &lightsAll[nLightsAll - 1];
+  float len = sqrtf(dx * dx + dy * dy + dz * dz);
+  if (len < 1e-6f) return;
+  l->dx = dx / len; l->dy = dy / len; l->dz = dz / len;
+  l->cosOut = cosOuter < -0.99f ? -0.99f : cosOuter > 0.99f ? 0.99f : cosOuter;
 }
 
 static int light_cmp(const void *a, const void *b) {
@@ -659,16 +689,18 @@ void r_lights_commit(void) {
   qsort(lightsAll, nLightsAll, sizeof(LightRec), light_cmp);
   int n = nLightsAll < g_cfg.maxLights ? nLightsAll : g_cfg.maxLights;
   if (n > 16) n = 16;
-  float pos[64], col[64];
+  float pos[64], col[64], dir[64];
   for (int i = 0; i < n; i++) {
     pos[i * 4] = lightsAll[i].x; pos[i * 4 + 1] = lightsAll[i].y; pos[i * 4 + 2] = lightsAll[i].z; pos[i * 4 + 3] = lightsAll[i].r;
-    col[i * 4] = lightsAll[i].cr; col[i * 4 + 1] = lightsAll[i].cg; col[i * 4 + 2] = lightsAll[i].cb; col[i * 4 + 3] = 1;
+    col[i * 4] = lightsAll[i].cr; col[i * 4 + 1] = lightsAll[i].cg; col[i * 4 + 2] = lightsAll[i].cb; col[i * 4 + 3] = lightsAll[i].cosOut;
+    dir[i * 4] = lightsAll[i].dx; dir[i * 4 + 1] = lightsAll[i].dy; dir[i * 4 + 2] = lightsAll[i].dz; dir[i * 4 + 3] = 0;
   }
   glUseProgram(R.world);
   glUniform1i(R.wNL, n);
   if (n) {
     glUniform4fv(R.wLPos, n, pos);
     glUniform4fv(R.wLCol, n, col);
+    glUniform4fv(R.wLDir, n, dir);
   }
 }
 
@@ -770,7 +802,7 @@ void r_cone(float x, float y, float z, float topR, float botR, float h, float r,
       int j = idx[q];
       float *o = &v[k++ * 10];
       o[0] = P[j][0]; o[1] = P[j][1]; o[2] = P[j][2];
-      o[3] = C[j][0]; o[4] = (botR - topR) / (h > 0.01f ? h : 0.01f); o[5] = C[j][1];
+      o[3] = C[j][0]; o[4] = (botR - topR) / (fabsf(h) > 0.01f ? fabsf(h) : 0.01f); o[5] = C[j][1];
       o[6] = r; o[7] = g; o[8] = b; o[9] = Hh[j];
     }
   }
@@ -826,7 +858,9 @@ void r_rain(float intensity) {
   glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_FALSE);
   glDepthMask(GL_FALSE);
   glBindVertexArray(R.rainVao);
-  glDrawArrays(GL_LINES, 0, (int)(2400 * 2 * (intensity > 1 ? 1 : intensity)) & ~1);
+  glDisable(GL_CULL_FACE);
+  glDrawArrays(GL_TRIANGLES, 0, ((int)(3000 * (intensity > 1 ? 1 : intensity))) * 6);
+  glEnable(GL_CULL_FACE);
   glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
   glDepthMask(GL_TRUE);
   glDisable(GL_BLEND);

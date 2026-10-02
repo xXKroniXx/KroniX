@@ -591,8 +591,9 @@ void cars_lights(int night) {
     float d = fabsf(c->x - W.px) + fabsf(c->z - W.pz);
     if (i != drive && d > 30) continue;
     float fx = fwdx(c->ang), fz = fwdz(c->ang);
-    float k = night ? 1.0f : 0.3f;
-    if (i == drive || d < 14) r_light(c->x + fx * 2.4f, 0.5f, c->z + fz * 2.4f, 2.2f * k, 2.0f * k, 1.5f * k, 5.0f);
+    float k = night ? 1.0f : 0.25f, L = VS[c->type].L;
+    /* reflektory jako światło stożkowe skierowane w jezdnię przed autem */
+    if (i == drive || d < 16) r_spot(c->x + fx * (L + 0.1f), 0.62f, c->z + fz * (L + 0.1f), fx, -0.16f, fz, 0.8f, 1.7f * k, 1.55f * k, 1.2f * k, 9.0f);
   }
 }
 
@@ -619,8 +620,8 @@ void cars_draw(void) {
     if (c->ai || i == drive) {
       float fx = fwdx(c->ang), fz = fwdz(c->ang), lx = fz, lz = -fx;
       for (int s = -1; s <= 1; s += 2) {
-        r_glow(c->x + fx * (vs->L - 0.02f) + lx * 0.3f * s, 0.5f, c->z + fz * (vs->L - 0.02f) + lz * 0.3f * s, 0.32f, 1.1f, 1.0f, 0.75f);
-        r_glow(c->x - fx * (vs->L + 0.02f) + lx * 0.32f * s, 0.42f, c->z - fz * (vs->L + 0.02f) + lz * 0.32f * s, 0.14f, 0.9f, 0.08f, 0.05f);
+        r_glow(c->x + fx * (vs->L + 0.12f) + lx * 0.3f * s, 0.5f, c->z + fz * (vs->L + 0.12f) + lz * 0.3f * s, 0.2f, 0.75f, 0.68f, 0.5f);
+        r_glow(c->x - fx * (vs->L + 0.1f) + lx * 0.32f * s, 0.42f, c->z - fz * (vs->L + 0.1f) + lz * 0.32f * s, 0.12f, 0.8f, 0.07f, 0.04f);
       }
       if (c->type == VT_POLICE) { /* koguty: czerwono-niebieskie błyski */
         float ph = fmodf(g_time * 3 + i, 1.0f);

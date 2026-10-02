@@ -557,7 +557,10 @@ void world_draw(void) {
     float mx, mz;
     if (world_marker_pos(&mx, &mz) && !M()->interior) {
       float p = 0.75f + 0.25f * sinf(g_time * 3.0f);
-      for (int k = 0; k < 9; k++) r_glow(mx, 0.4f + k * 0.7f, mz, 0.55f - k * 0.03f, 0.9f * p, 0.62f * p, 0.18f * p);
+      /* miękki słup światła (od ziemi w górę, wygasa z wysokością) + poświata u podstawy */
+      r_cone(mx, 0.05f, mz, 0.34f, 0.22f, -10.0f, 2.6f * p, 1.8f * p, 0.55f * p);
+      r_cone(mx, 0.05f, mz, 0.12f, 0.08f, -10.0f, 2.0f * p, 1.6f * p, 0.7f * p);
+      r_glow(mx, 0.15f, mz, 0.9f, 0.5f * p, 0.34f * p, 0.1f * p);
     }
   }
   combat_draw_world();

@@ -15,7 +15,7 @@ static inline V3 v3mul(V3 a, float s) { return v3(a.x * s, a.y * s, a.z * s); }
 static inline float v3dot(V3 a, V3 b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
 static inline V3 v3cross(V3 a, V3 b) { return v3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x); }
 static inline float v3len(V3 a) { return sqrtf(v3dot(a, a)); }
-static inline V3 v3norm(V3 a) { float l = v3len(a); return l > 1e-8f ? v3mul(a, 1.0f / l) : a; }
+static inline V3 v3norm(V3 a) { float l = v3len(a); return l > 1e-8f ? v3mul(a, 1.0f / l) : (V3){0, 1, 0}; } /* zdegenerowany wektor → „w górę” (nigdy NaN w shaderze) */
 
 M4 m4_identity(void);
 M4 m4_mul(M4 a, M4 b);
@@ -108,6 +108,7 @@ extern char g_glError[1024];    /* pierwszy błąd kompilacji shaderów (pusty =
 void r_resize(int w, int h);
 void r_frame_begin(const RCam *cam, const REnv *env);
 void r_light(float x, float y, float z, float r, float g, float b, float radius);
+void r_spot(float x, float y, float z, float dx, float dy, float dz, float cosOuter, float r, float g, float b, float radius); /* światło stożkowe (reflektory, latarki) */
 void r_lights_commit(void);
 void r_draw(const GMesh *m, const M4 *model, uint32_t tint);
 void r_draw_bones(const GMesh *m, const M4 *model, const M4 *bones, int nbones, uint32_t tint);
