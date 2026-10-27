@@ -13,6 +13,7 @@ stat REL_KAN "Victor Kane"
 speaker nar "" -
 speaker tomek "Tomek" tomek
 speaker mama "Mama" mama
+speaker posrednik "Pośrednik" agent
 speaker bronek "Bronek" bronek
 speaker zoska "Zośka" zoska
 speaker menel "Kulawy Józek" menel

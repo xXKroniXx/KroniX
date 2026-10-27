@@ -182,7 +182,7 @@ static void window_unit(const Face *f, float y, float wallL, uint32_t wcol, floa
     if (lit) {
       static const uint32_t W[4] = {0xFFFFD49A, 0xFFFFC27A, 0xFFF0E0B0, 0xFFFFB070};
       mb_paint(W[h % 4], L_WINDOW);
-      P_.emis = 0.35f + (h % 5) * 0.06f;
+      P_.emis = 0.35f + (h % 5) * 0.06f; P_.flags = VF_NIGHT;
     } else mb_paint(0xFF4A5868, L_WINDOW);
   }
   fquad_uv(f, s0, s1, y0, y1, -dep, 0, 0, 1, 1);
@@ -245,7 +245,7 @@ static void shop_front(const Face *f, int c, uint32_t wcol, int wallL, int tx, i
   float row = (sign / 2) / 8.0f, col = (sign % 2) * 0.5f;
   if (nshops < MAXSHOP) { V3 sp = fp(f, 0.5f, 0, 0.7f); shops[nshops++] = (ShopSpot){sp.x, sp.z, f->nx, f->nz, sign}; }
   mb_paint(0xFFFFFFFF, L_SIGNS);
-  P_.emis = Mp->night ? 0.25f : 0;
+  P_.emis = 0.25f; P_.flags = VF_NIGHT;
   fquad_uv(f, 0.06f, 0.94f, 1.1f, 1.32f, 0.03f, col, row, col + 0.5f, row + 0.125f);
   mb_paint(0xFF2A2420, L_WOOD);
   fbox(f, 0.04f, 0.96f, 1.08f, 1.34f, 0, 0.028f);
@@ -261,10 +261,10 @@ static void shop_front(const Face *f, int c, uint32_t wcol, int wallL, int tx, i
     fbox(f, 1.0f, 1.02f, 1.0f, 1.05f, 0.0f, 0.62f);
   }
   /* neon prostopadły do ściany */
-  if (Mp->night && H32(tx, tz, 23) % 3 == 0) {
+  if (!interior && H32(tx, tz, 23) % 3 == 0) {
     int w = neonIdx++ % 8;
     static const float NC[8][3] = {{0.3f, 0.8f, 1.0f}, {1.0f, 0.25f, 0.35f}, {1.0f, 0.75f, 0.25f}, {0.4f, 1.0f, 0.55f}, {1.0f, 0.4f, 0.8f}, {1.0f, 0.3f, 0.2f}, {0.4f, 0.6f, 1.0f}, {1.0f, 0.8f, 0.35f}};
-    mb_paint(0xFFFFFFFF, L_NEON); P_.emis = 1.0f;
+    mb_paint(0xFFFFFFFF, L_NEON); P_.emis = 1.0f; P_.flags = VF_NIGHT;
     V3 a = fp(f, 0.88f, 1.55f, 0.08f), b = fp(f, 0.88f, 1.55f, 0.72f), cc = fp(f, 0.88f, 1.85f, 0.72f), d = fp(f, 0.88f, 1.85f, 0.08f);
     mb_quad(&mb, a, b, cc, d, 0, w / 8.0f, 1, (w + 1) / 8.0f);
     mb_quad(&mb, b, a, d, cc, 0, w / 8.0f, 1, (w + 1) / 8.0f);
@@ -329,13 +329,13 @@ static void exterior_face(const Face *f, int c, int tx, int tz, float h, float y
     }
     if (c == 'M' || c == 'x' || c == 'W') { mb_paint(wc, wl); fquad(f, 0, 1, y, y + 1.5f, 0); continue; }
     uint32_t hh = H32(tx * 3 + (int)(f->nx * 2), tz * 3 + (int)(f->nz * 2), (int)(y * 2));
-    int lit = Mp->night ? (hh % 100 < 38) : 0;
+    int lit = !interior && hh % 100 < 38; /* zapalone nocą (VF_NIGHT) */
     if (y >= 4.4f) {
       /* wyższe piętra: płaska ściana + szyba (mniej geometrii, z ulicy różnica niewidoczna) */
       mb_paint(wc, wl); fquad(f, 0, 1, y, y + 1.5f, 0);
       if (lit) {
         static const uint32_t WC[4] = {0xFFFFD49A, 0xFFFFC27A, 0xFFF0E0B0, 0xFFFFB070};
-        mb_paint(WC[hh % 4], L_WINDOW); P_.emis = 0.35f + (hh % 5) * 0.06f;
+        mb_paint(WC[hh % 4], L_WINDOW); P_.emis = 0.35f + (hh % 5) * 0.06f; P_.flags = VF_NIGHT;
       } else mb_paint(0xFF4A5868, L_WINDOW);
       fquad_uv(f, 0.29f, 0.71f, y + 0.38f, y + 1.16f, 0.006f, 0, 0, 1, 1);
       continue;
@@ -624,7 +624,7 @@ static void skyline(void) {
     float rr = R + (h % 12);
     float ht = 6 + (h % 23) + ((h >> 8) % 3 == 0 ? 14 : 0);
     V3 p0 = v3(cx + cosf(a0) * rr, 0, cz + sinf(a0) * rr), p1 = v3(cx + cosf(a1) * rr, 0, cz + sinf(a1) * rr);
-    mb_paint(0xFF9AA0B0, L_SKYLINE); P_.emis = Mp->night ? 0.35f : 0; P_.flags = VF_NOFOG;
+    mb_paint(0xFF9AA0B0, L_SKYLINE); P_.emis = 0.35f; P_.flags = VF_NOFOG | VF_NIGHT;
     float w = sqrtf((p1.x - p0.x) * (p1.x - p0.x) + (p1.z - p0.z) * (p1.z - p0.z));
     /* ściana zwrócona do środka */
     mb_quad(&mb, v3(p1.x, -1, p1.z), v3(p0.x, -1, p0.z), v3(p0.x, ht, p0.z), v3(p1.x, ht, p1.z), 0, 0, w / 8.0f, (ht + 1) / 12.0f);
@@ -718,10 +718,10 @@ static void roof_extras(void) {
           int w = (int)(H32(x, z, 100) % 8);
           mb_paint(0xFF1A1A1E, L_METAL);
           fquad(&f, 0.05f, 1.95f, h + 0.5f, h + 1.7f, d0 + 0.01f);
-          mb_paint(0xFFFFFFFF, L_NEON); P_.emis = Mp->night ? 1.0f : 0.15f;
+          mb_paint(0xFFFFFFFF, L_NEON); P_.emis = 1.0f; P_.flags = VF_NIGHT;
           fquad_uv(&f, 0.12f, 1.88f, h + 0.75f, h + 1.45f, d0 + 0.03f, 0, w / 8.0f, 1, (w + 1) / 8.0f);
           V3 lp = fp(&f, 1.0f, h + 1.1f, 0.6f);
-          if (Mp->night) addlight(lp.x, lp.y, lp.z, NC[w][0] * 3.0f, NC[w][1] * 3.0f, NC[w][2] * 3.0f, 5.0f, 1);
+          addlight(lp.x, lp.y, lp.z, NC[w][0] * 3.0f, NC[w][1] * 3.0f, NC[w][2] * 3.0f, 5.0f, 1);
         } else {
           /* plakat reklamowy z dwiema lampami */
           mb_paint(0xFF3A2A1E, L_WOOD);
@@ -732,12 +732,12 @@ static void roof_extras(void) {
           for (int l = 0; l < 2; l++) {
             float sp = 0.5f + l;
             fbox(&f, sp - 0.02f, sp + 0.02f, h + 1.72f, h + 1.75f, d0, d0 + 0.35f);
-            mb_paint(0xFFFFE8B0, L_WHITE); P_.emis = Mp->night ? 1.0f : 0;
+            mb_paint(0xFFFFE8B0, L_WHITE); P_.emis = 1.0f; P_.flags = VF_NIGHT;
             fbox(&f, sp - 0.07f, sp + 0.07f, h + 1.66f, h + 1.72f, d0 + 0.3f, d0 + 0.38f);
             mb_paint(0xFF2A2C30, L_METAL);
           }
           V3 lp = fp(&f, 1.0f, h + 1.4f, 0.4f);
-          if (Mp->night) addlight(lp.x, lp.y, lp.z, 2.4f, 2.0f, 1.4f, 3.0f, 0);
+          addlight(lp.x, lp.y, lp.z, 2.4f, 2.0f, 1.4f, 3.0f, 5);
         }
         break;
       }
@@ -836,7 +836,7 @@ static void elevated_rail(void) {
     mb_paint(0xFF4A5A4A, L_PAINT);
     mb_box(&mb, v3(sx0, yt + 1.28f, fminf(zi, zi - s * 0.05f) - 0.03f), v3(sx1, yt + 1.36f, fmaxf(zi, zi - s * 0.05f) + 0.03f));
     /* tablica z nazwą stacji i lampy */
-    mb_paint(0xFFFFFFFF, L_SIGNS); P_.emis = Mp->night ? 0.3f : 0;
+    mb_paint(0xFFFFFFFF, L_SIGNS); P_.emis = 0.3f; P_.flags = VF_NIGHT;
     {
       float zz = zo - s * 0.07f;
       if (s < 0) mb_quad(&mb, v3(sx0 + 2.5f, yt + 0.85f, zz), v3(sx0 + 4.5f, yt + 0.85f, zz), v3(sx0 + 4.5f, yt + 1.15f, zz), v3(sx0 + 2.5f, yt + 1.15f, zz), 0, 0.875f, 0.5f, 1.0f);
@@ -1033,6 +1033,10 @@ void city_lights(float time) {
     float dx = l->x - g_camPos.x, dz = l->z - g_camPos.z;
     if (dx * dx + dz * dz > 48.0f * 48.0f) continue;
     float k = 1;
+    if (!interior && (l->kind == 1 || l->kind == 3 || l->kind == 5)) { /* latarnie, neony, iluminacje: tylko po zmroku */
+      k = g_nightK;
+      if (k < 0.02f) continue;
+    }
     if (l->kind == 2) k = 0.8f + 0.2f * sinf(time * 11 + l->phase) * sinf(time * 7.3f + l->phase * 2);
     if (l->kind == 1) k = (fmodf(time * 0.37f + l->phase, 9.0f) < 0.12f) ? 0.2f : 1.0f; /* mrugający neon */
     r_light(l->x, l->y, l->z, l->r * k, l->g * k, l->b * k, l->rad);
@@ -1042,11 +1046,12 @@ void city_glows(void) {
   for (int i = 0; i < nclights; i++) {
     CLight *l = &clights[i];
     if (l->kind == 3) {
-      r_glow(l->x, l->y, l->z, 0.5f, l->r * 0.35f, l->g * 0.35f, l->b * 0.35f);
-      if (Mp->night) r_cone(l->x, l->y - 0.08f, l->z, 0.07f, 1.05f, l->y - 0.08f, l->r * 0.75f, l->g * 0.75f, l->b * 0.75f);
+      float nk = interior ? 1.0f : g_nightK;
+      if (nk > 0.02f) r_glow(l->x, l->y, l->z, 0.5f, l->r * 0.35f * nk, l->g * 0.35f * nk, l->b * 0.35f * nk);
+      if (nk > 0.05f) r_cone(l->x, l->y - 0.08f, l->z, 0.07f, 1.05f, l->y - 0.08f, l->r * 0.75f * nk, l->g * 0.75f * nk, l->b * 0.75f * nk);
     }
-    if (l->kind == 1) r_glow(l->x, l->y, l->z, 0.9f, l->r * 0.2f, l->g * 0.2f, l->b * 0.2f);
-    if (l->kind == 4 && fmodf((float)g_time * 0.8f + l->phase, 1.0f) < 0.5f) r_glow(l->x, l->y, l->z, Mp->night ? 2.2f : 1.0f, l->r * 0.5f, l->g * 0.5f, l->b * 0.5f);
+    if (l->kind == 1 && (interior || g_nightK > 0.05f)) { float nk = interior ? 1.0f : g_nightK; r_glow(l->x, l->y, l->z, 0.9f, l->r * 0.2f * nk, l->g * 0.2f * nk, l->b * 0.2f * nk); }
+    if (l->kind == 4 && fmodf((float)g_time * 0.8f + l->phase, 1.0f) < 0.5f) r_glow(l->x, l->y, l->z, 1.0f + 1.2f * g_nightK, l->r * 0.5f, l->g * 0.5f, l->b * 0.5f);
   }
 }
 /* para z kanałów: kłęby wznoszące się i znoszone wiatrem */
@@ -1060,7 +1065,7 @@ void city_steam(float time) {
       float s = 0.25f + ph * 0.95f;
       float a = 0.32f * (1 - ph) * fminf(1, ph * 6);
       float wx = sinf(time * 0.3f + i) * 0.4f * ph + ph * 0.6f, wz = cosf(time * 0.23f + k) * 0.25f * ph;
-      float c = Mp->night ? 0.42f : 0.75f;
+      float c = 0.75f - 0.33f * g_nightK;
       r_puff(vents[i][0] + wx, y, vents[i][1] + wz, s, c, c * 0.97f, c * 0.95f, a);
     }
   }

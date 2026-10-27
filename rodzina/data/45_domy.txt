@@ -1,0 +1,119 @@
+# Nieruchomości: kupno mieszkania/domu, sen do wybranej godziny, drobne atrakcje domowe.
+
+@script s_dom_halsted
+as posrednik
+"Mieszkanie na drugim piętrze, okna na Halsted. Kuchnia, piec, łóżko z prawdziwym materacem."
+"Trzysta dolarów, gotówką. Bez pytań o źródło, panie."
+menu
+ opt "Biorę. ($300)" kup ifgold 300
+ opt "Pomyślę o tym." nie
+endmenu
+:nie
+as posrednik
+"Klucz poczeka. Ale nie wiecznie."
+end
+:kup
+cash -300
+set DOM_HALSTED 1
+set DOM 1
+as posrednik
+"Klucze. Witamy na swoim, panie Kowalski."
+toast "Kupiłeś mieszkanie przy Halsted — możesz tam spać"
+quest dom "Masz własne mieszkanie przy Halsted Street. Łóżko: sen do wybranej godziny."
+save
+end
+
+@script s_dom_loop
+as posrednik
+"Apartament w samym Loopie. Parkiet, fortepian, widok na kolejkę. Sąsiedzi nie zadają pytań."
+"Tysiąc pięćset dolarów."
+menu
+ opt "Biorę. ($1500)" kup ifgold 1500
+ opt "Za drogo, na razie." nie
+endmenu
+:nie
+as posrednik
+"Gdy interesy ruszą, wie pan, gdzie mnie szukać."
+end
+:kup
+cash -1500
+set DOM_LOOP 1
+set DOM 1
+as posrednik
+"Gratuluję. Portier już zna pana nazwisko."
+toast "Kupiłeś apartament w Loopie"
+quest dom "Masz apartament w Loopie — nad ulicą z kolejką."
+save
+end
+
+@script s_dom_willa
+as posrednik
+"Dom nad jeziorem Michigan. Kominek, salon, sejf w ścianie. Dla kogoś, kto już coś znaczy w tym mieście."
+"Pięć tysięcy."
+menu
+ opt "Biorę. ($5000)" kup ifgold 5000
+ opt "Jeszcze nie teraz." nie
+endmenu
+:nie
+as posrednik
+"Jezioro nigdzie nie ucieknie."
+end
+:kup
+cash -5000
+set DOM_WILLA 1
+set DOM 1
+as posrednik
+"Witamy na Gold Coast. Tu mieszkają ludzie, którzy rządzą Chicago."
+toast "Kupiłeś dom nad jeziorem"
+quest dom "Masz dom nad jeziorem przy Michigan Avenue."
+save
+end
+
+@script s_dom_sen
+"Łóżko. Do której chcesz spać?"
+menu
+ opt "Do rana (7:00)" rano
+ opt "Do południa (12:00)" poludnie
+ opt "Do popołudnia (16:00)" popoludnie
+ opt "Do wieczora (19:00)" wieczor
+ opt "Do północy (0:00)" polnoc
+ opt "Nie teraz" nie
+endmenu
+:nie
+end
+:rano
+fade 1
+sleep 7
+fade 0
+end
+:poludnie
+fade 1
+sleep 12
+fade 0
+end
+:popoludnie
+fade 1
+sleep 16
+fade 0
+end
+:wieczor
+fade 1
+sleep 19
+fade 0
+end
+:polnoc
+fade 1
+sleep 0
+fade 0
+end
+
+@script s_dom_gramofon
+"Gramofon. Płyta Duke'a Ellingtona kręci się z cichym trzaskiem."
+music bar
+toast "Jazz gra — usiądź wygodnie"
+end
+
+@script s_dom_sejf
+"Sejf w ścianie. Pięć stalowych bolców, zamek szyfrowy."
+"Tu nikt nie znajdzie twoich papierów."
+end

@@ -549,6 +549,16 @@ void combat_draw_hud(void) {
   float mw = d2_text_w(FONT_BOLD, 24, b) + 34;
   d2_rrect(UI_W - mw - 28, 24, mw, 42, 10, 0xB8121016);
   d2_text_sh(FONT_BOLD, 24, UI_W - mw - 11, 30, b, 0xFF9AE08A);
+  /* zegar: godzina i ikonka pory dnia */
+  {
+    const char *ct = clock_text();
+    float cw = d2_text_w(FONT_BOLD, 22, ct) + 52, cx = UI_W - mw - 36 - cw;
+    d2_rrect(cx, 24, cw, 42, 10, 0xB8121016);
+    float ix = cx + 20, iy = 45;
+    if (g_nightK > 0.5f) { d2_circle(ix, iy, 8, 0xFFE8E0C0); d2_circle(ix + 4, iy - 3, 7, 0xFF121016); } /* księżyc */
+    else { d2_circle(ix, iy, 7, 0xFFF0C050); for (int k = 0; k < 8; k++) { float a = k * 0.785f; d2_line(ix + cosf(a) * 9, iy + sinf(a) * 9, ix + cosf(a) * 12, iy + sinf(a) * 12, 2, 0xFFF0C050); } }
+    d2_text_sh(FONT_BOLD, 22, cx + 36, 31, ct, UI_CREAM);
+  }
   /* minimapa */
   minimap(UI_W - 196, 78, 168);
   {

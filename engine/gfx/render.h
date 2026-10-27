@@ -30,7 +30,8 @@ V3 m4_point(M4 m, V3 p);
 V3 m4_dir(M4 m, V3 d);
 
 /* ------------------------------------------------------------------ siatki */
-enum { VF_ALPHATEST = 1, VF_UNLIT = 2, VF_NOFOG = 4, VF_WATER = 8, VF_FOLIAGE = 16, VF_FIRE = 32 };
+enum { VF_ALPHATEST = 1, VF_UNLIT = 2, VF_NOFOG = 4, VF_WATER = 8, VF_FOLIAGE = 16, VF_FIRE = 32,
+       VF_NIGHT = 64 /* emisja skalowana porą dnia (r_set_night): okna, neony, szyldy */ };
 typedef struct {
   float p[3], n[3], uv[3]; /* uv[2] = warstwa tablicy tekstur */
   uint8_t c[4];            /* kolor (sRGB) + a = emisja */
@@ -112,6 +113,8 @@ void r_frame_begin(const RCam *cam, const REnv *env);
 void r_light(float x, float y, float z, float r, float g, float b, float radius);
 void r_spot(float x, float y, float z, float dx, float dy, float dz, float cosOuter, float r, float g, float b, float radius); /* światło stożkowe (reflektory, latarki) */
 void r_lights_commit(void);
+void r_env_lerp(const REnv *a, const REnv *b, float t, REnv *out); /* płynne przejście (pora dnia, pogoda) */
+void r_set_night(float k); /* 0 = dzień, 1 = noc: mnożnik emisji wierzchołków VF_NIGHT */
 /* odrzucanie obiektów spoza kadru (płaszczyzny z bieżącej kamery, po r_frame_begin) */
 int r_visible_box(float x0, float y0, float z0, float x1, float y1, float z1);
 int r_visible_sphere(float x, float y, float z, float r);

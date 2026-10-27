@@ -123,6 +123,14 @@ static float dir_angle(int dir) {
 static EntDef spawnDefs[32];
 static int nspawn;
 
+static void world_audio_ambience_only(void) {
+  MapDef *m = M();
+  Region *g = W.region >= 0 ? &S.regions[W.region] : NULL;
+  int amb = g && g->ambient ? g->ambient : m->ambient ? m->ambient : m->interior ? AMB_ROOM : AMB_STREET;
+  float rain = m->interior ? 0.0f : g_rainK;
+  if (!m->interior && g && g->rain) rain = fminf(1.0f, rain + 0.35f);
+  audio_ambience(amb, rain, amb == AMB_CHURCH || amb == AMB_WAREHOUSE ? 2 : m->interior ? 1 : 0);
+}
 /* muzyka i tło dźwiękowe bieżącej mapy */
 void world_audio(void) {
   MapDef *m = M();
@@ -131,7 +139,9 @@ void world_audio(void) {
   else if (m->music[0]) music_play(m->music);
   int amb = g && g->ambient ? g->ambient : m->ambient ? m->ambient : m->interior ? AMB_ROOM : AMB_STREET;
   float space = amb == AMB_CHURCH || amb == AMB_WAREHOUSE ? 2 : m->interior ? 1 : 0;
-  audio_ambience(amb, m->rain ? 1.0f : 0.0f, space);
+  float rain = m->interior ? 0.0f : g_rainK;
+  if (!m->interior && g && g->rain) rain = fminf(1.0f, rain + 0.35f);
+  audio_ambience(amb, rain, space);
 }
 
 void world_load_map(int map, int tx, int ty, int dir) {
@@ -447,6 +457,12 @@ void world_update(void) {
   }
   cars_update();
   streetlife_update();
+  /* pogoda się zmienia: odśwież szum deszczu, gdy zmiana jest wyraźna */
+  {
+    static float lastRain = -1;
+    clock_update_env();
+    if (!M()->interior && fabsf(g_rainK - lastRain) > 0.15f) { lastRain = g_rainK; world_audio_ambience_only(); }
+  }
   update_npcs();
   tycoon_world_tick();
 }
@@ -468,33 +484,52 @@ static REnv env_for_map(const MapDef *m) {
     e.exposure = 1.05f;
     return e;
   }
-  if (m->night) {
+  /* na zewnątrz: pora dnia (zegar) i pogoda (deszcz falami, w Polonii i w porcie częściej) */
+  Region *rg = W.region >= 0 ? &S.regions[W.region] : NULL;
+  float rain = g_rainK;
+  if (rg && rg->rain) rain = fminf(1.0f, rain + 0.35f);
+  REnv n = e, d = e;
+  {
     float top[3] = {0.012f, 0.016f, 0.035f}, hor[3] = {0.11f, 0.08f, 0.12f}, glow[3] = {0.22f, 0.11f, 0.05f};
-    memcpy(e.skyTop, top, 12); memcpy(e.skyHorizon, hor, 12); memcpy(e.skyGlow, glow, 12);
-    e.fogCol[0] = 0.075f; e.fogCol[1] = 0.062f; e.fogCol[2] = 0.085f;
-    e.fogDensity = m->rain ? 0.05f : 0.038f;
-    e.ambSky[0] = 0.12f; e.ambSky[1] = 0.125f; e.ambSky[2] = 0.17f;
-    e.ambGround[0] = 0.06f; e.ambGround[1] = 0.05f; e.ambGround[2] = 0.045f;
-    e.sunDir[0] = -0.4f; e.sunDir[1] = 0.55f; e.sunDir[2] = 0.6f;
-    e.sunCol[0] = 0.1f; e.sunCol[1] = 0.12f; e.sunCol[2] = 0.2f;
-    e.wet = m->rain ? 1.0f : 0.35f;
-    e.rain = m->rain ? 1.0f : 0;
-    e.moon = m->rain ? 0.25f : 1.0f;
-    e.stars = m->rain ? 0.1f : 1.0f;
-    return e;
+    memcpy(n.skyTop, top, 12); memcpy(n.skyHorizon, hor, 12); memcpy(n.skyGlow, glow, 12);
+    n.fogCol[0] = 0.075f; n.fogCol[1] = 0.062f; n.fogCol[2] = 0.085f;
+    n.fogDensity = 0.038f + 0.012f * rain;
+    n.ambSky[0] = 0.12f; n.ambSky[1] = 0.125f; n.ambSky[2] = 0.17f;
+    n.ambGround[0] = 0.06f; n.ambGround[1] = 0.05f; n.ambGround[2] = 0.045f;
+    n.sunDir[0] = -0.4f; n.sunDir[1] = 0.55f; n.sunDir[2] = 0.6f;
+    n.sunCol[0] = 0.1f; n.sunCol[1] = 0.12f; n.sunCol[2] = 0.2f;
+    n.moon = 1.0f - 0.75f * rain;
+    n.stars = 1.0f - 0.9f * rain;
+    n.exposure = 1.0f;
   }
-  /* dzień (pochmurny, złote popołudnie) */
-  float top[3] = {0.25f, 0.38f, 0.62f}, hor[3] = {0.75f, 0.7f, 0.62f}, glow[3] = {0.3f, 0.2f, 0.1f};
-  memcpy(e.skyTop, top, 12); memcpy(e.skyHorizon, hor, 12); memcpy(e.skyGlow, glow, 12);
-  e.fogCol[0] = 0.62f; e.fogCol[1] = 0.6f; e.fogCol[2] = 0.56f;
-  e.fogDensity = 0.022f;
-  e.ambSky[0] = 0.55f; e.ambSky[1] = 0.58f; e.ambSky[2] = 0.65f;
-  e.ambGround[0] = 0.25f; e.ambGround[1] = 0.22f; e.ambGround[2] = 0.2f;
-  e.sunDir[0] = -0.5f; e.sunDir[1] = 0.6f; e.sunDir[2] = 0.4f;
-  e.sunCol[0] = 1.6f; e.sunCol[1] = 1.35f; e.sunCol[2] = 1.0f;
-  e.wet = m->rain ? 0.8f : 0;
-  e.rain = m->rain ? 1.0f : 0;
-  e.exposure = 0.9f;
+  {
+    float top[3] = {0.25f, 0.38f, 0.62f}, hor[3] = {0.75f, 0.7f, 0.62f}, glow[3] = {0.3f, 0.2f, 0.1f};
+    memcpy(d.skyTop, top, 12); memcpy(d.skyHorizon, hor, 12); memcpy(d.skyGlow, glow, 12);
+    d.fogCol[0] = 0.62f; d.fogCol[1] = 0.6f; d.fogCol[2] = 0.56f;
+    d.fogDensity = 0.022f + 0.014f * rain;
+    d.ambSky[0] = 0.55f; d.ambSky[1] = 0.58f; d.ambSky[2] = 0.65f;
+    d.ambGround[0] = 0.25f; d.ambGround[1] = 0.22f; d.ambGround[2] = 0.2f;
+    d.sunDir[0] = -0.5f; d.sunDir[1] = 0.6f; d.sunDir[2] = 0.4f;
+    d.sunCol[0] = 1.6f; d.sunCol[1] = 1.35f; d.sunCol[2] = 1.0f;
+    d.exposure = 0.9f;
+    /* pochmurno w deszczu: szarzej, słabsze słońce */
+    for (int k = 0; k < 3; k++) {
+      d.sunCol[k] *= 1.0f - 0.65f * rain;
+      d.skyTop[k] = d.skyTop[k] + (0.42f - d.skyTop[k]) * rain * 0.7f;
+      d.skyHorizon[k] = d.skyHorizon[k] + (0.55f - d.skyHorizon[k]) * rain * 0.6f;
+      d.fogCol[k] = d.fogCol[k] + (0.5f - d.fogCol[k]) * rain * 0.5f;
+    }
+  }
+  r_env_lerp(&d, &n, g_nightK, &e);
+  /* złota godzina: ciepły horyzont i niskie, pomarańczowe słońce */
+  float dk = g_duskK * (1.0f - 0.6f * rain);
+  e.skyGlow[0] += 0.9f * dk; e.skyGlow[1] += 0.35f * dk; e.skyGlow[2] += 0.05f * dk;
+  e.skyHorizon[0] += 0.25f * dk; e.skyHorizon[1] += 0.08f * dk;
+  e.sunCol[0] += 0.6f * dk; e.sunCol[1] += 0.15f * dk; e.sunCol[2] -= 0.3f * dk * (1 - g_nightK);
+  e.sunDir[1] = e.sunDir[1] * (1.0f - 0.6f * dk);
+  e.fogCol[0] += 0.08f * dk; e.fogCol[1] += 0.03f * dk;
+  e.rain = rain;
+  e.wet = fmaxf(rain, 0.35f * g_nightK); /* nocą rosa, po deszczu mokro */
   return e;
 }
 
@@ -540,7 +575,9 @@ static void draw_ent(Ent *e) {
 
 void world_draw(void) {
   MapDef *m = M();
+  clock_update_env();
   REnv env = env_for_map(m);
+  r_set_night(m->interior ? 1.0f : g_nightK);
   /* interpolacja między krokami logiki (płynność przy monitorach > 60 Hz) */
   float a = g_alpha < 0 ? 0 : g_alpha > 1 ? 1 : g_alpha;
   if (fabsf(W.px - W.ppx) + fabsf(W.pz - W.ppz) > 1.0f) a = 1;
@@ -561,8 +598,8 @@ void world_draw(void) {
   city_lights(g_time);
   combat_lights();
   if (!driving) r_light(cx, camY + 0.3f, cz, 0.22f, 0.2f, 0.18f, 4.0f); /* delikatne doświetlenie wokół gracza */
-  cars_lights(m->night);
-  streetlife_lights(m->night);
+  cars_lights(m->interior ? m->night : g_nightK > 0.45f);
+  streetlife_lights(m->interior ? m->night : g_nightK > 0.45f);
   r_lights_commit();
   city_draw();
   cars_draw();
@@ -603,6 +640,11 @@ void world_draw_ui(void) {
     char b[128] = "";
     if (t) {
       const char *nm = t->d->type == ENT_NPC ? "Rozmawiaj" : "Zbadaj";
+      if (t->d->script >= 0) { /* czytelniejsze podpowiedzi dla przedmiotów domowych */
+        const char *sn = S.scripts[t->d->script].name;
+        if (!strcmp(sn, "s_dom_sen")) nm = "Idź spać";
+        else if (!strcmp(sn, "s_dom_gramofon")) nm = "Włącz gramofon";
+      }
       int sp = speaker_find(t->d->id);
       if (sp >= 0 && t->d->type == ENT_NPC) snprintf(b, sizeof b, "%s  \xe2\x80\x94  %s", nm, S.speakers[sp].name);
       else snprintf(b, sizeof b, "%s", nm);

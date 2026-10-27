@@ -163,6 +163,16 @@ static void exec(void) {
         break;
       }
       case OP_HEAL: H.hp = H.mhp; sfx_play(SFX_HEAL); break;
+      case OP_SLEEP: {
+        int mins = clock_sleep_until(c->i[0]);
+        H.hp = H.mhp;
+        char b[96];
+        snprintf(b, sizeof b, "Przespałeś %d h %02d min. Jest %s.", mins / 60, mins % 60, clock_text());
+        ui_toast(b);
+        if (!g_autoplay && !g_testdrv) save_game();
+        world_audio();
+        break;
+      }
       case OP_HURT: H.hp -= c->i[0]; if (H.hp < 1) H.hp = 1; W.hurtT = 18; sfx_play(SFX_HURT); break;
       case OP_WARP: if (c->i[0] >= 0) world_load_map(c->i[0], c->i[1], c->i[2], c->i[3]); break;
       case OP_FADE: V.fadeTarget = c->i[0] ? 255 : 0; V.state = VS_FADE; break;

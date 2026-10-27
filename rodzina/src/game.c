@@ -27,6 +27,8 @@ void hero_new(void) {
   memset(&H, 0, sizeof H);
   H.hp = H.mhp = 100;
   H.gold = 20;
+  H.clock = 17 * 60 + 40; /* początek gry: późne popołudnie, zaraz zmierzch */
+  H.day = 1;
   H.hasWpn[WPN_FISTS] = 1;
   H.weapon = WPN_FISTS;
 }
@@ -78,6 +80,7 @@ int save_game(void) {
   fprintf(f, "KRONIX3D 1\n");
   fprintf(f, "map %s %d %d %d\n", S.maps[W.map].id, (int)floorf(W.px), (int)floorf(W.pz), 0);
   fprintf(f, "yaw %f\n", W.yaw);
+  fprintf(f, "clock %d %d\n", H.clock, H.day);
   fprintf(f, "hero %d %d %d %d %ld %d\n", H.hp, H.mhp, H.armor, H.gold, H.playFrames, H.weapon);
   for (int w = 0; w < WPN_COUNT; w++) fprintf(f, "wpn %d %d %d %d\n", w, H.hasWpn[w], H.ammo[w], H.clip[w]);
   fprintf(f, "obj %s\n", H.objective);
@@ -127,6 +130,7 @@ int load_game(void) {
     int v, w, x1, x2;
     if (!strncmp(line, "map ", 4)) sscanf(line + 4, "%63s %d %d %d", mapId, &mx, &my, &md);
     else if (!strncmp(line, "yaw ", 4)) yaw = (float)atof(line + 4);
+    else if (!strncmp(line, "clock ", 6)) sscanf(line + 6, "%d %d", &H.clock, &H.day);
     else if (!strncmp(line, "hero ", 5)) sscanf(line + 5, "%d %d %d %d %ld %d", &H.hp, &H.mhp, &H.armor, &H.gold, &H.playFrames, &H.weapon);
     else if (!strncmp(line, "wpn ", 4) && sscanf(line + 4, "%d %d %d %d", &w, &v, &x1, &x2) == 4 && w >= 0 && w < WPN_COUNT) { H.hasWpn[w] = v; H.ammo[w] = x1; H.clip[w] = x2; }
     else if (!strncmp(line, "obj ", 4)) snprintf(H.objective, sizeof H.objective, "%s", line + 4);
@@ -209,7 +213,9 @@ void game_debug(const char *cmdline) {
     else if (!strcmp(t[1], "scale")) r_set_quality_scale(v);
   }
   else if (!strcmp(t[0], "mark") && n >= 3) world_marker_set(W.map, atoi(t[1]), atoi(t[2]), NULL);
-  else if (!strcmp(t[0], "night") && n >= 2) { S.maps[W.map].night = atoi(t[1]); S.maps[W.map].rain = n > 2 ? atoi(t[2]) : 0; }
+  else if (!strcmp(t[0], "night") && n >= 2) { H.clock = atoi(t[1]) ? 23 * 60 : 12 * 60; g_rainForce = n > 2 ? (float)atof(t[2]) : 0.0f; }
+  else if (!strcmp(t[0], "time") && n >= 2) { H.clock = (int)(atof(t[1]) * 60) % 1440; }
+  else if (!strcmp(t[0], "rain") && n >= 2) g_rainForce = (float)atof(t[1]);
   else if (!strcmp(t[0], "state")) printf("stan: px=%.4f pz=%.4f yaw=%.4f pitch=%.4f bob=%.4f ppx=%.4f alpha=%.2f shake=%d\n", W.px, W.pz, W.yaw, W.pitch, W.bob, W.ppx, g_alpha, g_shake);
   else if (!strcmp(t[0], "endday")) { int k = n > 1 ? atoi(t[1]) : 1; for (int i = 0; i < k; i++) tycoon_end_day(); }
   else if (!strcmp(t[0], "mode") && n >= 2) game_set_mode(!strcmp(t[1], "world") ? MODE_WORLD : !strcmp(t[1], "menu") ? MODE_MENU : MODE_TITLE);
@@ -394,7 +400,7 @@ void kx_game_frame(void) {
   input_update();
   switch (g_mode) {
     case MODE_TITLE: ui_title_update(); break;
-    case MODE_WORLD: H.playFrames++; world_update(); autosave_tick(); break;
+    case MODE_WORLD: H.playFrames++; clock_tick(); world_update(); autosave_tick(); break;
     case MODE_MENU: ui_pause_update(); break;
     case MODE_SHOP: ui_shop_update(); break;
     case MODE_GAMEOVER: ui_gameover_update(); break;

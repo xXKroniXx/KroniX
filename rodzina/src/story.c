@@ -290,6 +290,8 @@ static void parse_script_line(char *line) {
     k->i[1] = ival(2, 1);
   } else if (!strcmp(c, "cash")) {
     emit(OP_CASH)->i[0] = ival(1, 0);
+  } else if (!strcmp(c, "sleep")) {
+    emit(OP_SLEEP)->i[0] = ival(1, 7); /* śpij do godziny H:00 (pełne zdrowie, zapis) */
   } else if (!strcmp(c, "heal")) {
     emit(OP_HEAL);
   } else if (!strcmp(c, "xp")) {

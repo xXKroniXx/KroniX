@@ -42,13 +42,14 @@ def add(mid, props, g, ents):
 g = grid(10, 7, '_')
 border(g, 'i')
 put(g, 0, 0, 'iiiiiiiiii')
-put(g, 1, 1, 'B___i_f_')
+put(g, 1, 1, 'Bd__i_f_')
 put(g, 1, 3, '__t_____')
 put(g, 1, 4, '___i__u_')
 put(g, 0, 6, 'iiiiDiiiii')
 add('dom', ['ambient room', 'name "Mieszkanie Kowalskich"', 'music polonia', 'night 120', 'interior 1.5', 'bg wood'], g, [
     'npc mama 7 3 mama left s_mama',
     'obj zdjecie 3 3 papers down s_zdjecie',
+    'obj radio_dom 2 1 radio down s_dom_sen',
     'warp 4 6 polonia 5 2 down',
 ])
 
@@ -534,6 +535,56 @@ for m in maps:
 # alejami. Stare nazwy map stają się regionami (przesunięcie współrzędnych liczy silnik).
 import random
 random.seed(1933)
+
+# ------------------------------------------------------------------ nieruchomości na sprzedaż
+g = grid(9, 7, '_')
+border(g, 'i')
+put(g, 1, 1, 'Bd__p_u')
+put(g, 1, 3, '__t____')
+put(g, 1, 4, '______f')
+put(g, 0, 6, 'iiiiDiiii')
+add('mieszkanie', ['ambient room', 'name "Mieszkanie przy Halsted"', 'music noc', 'night 120', 'interior 1.5', 'bg wood'], g, [
+    'obj radio_m 2 1 radio down s_dom_sen',
+    'warp 4 6 miasto 88 70 left',
+])
+g = grid(13, 9, '=')
+border(g, 'j')
+put(g, 1, 1, 'Bd___p_uuu_')
+put(g, 6, 3, 'rrrr')
+put(g, 1, 4, 'P____rttr__')
+put(g, 6, 5, 'rrrr_b')
+put(g, 1, 6, 'f__________')
+put(g, 1, 7, '___p_______')
+put(g, 0, 8, 'jjjjjjDjjjjjj')
+add('apartament', ['ambient room', 'name "Apartament w Loopie"', 'music noc', 'night 120', 'interior 1.6', 'bg wood'], g, [
+    'obj radio_a 2 1 radio down s_dom_sen',
+    'obj gramofon_a 10 7 gramophone left s_dom_gramofon',
+    'warp 6 8 miasto 110 48 down',
+])
+g = grid(15, 10, '=')
+border(g, 'i')
+put(g, 5, 1, 'i')
+put(g, 5, 2, 'i')
+put(g, 5, 3, 'i')
+put(g, 5, 4, 'i')
+put(g, 0, 5, 'iii_ii')
+put(g, 1, 1, 'Bd__')
+put(g, 1, 2, '____')
+put(g, 1, 3, 'u___')
+put(g, 6, 1, 'f____uuu')
+put(g, 8, 3, 'rrrr')
+put(g, 8, 4, 'rttr_b')
+put(g, 8, 5, 'rrrr')
+put(g, 1, 6, 'P___________')
+put(g, 2, 7, 'p_______p')
+put(g, 0, 9, 'iiiiiiiDiiiiiii')
+add('willa', ['ambient room', 'name "Dom nad jeziorem"', 'music noc', 'night 120', 'interior 1.7', 'bg wood'], g, [
+    'obj radio_w 2 1 radio down s_dom_sen',
+    'obj gramofon_w 12 7 gramophone left s_dom_gramofon',
+    'obj sejf_w 13 1 safe down s_dom_sejf',
+    'warp 7 9 miasto 135 72 left',
+])
+
 MW, MH = 150, 110
 city = grid(MW, MH, '#')
 PARTS = {}   # nazwa -> (ox, oy)
@@ -692,6 +743,21 @@ city[58][61] = 'c'; city[61][63] = 'c'
 # browar Russo: drzwi od Cermak Road (Levee)
 city[85][60] = 'D'
 BROWAR_DOOR = (60, 85)
+# nieruchomości: drzwi (aktywne po kupnie) + pośrednik przed wejściem
+city[70][89] = 'D'                      # mieszkanie przy Halsted
+city[47][110] = 'D'                     # apartament w Loopie
+for y in range(70, 74):                 # dom nad jeziorem (Michigan Avenue)
+    for x in range(136, 140):
+        city[y][x] = 'R'
+city[72][136] = 'D'
+PROPERTY_ENTS = [
+    'warp 89 70 mieszkanie 4 5 up if DOM_HALSTED',
+    'npc posrednik_h 88 71 agent left s_dom_halsted ifnot DOM_HALSTED',
+    'warp 110 47 apartament 6 7 up if DOM_LOOP',
+    'npc posrednik_l 111 48 agent up s_dom_loop ifnot DOM_LOOP',
+    'warp 136 72 willa 7 8 up if DOM_WILLA',
+    'npc posrednik_w 135 73 agent left s_dom_willa ifnot DOM_WILLA',
+]
 
 # --- przeniesienie encji wklejonych dzielnic
 def tr(mapname, x, y):
@@ -719,6 +785,7 @@ for name in PARTS:
             t[1] = str(int(t[1]) + ox); t[2] = str(int(t[2]) + oy)
         city_ents.append(' '.join(t))
 city_ents.append('warp %d %d browar 13 14 up' % BROWAR_DOOR)
+city_ents.extend(PROPERTY_ENTS)
 
 # --- wyjścia z wnętrz prowadzą do miasta
 newmaps = []

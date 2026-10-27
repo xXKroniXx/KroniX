@@ -130,7 +130,7 @@ enum { CND_NONE, CND_IF, CND_IFNOT, CND_GE, CND_LT, CND_GOLD, CND_HAS };
 enum { OP_END, OP_SAY, OP_AS, OP_MENU, OP_GOTO, OP_IF, OP_SET, OP_ADD, OP_GIVE, OP_TAKE, OP_CASH, OP_HEAL,
        OP_BATTLE, OP_WARP, OP_FADE, OP_WAIT, OP_SFX, OP_MUSIC, OP_SHAKE, OP_QUEST, OP_DONE, OP_SHOP,
        OP_SAVE, OP_ENDING, OP_LEARN, OP_FACE, OP_WALK, OP_CALL, OP_TOAST, OP_CHANCE, OP_HURT, OP_EQUIP, OP_XP,
-       OP_SPAWN, OP_WAITKILL, OP_WEAPON, OP_TYCOON, OP_OBJECTIVE, OP_KILLALL, OP_TRUST, OP_NOP };
+       OP_SPAWN, OP_WAITKILL, OP_WEAPON, OP_TYCOON, OP_OBJECTIVE, OP_KILLALL, OP_TRUST, OP_SLEEP, OP_NOP };
 int map_find(const char *id);
 int map_resolve(const char *id, int *x, int *y); /* mapa albo region: dodaje przesunięcie regionu */
 int region_at(int map, float x, float z);          /* -1 = brak */
@@ -155,6 +155,7 @@ float world_ground(float x, float z);
 typedef struct { char id[24]; char text[120]; int done; } Quest;
 typedef struct {
   int hp, mhp, armor;
+  int clock, day;   /* pora dnia: minuty od północy, numer dnia */
   int gold;
   int inv[MAX_ITEMS];
   int vars[MAX_VARS];
@@ -169,6 +170,17 @@ void quest_set(const char *id, const char *text);
 void quest_done(const char *id);
 int save_exists(void);
 int save_game(void);
+/* clock.c: pora dnia i pogoda */
+extern float g_nightK, g_rainK, g_duskK; /* 0..1: noc, deszcz, złota godzina */
+extern float g_rainForce;
+float clock_night(int minutes);
+void clock_tick(void);
+void clock_update_env(void);
+int clock_hour(void);
+const char *clock_text(void);
+int clock_sleep_until(int hour);
+int shop_hours(int sign, int *open, int *close);
+int shop_is_open(int sign);
 void autosave_request(void);  /* zapis przy najbliższej bezpiecznej okazji */
 int autosave_indicator(void); /* >0: pokaż ikonę zapisu */
 int load_game(void);

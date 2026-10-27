@@ -25,7 +25,7 @@ static void m_lamp(void) {
   cyl(0, 1.92f, 0, 0.05f, 0.05f, 0.04f, 8, 3);
   /* latarnia */
   box(-0.08f, 1.96f, -0.08f, 0.08f, 1.98f, 0.08f);
-  PNT(0xFFFFE2A8, L_WHITE); P_.emis = 1.0f;
+  PNT(0xFFFFE2A8, L_WHITE); P_.emis = 1.0f; P_.flags = VF_NIGHT;
   cyl(0, 1.98f, 0, 0.06f, 0.08f, 0.2f, 6, 0);
   PNT(0xFF2A2C30, L_METAL);
   cyl(0, 2.18f, 0, 0.1f, 0.0f, 0.1f, 6, 1);

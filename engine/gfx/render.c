@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+static float nightK = 1.0f; /* r_set_night: 0 dzień .. 1 noc */
+
 RCfg g_cfg = {4, 1, 100, 16, 1, 75, 1, 1, 1, 1};
 int g_winW = 1280, g_winH = 720;
 float g_time;
@@ -36,7 +38,7 @@ static const char *FS_WORLD =
   "uniform sampler2DArray uTex; uniform vec3 uCam; uniform int uNL;\n"
   "uniform vec4 uLPos[16]; uniform vec4 uLCol[16]; uniform vec4 uLDir[16];\n"
   "uniform vec3 uAmbSky, uAmbGround, uSunDir, uSunCol, uFogCol; uniform float uFogDens, uWet, uTime, uExposure;\n"
-  "uniform vec4 uTint; uniform int uViewModel;\n"
+  "uniform vec4 uTint; uniform int uViewModel; uniform float uNight;\n"
   "out vec4 frag;\n"
   "float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233)))*43758.5453); }\n"
   "float vnoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f);\n"
@@ -50,7 +52,8 @@ static const char *FS_WORLD =
   "  float gloss = ((vFlags & 1) != 0) ? 0.15 : t.a;\n"
   "  vec3 N = dot(vNrm, vNrm) > 1e-10 ? normalize(vNrm) : vec3(0.0, 1.0, 0.0); if (!gl_FrontFacing) N = -N;\n"
   "  vec3 V = normalize(uCam - vPos);\n"
-  "  if ((vFlags & 2) != 0) { frag = vec4(alb * (1.0 + vCol.a*6.0), 1.0); return; }\n"
+  "  float emis = vCol.a * (((vFlags & 64) != 0) ? uNight : 1.0);\n"
+  "  if ((vFlags & 2) != 0) { frag = vec4(alb * (1.0 + emis*6.0), 1.0); return; }\n"
   "  if ((vFlags & 32) != 0) { float f = 0.75 + 0.25*sin(uTime*13.0+vPos.x*5.0)*sin(uTime*7.3+vPos.z*3.0); frag = vec4(alb*4.0*f, 1.0); return; }\n"
   "  float flat_ = smoothstep(0.6, 0.95, N.y);\n"
   "  float wet = uWet * flat_ * (uViewModel==1 ? 0.0 : 1.0);\n"
@@ -78,7 +81,7 @@ static const char *FS_WORLD =
   "  }\n"
   "  float fres = pow(1.0 - max(dot(N, V), 0.0), 3.0);\n"
   "  col += uAmbSky * fres * 0.9 * (0.4 + alb);\n"
-  "  col += alb * vCol.a * 4.0;\n"
+  "  col += alb * emis * 4.0;\n"
   "  float fogF = 0.0;\n"
   "  if ((vFlags & 4) == 0) { float dist = length(uCam - vPos); fogF = 1.0 - exp(-pow(dist*uFogDens, 1.4)); col = mix(col, uFogCol, fogF); }\n"
   "  else { float dist = length(uCam - vPos); fogF = 1.0 - exp(-dist*uFogDens*0.35); col = mix(col, uFogCol, fogF*0.85); }\n"
@@ -624,6 +627,7 @@ static void world_uniforms_env(void) {
   glUniform1f(R.wWet, e->wet);
   glUniform1f(R.wTime, g_time);
   glUniform1f(R.wExp, e->exposure);
+  glUniform1f(uloc(R.world, "uNight"), nightK);
 }
 
 /* ---- odrzucanie spoza kadru: 6 płaszczyzn z macierzy widok-rzut (Gribb/Hartmann) */
@@ -713,6 +717,20 @@ static void dynres_update(void) {
   if (sc != g_cfg.scale) { g_cfg.scale = sc; create_targets(); }
 }
 void r_set_quality_scale(int scale) { dynMax = scale; g_cfg.scale = scale; if (R.ready) create_targets(); }
+
+void r_set_night(float k) { nightK = k < 0 ? 0 : k > 1 ? 1 : k; }
+void r_env_lerp(const REnv *a, const REnv *b, float t, REnv *out) {
+  REnv r = *a;
+  const float *pa = &a->skyTop[0], *pb = &b->skyTop[0];
+  float *po = &r.skyTop[0];
+  /* wszystkie pola float do 'exposure' włącznie leżą po kolei */
+  int n = (int)(((const char *)&a->exposure - (const char *)&a->skyTop[0]) / sizeof(float)) + 1;
+  for (int i = 0; i < n; i++) po[i] = pa[i] + (pb[i] - pa[i]) * t;
+  r.moon = a->moon + (b->moon - a->moon) * t;
+  r.stars = a->stars + (b->stars - a->stars) * t;
+  r.interior = t < 0.5f ? a->interior : b->interior;
+  *out = r;
+}
 
 void r_frame_begin(const RCam *cam, const REnv *env) {
   lastDraws = stDraws; lastTris = stTris; stDraws = stTris = 0;

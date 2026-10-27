@@ -9,7 +9,7 @@ interior 1.5
 bg wood
 tiles
 iiiiiiiiii
-iB___i_f_i
+iBd__i_f_i
 i________i
 i__t_____i
 i___i__u_i
@@ -18,6 +18,7 @@ iiiiDiiiii
 endtiles
 npc mama 7 3 mama left s_mama
 obj zdjecie 3 3 papers down s_zdjecie
+obj radio_dom 2 1 radio down s_dom_sen
 warp 4 6 miasto 17 48 down
 
 @map miasto
@@ -85,7 +86,7 @@ RWW,,.|.,,gggggnnnn,.|.,nnnnnngggggwwwwwWWWWWRRRRRWWWWWWWWWW,.|.,RRRRRWWWWWwwwww
 RWW,,.|.,,gggggnnnn,.|.,nnnnnngggggwwwwwWWWWWRRRRRWWWWWWWWWWL.|.,RRRRRWWWWWwwwwwgg,,.|.,,HHHHHHHHHH,.|.,HHHHHHHHHHHHHHHHHHHHHHHHHL,.|.,,"""""~~~~~~~~~
 RWW,,...,,gggggnnnn,...,nnnnnngggggwwwwwWWWWWRRRRRWWWWWWWWWW,...,RRRRRWWWWWwwwwwgg,,...,,HHHHHHHHHHL...,HHHHHHHHHHHHHHHHHHHHHHHHH,,...,,"""""~~~~~~~~~
 RWW,,.|.,,ggRRRRRRR,.|.,RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR,.|.,RRRRRRRRRRRRRRRRR,,.|.,,HHHHHHHHHH,.|.,HHHHHHHHHHHHHHHHHHHHHHHHH,,.|.,,"""""~~~~~~~~~
-RWW,,.|.,,ggRRRRwDw,.|.,GGaDaGGRRRRRRRwwDwwRRRRRRwwwGaDaGwww,.|.,gggDgggRRRRwGDGwR,,.|.,,HHHHHHHHHH,.|.,HHHHHHHHHHHHHHHHHHHHHHHHH,,.|.,,"""""~~~~~~~~~
+RWW,,.|.,,ggRRRRwDw,.|.,GGaDaGGRRRRRRRwwDwwRRRRRRwwwGaDaGwww,.|.,gggDgggRRRRwGDGwR,,.|.,,HHHHHHHHHH,.|.,HHHHHHDHHHHHHHHHHHHHHHHHH,,.|.,,"""""~~~~~~~~~
 Rnn,,...,,,,,,,,,,,,,,,,L,,,,,,,,,,,,L,,,,,,,RR,,,,,,,,,,,tt,,,,,,,,,,,,,,,,,,,,,,,,...,,,,,,,,,,,,,...,,,,,,,,,,,,,,,,,,,,,,,,,,,,...,,""T""~~~~~~~~~
 Rnn,,.|.,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,Xk,RR,,,L,,,,,,,,,,,,L,,,,,,,,,,,,L,,,,,,,.|.,,,,J,,,J,,,,...,,,,J,,,J,,,,,,,J,,,J,,,J,,,.|.,,"""""~~~~~~~~~
 Rnn,,.|.,,........................................................................,,.|.,,........................................,,.|.,,"""""~~~~~~~~~
@@ -108,10 +109,10 @@ Rgg,,...,,ggggg####,...,g#####WWWWWgggggRRRRRgggggWWWWW#####,...,gggggRRRRRwwwww
 Rgg,,.|.,,ggggg####,c|.,g#####WWWWWgggggRRRRRgggggWWWWW#####L.|.,gggggRRRRRwwwwwgg,,.|.,,RWWWWWRRRRR#####gggggRRRR,.|.,RnnnnnggggL,.|.,,"""""~~~~~~~~~
 Rgg,,.|.,,ggggg####,.|.,g#####WWWWWgggggRRRRRgggggWWWWW#####,.|.,gggggRRRRRwwwwwgg,,.|.,,RWWWWWRRRRR#####gggggRRRR,.|.,Rnnnnngggg,,.|.,,""T""~~~~~~~~~
 Rgg,,...,,ggggg####,...Lg#####WWWWWgggggRRRRRgggggWWWWW#####,...,gggggRRRRRwwwwwgg,,...,,RWWWWWRRRRR#####gggggRRRR,...,Rnnnnngggg,,...,,"""""~~~~~~~~~
-Rgg,,.|.,,ggggg####,.|.,g#####WWWWWgggggRRRRRgggggWWWWW#####,.|.,gggggRRRRRwwwwwgg,,.|.,,RWWWWWRRRRR#####gggggRRRR,.|.,Rnnnnngggg,,.|.,,"""""~~~~~~~~~
-Rgg,,.|.,Lggggg####,.|.,g#####WWWWWgggggRRRRRgggggWWWWW#####,.|.,gggggRRRRRwwwwwgg,,.|.,,RWWWWWRRRRR#####gggggRRRR,.|.,Rnnnnngggg,,.|.,,"""""~~~~~~~~~
-RWW,,...,,gggggRRRR,..c,wgggggwwwwwWWWWWWWWWWWWWWWWWWWWWWWWW,...,RRRRRgggggRRRRRRR,,...,,nRRRRR#####RRRRR#####wwww,...,w#####WWWW,,...,,"""""~~~~~~~~~
-RWW,,.|.,,gggggRRRR,.|.,wgggggwwwwwWWWWWWWWWWWWWWWWWWWWWWWWW,.|.LRRRRRgggggRRRRRRR,,.|.,,nRRRRR#####RRRRR#####wwww,.|.,w#####WWWW,,.|.,,""T""~~~~~~~~~
+Rgg,,.|.,,ggggg####,.|.,g#####WWWWWgggggRRRRRgggggWWWWW#####,.|.,gggggRRRRRwwwwwgg,,.|.,,DWWWWWRRRRR#####gggggRRRR,.|.,Rnnnnngggg,,.|.,,RRRR"~~~~~~~~~
+Rgg,,.|.,Lggggg####,.|.,g#####WWWWWgggggRRRRRgggggWWWWW#####,.|.,gggggRRRRRwwwwwgg,,.|.,,RWWWWWRRRRR#####gggggRRRR,.|.,Rnnnnngggg,,.|.,,RRRR"~~~~~~~~~
+RWW,,...,,gggggRRRR,..c,wgggggwwwwwWWWWWWWWWWWWWWWWWWWWWWWWW,...,RRRRRgggggRRRRRRR,,...,,nRRRRR#####RRRRR#####wwww,...,w#####WWWW,,...,,DRRR"~~~~~~~~~
+RWW,,.|.,,gggggRRRR,.|.,wgggggwwwwwWWWWWWWWWWWWWWWWWWWWWWWWW,.|.LRRRRRgggggRRRRRRR,,.|.,,nRRRRR#####RRRRR#####wwww,.|.,w#####WWWW,,.|.,,RRRR"~~~~~~~~~
 RWW,,.|.,,gggggRRRR,.|.,wgggggwwwwwWWWWWWWWWWWWWWWWWWWWWWWWW,.|.,RRRRRgggggRRRRRRR,,.|.,,nRRRRR#####RRRRR#####wwww,.|.,w#####WWWW,,.|.,,"""""~~~~~~~~~
 RWW,,...,,gggggRRRR,...,wgggggwwwwwWWWWWWWWWWWWWWWWWWWWWWWWW,...,RRRRRgggggRRRRRRR,,...,,nRRRRR#####RRRRR#####wwww,...,w#####WWWW,,...,,"""""~~~~~~~~~
 RWW,,.|.,,gggggRRRR,.|.,wgggggwwwwwWWWWWWWWWWWWWWWWWWWWWWWWW,c|.,RRRRRgggggRRRRRRR,,.|.,,nRRRRR#####RRRRR#####wwww,.|.,w#####WWWW,,.|.,,"""""~~~~~~~~~
@@ -183,6 +184,12 @@ npc gino_d 122 14 gino left s_gino_doki if MISJA_DOKI ifnot DOKI_OK
 npc dokowiec 130 15 dokowiec left s_dokowiec wander
 npc mickey 128 15 mickey left s_mickey if DOKI_WALKA_OK ifnot MICKEY_DONE
 warp 60 85 browar 13 14 up
+warp 89 70 mieszkanie 4 5 up if DOM_HALSTED
+npc posrednik_h 88 71 agent left s_dom_halsted ifnot DOM_HALSTED
+warp 110 47 apartament 6 7 up if DOM_LOOP
+npc posrednik_l 111 48 agent up s_dom_loop ifnot DOM_LOOP
+warp 136 72 willa 7 8 up if DOM_WILLA
+npc posrednik_w 135 73 agent left s_dom_willa ifnot DOM_WILLA
 
 @map piekarnia
 ambient room
@@ -638,4 +645,69 @@ jrrhhrrrrrrrrrrrrrrhhrrrrj
 jrrrrrrrrrrrrrrrrrrrrrrrrj
 jjjjjjjjjjjDjjjjjjjjjjjjjj
 endtiles
+
+@map mieszkanie
+ambient room
+name "Mieszkanie przy Halsted"
+music noc
+night 120
+interior 1.5
+bg wood
+tiles
+iiiiiiiii
+iBd__p_ui
+i_______i
+i__t____i
+i______fi
+i_______i
+iiiiDiiii
+endtiles
+obj radio_m 2 1 radio down s_dom_sen
+warp 4 6 miasto 88 70 left
+
+@map apartament
+ambient room
+name "Apartament w Loopie"
+music noc
+night 120
+interior 1.6
+bg wood
+tiles
+jjjjjjjjjjjjj
+jBd___p_uuu_j
+j===========j
+j=====rrrr==j
+jP____rttr__j
+j=====rrrr_bj
+jf__________j
+j___p_______j
+jjjjjjDjjjjjj
+endtiles
+obj radio_a 2 1 radio down s_dom_sen
+obj gramofon_a 10 7 gramophone left s_dom_gramofon
+warp 6 8 miasto 110 48 down
+
+@map willa
+ambient room
+name "Dom nad jeziorem"
+music noc
+night 120
+interior 1.7
+bg wood
+tiles
+iiiiiiiiiiiiiii
+iBd__if____uuui
+i____i========i
+iu___i==rrrr==i
+i====i==rttr_bi
+iii_ii==rrrr==i
+iP___________=i
+i=p_______p===i
+i=============i
+iiiiiiiDiiiiiii
+endtiles
+obj radio_w 2 1 radio down s_dom_sen
+obj gramofon_w 12 7 gramophone left s_dom_gramofon
+obj sejf_w 13 1 safe down s_dom_sejf
+warp 7 9 miasto 135 72 left
 
