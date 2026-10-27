@@ -201,6 +201,7 @@ void game_debug(const char *cmdline) {
   else if (!strcmp(t[0], "beat") && n >= 2) { printf("beat %s (tryb %d)\n", t[1], g_mode); tycoon_debug_beat(atoi(t[1])); }
   else if (!strcmp(t[0], "ledger")) tycoon_open();
   else if (!strcmp(t[0], "carshow")) cars_showcase();
+  else if (!strcmp(t[0], "toshop") && n >= 2) { float x, z, y; if (city_shop_find(atoi(t[1]), &x, &z, &y)) { W.px = x; W.pz = z; W.yaw = y; W.pitch = 0; } else printf("brak sklepu %s\n", t[1]); }
   else if (!strcmp(t[0], "cfg") && n >= 3) {
     int v = atoi(t[2]);
     if (!strcmp(t[1], "ssr")) g_cfg.ssr = v; else if (!strcmp(t[1], "ssao")) g_cfg.ssao = v;
@@ -230,7 +231,7 @@ static int tdN, tdI, tdWait, tdHold[BTN_COUNT];
 static float tdMouseX, tdMouseY;
 static int btn_parse(const char *s) {
   static const char *names[BTN_COUNT] = {"up", "down", "left", "right", "a", "b", "run", "fire", "reload",
-                                         "sl", "sr", "tl", "tr", "tab", "w1", "w2", "w3", "w4", "wnext", "n"};
+                                         "sl", "sr", "tl", "tr", "tab", "w1", "w2", "w3", "w4", "wnext", "n", "quick"};
   for (int i = 0; i < BTN_COUNT; i++) if (!strcmp(s, names[i])) return i;
   return -1;
 }

@@ -290,6 +290,12 @@ void ui_open_pause(void);
 void ui_pause_update(void);
 void ui_pause_draw(void);
 void ui_open_shop(const char **ids, int n);
+const char *shop_name(int sign);  /* NULL: witryna bez sklepu (fryzjer, pralnia...) */
+int shop_open_sign(int sign);
+int ui_quick_heal(void);
+int heal_items_count(void);
+int city_shop_at(float px, float pz, float fx, float fz, int *sign);
+int city_shop_find(int sign, float *x, float *z, float *yaw);
 void ui_shop_update(void);
 void ui_shop_draw(void);
 void ui_title_enter(void);

@@ -122,6 +122,7 @@ static void pad_poll(void) {
   padBtn[BTN_WNEXT] = (b & 0x8000) != 0;               /* Y */
   padBtn[BTN_TAB] = (b & 0x0020) != 0;                 /* Back */
   padBtn[BTN_N] = (b & 0x0200) != 0;                   /* RB */
+  padBtn[BTN_QUICK] = (b & 0x0100) != 0;               /* LB */
   int rx = st.Gamepad.sThumbRX, ry = st.Gamepad.sThumbRY;
   padLookX = (rx > 8000 || rx < -8000) ? rx / 32768.0f * 9.0f : 0;
   padLookY = (ry > 8000 || ry < -8000) ? -ry / 32768.0f * 6.0f : 0;
@@ -290,6 +291,7 @@ static void map_input(void) {
   g_btn_raw[BTN_WNEXT] = wheelPulse > 0 || keys['Q'] || padBtn[BTN_WNEXT];
   if (wheelPulse > 0) wheelPulse--;
   g_btn_raw[BTN_N] = keys['N'] || padBtn[BTN_N];
+  g_btn_raw[BTN_QUICK] = keys['H'] || padBtn[BTN_QUICK];
   if (padLookX != 0 || padLookY != 0) { g_mouse_dx += padLookX; g_mouse_dy += padLookY; }
 }
 

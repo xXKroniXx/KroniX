@@ -81,6 +81,48 @@ type heal
 power 15
 price 5
 
+@item kawa
+name "Kawa z mlekiem"
+desc "Gorąca, mocna. Przywraca 10 zdrowia."
+type heal
+power 10
+price 3
+
+@item herbata
+name "Herbata jaśminowa"
+desc "Z Chinatown. Przywraca 10 zdrowia."
+type heal
+power 10
+price 2
+
+@item kanapka
+name "Kanapka z pastrami"
+desc "Gruba jak książka telefoniczna. Przywraca 20 zdrowia."
+type heal
+power 20
+price 8
+
+@item ryz
+name "Miska chop suey"
+desc "Ryż, warzywa i wieprzowina. Przywraca 25 zdrowia."
+type heal
+power 25
+price 6
+
+@item bandaz
+name "Bandaż i jodyna"
+desc "Na szybko, w bramie. Przywraca 30 zdrowia."
+type heal
+power 30
+price 20
+
+@item usl_lekarz
+name "Opatrzenie ran przez aptekarza"
+desc "Usługa na miejscu: pełne zdrowie, bez pytań skąd te rany."
+type heal
+power 100
+price 45
+
 @item naboje_p
 name "Naboje .45 (pistolet)"
 desc "14 naboi do Colta."

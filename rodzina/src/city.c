@@ -90,7 +90,9 @@ static void split_chunks(void);
 #define MAXVENT 64
 static float vents[MAXVENT][2];
 static int nvents;
-typedef struct { MapDef *m; GMesh far; Chunk ch[MAXCH]; int nch; CLight l[MAXCL]; int nl; float v[MAXVENT][2]; int nv; int rail; float rail3[3]; KxColl *coll; } CitySlot;
+#define MAXSHOP 600
+typedef struct { float x, z, nx, nz; int sign; } ShopSpot;
+typedef struct { MapDef *m; GMesh far; Chunk ch[MAXCH]; int nch; CLight l[MAXCL]; int nl; float v[MAXVENT][2]; int nv; int rail; float rail3[3]; KxColl *coll; ShopSpot sh[MAXSHOP]; int nsh; } CitySlot;
 static CitySlot bigSlot;
 static int curIsBig;
 static int interior;
@@ -213,6 +215,26 @@ static void fire_escape(const Face *f, float h) {
 }
 
 static int neonIdx;
+/* witryny z szyldem = sklepy, do których można podejść i coś kupić */
+static ShopSpot shops[MAXSHOP];
+static int nshops;
+int city_shop_at(float px, float pz, float fx, float fz, int *sign) {
+  int best = -1;
+  float bd = 1.4f;
+  for (int i = 0; i < nshops; i++) {
+    ShopSpot *s = &shops[i];
+    float dx = s->x - px, dz = s->z - pz, d = sqrtf(dx * dx + dz * dz);
+    if (d > bd || fx * -s->nx + fz * -s->nz < 0.45f) continue; /* patrzy na witrynę */
+    best = i; bd = d;
+  }
+  if (best >= 0 && sign) *sign = shops[best].sign;
+  return best;
+}
+int city_shop_find(int sign, float *x, float *z, float *yaw) {
+  for (int i = 0; i < nshops; i++)
+    if (shops[i].sign == sign) { *x = shops[i].x; *z = shops[i].z; *yaw = atan2f(-shops[i].nx, -shops[i].nz); return 1; }
+  return 0;
+}
 static void shop_front(const Face *f, int c, uint32_t wcol, int wallL, int tx, int tz) {
   int lit = Mp->night || 1;
   window_unit(f, 0, wallL, wcol, 0.78f, 0.85f, 0.18f, lit, 1);
@@ -221,6 +243,7 @@ static void shop_front(const Face *f, int c, uint32_t wcol, int wallL, int tx, i
   int sign = Mp->district == 1 && h % 4 == 0 ? 8 : (int)(h % 16);
   if (sign == 8 || sign == 9 || sign == 15 || sign == 10) sign = (int)(h % 8);
   float row = (sign / 2) / 8.0f, col = (sign % 2) * 0.5f;
+  if (nshops < MAXSHOP) { V3 sp = fp(f, 0.5f, 0, 0.7f); shops[nshops++] = (ShopSpot){sp.x, sp.z, f->nx, f->nz, sign}; }
   mb_paint(0xFFFFFFFF, L_SIGNS);
   P_.emis = Mp->night ? 0.25f : 0;
   fquad_uv(f, 0.06f, 0.94f, 1.1f, 1.32f, 0.03f, col, row, col + 0.5f, row + 0.125f);
@@ -839,11 +862,13 @@ void city_build(MapDef *m) {
     memcpy(vents, bigSlot.v, sizeof vents); nvents = bigSlot.nv;
     hasRail = bigSlot.rail; railX0 = bigSlot.rail3[0]; railX1 = bigSlot.rail3[1]; railZc = bigSlot.rail3[2];
     coll = bigSlot.coll;
+    memcpy(shops, bigSlot.sh, sizeof(ShopSpot) * bigSlot.nsh); nshops = bigSlot.nsh;
     curIsBig = 1;
     return;
   }
   nclights = 0;
   neonIdx = 0;
+  nshops = 0;
   coll = kxc_create(Mw, Mh);
   if (!mb.v) mb_init(&mb);
   mb_reset(&mb);
@@ -956,6 +981,7 @@ void city_build(MapDef *m) {
       bigSlot.rail = hasRail; bigSlot.rail3[0] = railX0; bigSlot.rail3[1] = railX1; bigSlot.rail3[2] = railZc;
       if (bigSlot.coll && bigSlot.coll != coll) kxc_free(bigSlot.coll);
       bigSlot.coll = coll;
+      memcpy(bigSlot.sh, shops, sizeof(ShopSpot) * nshops); bigSlot.nsh = nshops;
       curIsBig = 1;
     }
     if (getenv("KX_STAT")) fprintf(stderr, "miasto: %d wierzchołków, %d kwartałów, %d świateł, %d kolizji\n", mb.n, nchunks, nclights, kxc_count(coll));

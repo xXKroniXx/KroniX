@@ -382,7 +382,63 @@ void ui_pause_draw(void) {
 
 /* ---------------------------------------------------------------- sklep */
 static int shopIds[MAX_ARGS], shopN, shopCur;
+static char shopTitle[48];
+/* sklepy uliczne: szyld witryny (SIGN_TEXT) → nazwa i asortyment */
+static const struct { int sign; const char *name; const char *items[7]; } SHOPS[] = {
+  {0, "Piekarnia", {"chleb", "kawa"}},
+  {1, "Delikatesy", {"kanapka", "chleb", "kawa", "whisky"}},
+  {3, "Lombard", {"naboje_p", "naboje_s", "naboje_t", "kamizelka", "pistolet", "strzelba"}},
+  {6, "Trafika", {"kawa", "whisky"}},
+  {7, "Apteka", {"usl_lekarz", "bandaz", "apteczka"}},
+  {9, "Pub O'Hary", {"whisky", "kanapka"}},
+  {12, "Sklep spożywczy", {"chleb", "kanapka", "kawa"}},
+  {13, "Bar chop suey", {"ryz", "herbata"}},
+  {14, "Herbaciarnia", {"herbata", "ryz"}},
+  {15, "Narzędzia Gina", {"naboje_p", "naboje_s", "kamizelka"}},
+};
+const char *shop_name(int sign) {
+  for (int i = 0; i < (int)(sizeof SHOPS / sizeof SHOPS[0]); i++) if (SHOPS[i].sign == sign) return SHOPS[i].name;
+  return NULL;
+}
+int shop_open_sign(int sign) {
+  for (int i = 0; i < (int)(sizeof SHOPS / sizeof SHOPS[0]); i++) {
+    if (SHOPS[i].sign != sign) continue;
+    int n = 0;
+    while (n < 7 && SHOPS[i].items[n]) n++;
+    ui_open_shop((const char **)SHOPS[i].items, n);
+    snprintf(shopTitle, sizeof shopTitle, "%s", SHOPS[i].name);
+    return 1;
+  }
+  return 0;
+}
+/* H: najlepiej dobrany środek leczniczy z ekwipunku (najmniejszy, który pokryje braki) */
+int ui_quick_heal(void) {
+  if (H.hp >= H.mhp) { ui_toast("Zdrowie pełne"); return 0; }
+  int miss = H.mhp - H.hp, best = -1;
+  for (int i = 0; i < S.nitems; i++) {
+    ItemDef *d = &S.items[i];
+    if (!H.inv[i] || d->type != IT_HEAL) continue;
+    if (best < 0) { best = i; continue; }
+    int bp = S.items[best].power;
+    if ((d->power >= miss && (bp < miss || d->power < bp)) || (bp < miss && d->power > bp)) best = i;
+  }
+  if (best < 0) { ui_toast("Nie masz nic do leczenia — apteka, piekarnia, pub"); sfx_play(SFX_CANCEL); return 0; }
+  int before = H.hp;
+  H.hp = H.hp + S.items[best].power > H.mhp ? H.mhp : H.hp + S.items[best].power;
+  H.inv[best]--;
+  sfx_play(SFX_HEAL);
+  char b[96];
+  snprintf(b, sizeof b, "%s  +%d", S.items[best].name, H.hp - before);
+  ui_toast(b);
+  return 1;
+}
+int heal_items_count(void) {
+  int n = 0;
+  for (int i = 0; i < S.nitems; i++) if (S.items[i].type == IT_HEAL) n += H.inv[i];
+  return n;
+}
 void ui_open_shop(const char **ids, int n) {
+  shopTitle[0] = 0;
   shopN = 0;
   for (int i = 0; i < n && shopN < MAX_ARGS; i++) {
     int it = item_find(ids[i]);
@@ -393,6 +449,13 @@ void ui_open_shop(const char **ids, int n) {
 }
 static void shop_buy(void) {
   ItemDef *d = &S.items[shopIds[shopCur]];
+  if (!strncmp(d->id, "usl_", 4)) { /* usługa na miejscu (np. opatrzenie ran) */
+    if (H.gold < d->price || H.hp >= H.mhp) { sfx_play(SFX_CANCEL); return; }
+    H.hp = H.hp + d->power > H.mhp ? H.mhp : H.hp + d->power;
+    H.gold -= d->price;
+    sfx_play(SFX_HEAL);
+    return;
+  }
   if (H.gold >= d->price) {
     if (d->type == IT_WEAPON && H.hasWpn[d->power]) { H.ammo[d->power] += AMMO_PACK[d->power]; }
     else if (d->type == IT_WEAPON) { H.hasWpn[d->power] = 1; H.ammo[d->power] += AMMO_PACK[d->power]; H.weapon = d->power; combat_top_up(d->power); }
@@ -419,8 +482,10 @@ void ui_shop_draw(void) {
   float x = 270, y = 90, w = 740, h = 140 + shopN * 44 + 70;
   d2_rect(0, 0, UI_W, UI_H, 0x80000000);
   ui_panel(x, y, w, h);
-  d2_text_sh(FONT_SERIF, 34, x + 30, y + 26, "Co podać?", UI_GOLD);
+  d2_text_sh(FONT_SERIF, 34, x + 30, y + 26, shopTitle[0] ? shopTitle : "Co podać?", UI_GOLD);
   char b[96];
+  snprintf(b, sizeof b, "Zdrowie %d/%d", H.hp, H.mhp);
+  d2_text_r(FONT_SANS, 17, x + w - 30, y + 64, b, H.hp < H.mhp / 2 ? UI_RED : UI_GREY);
   snprintf(b, sizeof b, "Masz: $ %d", H.gold);
   d2_text_r(FONT_BOLD, 22, x + w - 30, y + 34, b, 0xFF9AE08A);
   for (int i = 0; i < shopN; i++) {
@@ -429,7 +494,8 @@ void ui_shop_draw(void) {
     int sel = i == shopCur, can = H.gold >= d->price;
     if (sel) { d2_rrect(x + 20, ry - 6, w - 40, 40, 8, 0xC0362A1A); d2_rrect_line(x + 20, ry - 6, w - 40, 40, 8, 1.5f, UI_GOLD); }
     d2_text_sh(FONT_SANS, 20, x + 40, ry, d->name, !can ? UI_DIM : sel ? 0xFFFFE6A8 : UI_CREAM);
-    if (d->type == IT_WEAPON) snprintf(b, sizeof b, H.hasWpn[d->power] ? "amunicja" : "nowa broń");
+    if (!strncmp(d->id, "usl_", 4)) snprintf(b, sizeof b, "usługa");
+    else if (d->type == IT_WEAPON) snprintf(b, sizeof b, H.hasWpn[d->power] ? "amunicja" : "nowa broń");
     else if (d->type == IT_ARMOR) snprintf(b, sizeof b, "masz %d", H.armor);
     else snprintf(b, sizeof b, "masz %d", H.inv[shopIds[i]]);
     d2_text_sh(FONT_SANS, 16, x + 470, ry + 3, b, UI_GREY);

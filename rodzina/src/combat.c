@@ -519,6 +519,10 @@ void combat_draw_hud(void) {
   d2_rrect(bx, hy + 18, bw, 14, 7, 0xFF2A2228);
   float f = (float)(H.hp > 0 ? H.hp : 0) / (H.mhp ? H.mhp : 100);
   if (f > 0) d2_grad(bx + 2, hy + 20, (bw - 4) * f, 10, lowhp ? 0xFFF05A4A : 0xFF8AD07A, lowhp ? 0xFF9A2020 : 0xFF3A8A4A);
+  if (H.hp < H.mhp && heal_items_count() > 0) {
+    snprintf(b, sizeof b, "H \xe2\x80\x94 ulecz (%d)", heal_items_count());
+    d2_text(FONT_SANS, 13, bx + bw - d2_text_w(FONT_SANS, 13, b), hy - 18, b, lowhp ? UI_GOLD : UI_GREY);
+  }
   if (H.armor > 0) {
     d2_rrect(bx, hy + 40, bw, 8, 4, 0xFF2A2228);
     d2_grad(bx + 1, hy + 41, (bw - 2) * H.armor / 100.0f, 6, 0xFF9AC8F0, 0xFF4A7AB0);

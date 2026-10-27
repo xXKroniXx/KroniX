@@ -366,7 +366,16 @@ static void update_player(void) {
     }
     Ent *door = look_door();
     if (door && door->d->toMap >= 0) { start_warp(door->d); return; }
+    int sg;
+    if (world_enemies_alive() == 0 && city_shop_at(W.px, W.pz, fx, fz, &sg) >= 0 && shop_name(sg) && shop_open_sign(sg)) { sfx_play(SFX_DOOR); return; }
     if (world_enemies_alive() == 0 && cars_enter()) return;
+  }
+  if (in.pressed[BTN_QUICK]) ui_quick_heal();
+  /* poza walką rany powoli się zasklepiają (do 35% zdrowia) */
+  {
+    static int calmT;
+    if (world_enemies_alive() > 0 || W.hurtT > 0) calmT = 0; else calmT++;
+    if (calmT > 600 && H.hp < H.mhp * 35 / 100 && calmT % 90 == 0) H.hp++;
   }
   if (in.pressed[BTN_B]) { ui_open_pause(); return; }
   if (in.pressed[BTN_TAB] && tycoon_active() && !tycoon_mission_active()) { tycoon_open(); return; }
@@ -600,7 +609,12 @@ void world_draw_ui(void) {
     } else {
       Ent *door = look_door();
       if (door && door->d->toMap >= 0) snprintf(b, sizeof b, "Wejdź  \xe2\x80\x94  %s", S.maps[door->d->toMap].name);
-      else if (car_player() < 0 && cars_near() >= 0 && world_enemies_alive() == 0) snprintf(b, sizeof b, "Wsiądź do auta");
+      else {
+        int sg;
+        if (car_player() < 0 && world_enemies_alive() == 0 && city_shop_at(W.px, W.pz, sinf(W.yaw), cosf(W.yaw), &sg) >= 0 && shop_name(sg))
+          snprintf(b, sizeof b, "Kup  \xe2\x80\x94  %s", shop_name(sg));
+        else if (car_player() < 0 && cars_near() >= 0 && world_enemies_alive() == 0) snprintf(b, sizeof b, "Wsiądź do auta");
+      }
     }
     if (car_player() >= 0) b[0] = 0;
     if (b[0]) {

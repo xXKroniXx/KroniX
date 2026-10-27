@@ -31,6 +31,7 @@ enum {
   BTN_A, BTN_B, BTN_RUN, BTN_FIRE, BTN_RELOAD,
   BTN_SL, BTN_SR, BTN_TL, BTN_TR,       /* krok w bok (A/D), obrót (strzałki) */
   BTN_TAB, BTN_W1, BTN_W2, BTN_W3, BTN_W4, BTN_WNEXT, BTN_N,
+  BTN_QUICK,                              /* szybki przedmiot (H / pad: LB) */
   BTN_COUNT
 };
 
