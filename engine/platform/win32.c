@@ -5,6 +5,7 @@
 #include <mmsystem.h>
 #undef RGB
 #include "kx.h"
+#include "kx_prof.h"
 #include "render.h"
 #include "kx_audio.h"
 #include "glapi.h"
@@ -225,6 +226,7 @@ static LRESULT CALLBACK wndproc(HWND h, UINT msg, WPARAM wp, LPARAM lp) {
       if (wp == VK_F10) return 0;
       break;
     case WM_KEYDOWN:
+      if (wp == VK_F3) { if (!(lp & (1 << 30))) g_prof_show ^= 1; return 0; }
       if (wp == VK_F11) { if (!(lp & (1 << 30))) toggle_fullscreen(); return 0; }
       if (wp < 256) keys[wp] = 1;
       return 0;
@@ -379,6 +381,7 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmd, int show) {
     last = now;
     if (acc > step * 6) acc = step * 6; /* po zacięciu nie nadrabiaj w nieskończoność */
     int steps = 0;
+    kx_prof_begin(KXP_UPDATE);
     while (acc >= step) {
       map_input();
       kx_game_frame();
@@ -386,12 +389,16 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmd, int show) {
       steps++;
       if (g_fullscreen_toggle) { g_fullscreen_toggle = 0; toggle_fullscreen(); }
     }
+    kx_prof_end(KXP_UPDATE);
     audio_pump();
     if (captured) kx_game_look(); /* obrót myszą w każdej klatce ekranu — bez szarpania */
     g_alpha = (float)(acc / step);
     (void)steps;
+    kx_prof_begin(KXP_DRAW);
     kx_game_draw();   /* z vsync SwapBuffers czeka na odświeżenie ekranu: rysujemy w tempie monitora */
+    kx_prof_end(KXP_DRAW);
     SwapBuffers(hdc);
+    kx_prof_frame();
     if (!g_cfg.vsync) {
       /* bez vsync: ogranicz do ~144 FPS, żeby nie palić procesora */
       QueryPerformanceCounter(&now);

@@ -1,12 +1,13 @@
 /* KroniX Engine — Renderer: shadery świata (światła per-piksel, mgła, mokra nawierzchnia, emisja), niebo,
  * deszcz, poświaty, HDR + MSAA + bloom + tonemapping (ACES) + korekcja barw, render do tekstur. */
 #include "render.h"
+#include "kx_prof.h"
 #include "glapi.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-RCfg g_cfg = {4, 1, 100, 16, 1, 75, 1, 1};
+RCfg g_cfg = {4, 1, 100, 16, 1, 75, 1, 1, 1};
 int g_winW = 1280, g_winH = 720;
 float g_time;
 M4 g_view, g_proj, g_vp;
@@ -53,7 +54,7 @@ static const char *FS_WORLD =
   "  if ((vFlags & 32) != 0) { float f = 0.75 + 0.25*sin(uTime*13.0+vPos.x*5.0)*sin(uTime*7.3+vPos.z*3.0); frag = vec4(alb*4.0*f, 1.0); return; }\n"
   "  float flat_ = smoothstep(0.6, 0.95, N.y);\n"
   "  float wet = uWet * flat_ * (uViewModel==1 ? 0.0 : 1.0);\n"
-  "  float pud = wet * smoothstep(0.55, 0.72, vnoise(vPos.xz*0.45)*0.7 + vnoise(vPos.xz*1.9)*0.3);\n"
+  "  float pud = wet > 0.001 ? wet * smoothstep(0.55, 0.72, vnoise(vPos.xz*0.45)*0.7 + vnoise(vPos.xz*1.9)*0.3) : 0.0;\n"
   "  wet = min(1.0, wet + pud*0.6);\n"
   "  alb *= mix(1.0, 0.55, wet) * (1.0 - pud*0.3);\n"
   "  gloss = mix(gloss, max(gloss, 0.85), wet * (0.55 + 0.45*t.a));\n"
@@ -215,23 +216,24 @@ static const char *FS_POST =
   "  if (d0 >= 0.99999) { frag = vec4(col, 1.0); return; }\n"
   "  vec3 P = vpos(vUV);\n"
   "  float jit = hash(vUV*uRes + fract(uTime)*17.0);\n"
-  "  if (uAO > 0.0 && -P.z > 0.15) {\n"
+  "  if (uAO > 0.0 && -P.z > 0.15 && -P.z < 32.0) {\n"
   "    vec3 cx = cross(dFdx(P), dFdy(P));\n"
   "    vec3 N = dot(cx, cx) > 1e-14 ? normalize(cx) : vec3(0.0, 0.0, 1.0);\n"
   "    if (dot(N, P) > 0.0) N = -N;\n"
   "    float rad = 0.32, occ = 0.0;\n"
   "    float rpx = rad * uProj[1][1] / -P.z * 0.5;\n"
-  "    for (int i = 0; i < 10; i++) {\n"
-  "      float a = (float(i) + jit) * 2.39996; float r = (float(i) + 0.5) / 10.0;\n"
+  "    for (int i = 0; i < 8; i++) {\n"
+  "      float a = (float(i) + jit) * 2.39996; float r = (float(i) + 0.5) / 8.0;\n"
   "      vec2 o = vec2(cos(a), sin(a)) * r * rpx * vec2(uRes.y/uRes.x, 1.0);\n"
   "      vec3 S = vpos(vUV + o); vec3 v = S - P; float dl = length(v);\n"
   "      occ += max(dot(N, v/max(dl,1e-4)) - 0.12, 0.0) * (1.0 - smoothstep(rad*0.6, rad*2.0, dl));\n"
   "    }\n"
-  "    float ao = clamp(1.0 - occ/10.0 * 2.2, 0.0, 1.0); if (isnan(ao)) ao = 1.0;\n"
+  "    float ao = clamp(1.0 - occ/8.0 * 2.2, 0.0, 1.0); if (isnan(ao)) ao = 1.0;\n"
+  "    ao = mix(ao, 1.0, smoothstep(22.0, 32.0, -P.z));\n"
   "    col *= mix(1.0, ao, uAO * 0.85);\n"
   "  }\n"
   "  vec3 base = col;\n"
-  "  if (uSSR > 0.0 && refl > 0.02) {\n"
+  "  if (uSSR > 0.0 && refl > 0.05) {\n"
   "    vec3 W = (uInvView * vec4(P, 1.0)).xyz;\n"
   "    /* krople deszczu: rozchodzące się kręgi zaburzają normalną */\n"
   "    vec2 cell = floor(W.xz*2.2); vec2 f = fract(W.xz*2.2) - 0.5;\n"
@@ -240,16 +242,16 @@ static const char *FS_POST =
   "    vec3 nw = normalize(vec3(ring*0.05*(f.x), 1.0, ring*0.05*(f.y)) + vec3(sin(W.x*3.1+uTime*0.5), 0.0, cos(W.z*2.7))*0.012);\n"
   "    vec3 N = normalize((uView * vec4(nw, 0.0)).xyz);\n"
   "    vec3 V = normalize(P); vec3 R = reflect(V, N);\n"
-  "    vec3 pos = P; float st = 0.12 + jit*0.08; vec2 huv = vec2(-1.0); float fadeI = 0.0;\n"
-  "    for (int i = 0; i < 36; i++) {\n"
-  "      pos += R * st; st *= 1.11;\n"
+  "    vec3 pos = P; float st = 0.14 + jit*0.1; vec2 huv = vec2(-1.0); float fadeI = 0.0;\n"
+  "    for (int i = 0; i < 22; i++) {\n"
+  "      pos += R * st; st *= 1.17;\n"
   "      vec4 c = uProj * vec4(pos, 1.0); vec2 uv = c.xy/c.w*0.5+0.5;\n"
   "      if (uv.x < 0.0 || uv.y < 0.0 || uv.x > 1.0 || uv.y > 1.0 || pos.z > -0.05) break;\n"
   "      float sz = vpos(uv).z;\n"
   "      if (pos.z < sz && sz - pos.z < 0.3 + st*1.5) {\n"
   "        vec3 a = pos - R*st, b = pos;\n"
-  "        for (int k = 0; k < 5; k++) { vec3 m = (a+b)*0.5; vec4 cm = uProj*vec4(m,1.0); vec2 um = cm.xy/cm.w*0.5+0.5; if (m.z < vpos(um).z) b = m; else a = m; }\n"
-  "        vec4 cb = uProj*vec4(b,1.0); huv = cb.xy/cb.w*0.5+0.5; fadeI = 1.0 - float(i)/36.0; break;\n"
+  "        for (int k = 0; k < 4; k++) { vec3 m = (a+b)*0.5; vec4 cm = uProj*vec4(m,1.0); vec2 um = cm.xy/cm.w*0.5+0.5; if (m.z < vpos(um).z) b = m; else a = m; }\n"
+  "        vec4 cb = uProj*vec4(b,1.0); huv = cb.xy/cb.w*0.5+0.5; fadeI = 1.0 - float(i)/22.0; break;\n"
   "      }\n"
   "    }\n"
   "    if (huv.x >= 0.0 && huv.x <= 1.0 && huv.y >= 0.0 && huv.y <= 1.0) {\n"
@@ -361,7 +363,17 @@ typedef struct { float x, y, z, r, cr, cg, cb, d2, dx, dy, dz, cosOut; } LightRe
 static LightRec lightsAll[512];
 static int nLightsAll;
 
-static int uloc(unsigned p, const char *n) { return glGetUniformLocation(p, n); }
+/* lokalizacje uniformów z pamięcią podręczną: nazwy to literały, więc wystarczy porównać wskaźnik */
+static int uloc(unsigned p, const char *n) {
+  static struct { unsigned p; const char *n; int loc; } C[256];
+  unsigned h = ((unsigned)(size_t)n * 2654435761u ^ p * 40503u) & 255;
+  for (int i = 0; i < 256; i++) {
+    unsigned k = (h + i) & 255;
+    if (C[k].n == n && C[k].p == p) return C[k].loc;
+    if (!C[k].n) { C[k].p = p; C[k].n = n; C[k].loc = glGetUniformLocation(p, n); return C[k].loc; }
+  }
+  return glGetUniformLocation(p, n);
+}
 
 static void destroy_targets(void) {
   if (R.msFbo) { glDeleteFramebuffers(1, &R.msFbo); glDeleteRenderbuffers(1, &R.msColor); glDeleteRenderbuffers(1, &R.msDepth); R.msFbo = 0; }
@@ -598,7 +610,97 @@ static void world_uniforms_env(void) {
   glUniform1f(R.wExp, e->exposure);
 }
 
+/* ---- odrzucanie spoza kadru: 6 płaszczyzn z macierzy widok-rzut (Gribb/Hartmann) */
+static float frPl[6][4];
+static void frustum_extract(const M4 *m) {
+  const float *a = m->m; /* kolumnowo: element (wiersz r, kolumna c) = a[c*4+r] */
+  for (int i = 0; i < 6; i++) {
+    int row = i / 2; float sg = (i & 1) ? -1.0f : 1.0f;
+    for (int c = 0; c < 4; c++) frPl[i][c] = a[c * 4 + 3] + sg * a[c * 4 + row];
+    float l = sqrtf(frPl[i][0] * frPl[i][0] + frPl[i][1] * frPl[i][1] + frPl[i][2] * frPl[i][2]);
+    if (l > 1e-8f) for (int c = 0; c < 4; c++) frPl[i][c] /= l;
+  }
+}
+int r_visible_box(float x0, float y0, float z0, float x1, float y1, float z1) {
+  for (int i = 0; i < 6; i++) {
+    const float *p = frPl[i];
+    float x = p[0] >= 0 ? x1 : x0, y = p[1] >= 0 ? y1 : y0, z = p[2] >= 0 ? z1 : z0;
+    if (p[0] * x + p[1] * y + p[2] * z + p[3] < 0) return 0;
+  }
+  return 1;
+}
+float r_fog_far(void) {
+  /* mgła: 1-exp(-(d*gęstość)^1.4) > 0,997 dla d > 3,4/gęstość */
+  return R.env.fogDensity > 0.001f && !R.env.interior ? 3.4f / R.env.fogDensity : 1e9f;
+}
+int r_visible_sphere(float x, float y, float z, float r) {
+  for (int i = 0; i < 6; i++) if (frPl[i][0] * x + frPl[i][1] * y + frPl[i][2] * z + frPl[i][3] < -r) return 0;
+  return 1;
+}
+
+/* ---- statystyki, pomiar GPU i dynamiczna rozdzielczość */
+static int stDraws, stTris, lastDraws, lastTris;
+static unsigned gpuQ[4];
+static int gpuQi, gpuQn, gpuQok = -1, gpuOpen;
+static double dynT, dynGpu, dynFrame, dynLast;
+static int dynMax = 100;
+void r_stats(int *draws, int *tris, int *scale) {
+  if (draws) *draws = lastDraws;
+  if (tris) *tris = lastTris;
+  if (scale) *scale = g_cfg.scale;
+}
+static void gpu_query_begin(void) {
+  if (gpuQok < 0) {
+    gpuQok = glGenQueries && glBeginQuery && glEndQuery && glGetQueryObjectiv && glGetQueryObjectui64v && !getenv("KX_NOGPUTIMER");
+    if (gpuQok) glGenQueries(4, gpuQ);
+  }
+  if (!gpuQok || gpuQn >= 4) return;
+  glBeginQuery(GL_TIME_ELAPSED, gpuQ[(gpuQi + gpuQn) & 3]);
+  gpuOpen = 1;
+}
+static void gpu_query_end(void) {
+  if (!gpuOpen) return;
+  glEndQuery(GL_TIME_ELAPSED);
+  gpuOpen = 0;
+  gpuQn++;
+  /* odbieramy wyniki sprzed 1-3 klatek bez czekania na GPU */
+  while (gpuQn > 0) {
+    GLint avail = 0;
+    glGetQueryObjectiv(gpuQ[gpuQi], GL_QUERY_RESULT_AVAILABLE, &avail);
+    if (!avail && gpuQn < 4) break;
+    unsigned long long ns = 0;
+    glGetQueryObjectui64v(gpuQ[gpuQi], GL_QUERY_RESULT, &ns);
+    double ms = ns / 1e6;
+    kx_prof_add(KXP_GPU, ms);
+    dynGpu += (ms - dynGpu) * 0.1;
+    gpuQi = (gpuQi + 1) & 3;
+    gpuQn--;
+  }
+}
+/* co ~1,5 s: za wolno → skala -10%, z dużym zapasem → +10% (do skali z ustawień jakości) */
+static void dynres_update(void) {
+  double now = kx_time_now();
+  double dt = dynLast > 0 ? now - dynLast : 0;
+  dynLast = now;
+  if (dt <= 0 || dt > 0.5) return;
+  dynFrame += (dt * 1000.0 - dynFrame) * 0.05;
+  if (!g_cfg.dynres) { dynMax = g_cfg.scale; return; }
+  dynT += dt;
+  if (dynT < 1.5) return;
+  dynT = 0;
+  double cost = gpuQok > 0 ? dynGpu : dynFrame; /* bez zapytań GPU: czas klatki */
+  double hi = gpuQok > 0 ? 14.0 : 18.5, lo = gpuQok > 0 ? 9.0 : 0.0;
+  int sc = g_cfg.scale;
+  if (cost > hi && sc > 55) sc -= 10;
+  else if (cost < lo && sc < dynMax) sc += 10;
+  if (sc > dynMax) sc = dynMax;
+  if (sc != g_cfg.scale) { g_cfg.scale = sc; create_targets(); }
+}
+void r_set_quality_scale(int scale) { dynMax = scale; g_cfg.scale = scale; if (R.ready) create_targets(); }
+
 void r_frame_begin(const RCam *cam, const REnv *env) {
+  lastDraws = stDraws; lastTris = stTris; stDraws = stTris = 0;
+  gpu_query_begin();
   R.env = *env;
   if (R.env.exposure <= 0) R.env.exposure = 1;
   g_camPos = cam->pos;
@@ -608,6 +710,7 @@ void r_frame_begin(const RCam *cam, const REnv *env) {
   M4 rot = m4_mul(m4_rotx(-cam->pitch), m4_roty(3.14159265f - cam->yaw));
   g_view = m4_mul(rot, m4_translate(-cam->pos.x, -cam->pos.y, -cam->pos.z));
   g_vp = m4_mul(g_proj, g_view);
+  frustum_extract(&g_vp);
   g_invVP = m4_inverse(g_vp);
   g_camToWorld = m4_inverse(g_view);
   camRight[0] = g_view.m[0]; camRight[1] = g_view.m[4]; camRight[2] = g_view.m[8];
@@ -717,6 +820,7 @@ void r_draw(const GMesh *m, const M4 *model, uint32_t tint) {
   set_tint(tint);
   glBindVertexArray(m->vao);
   glDrawArrays(GL_TRIANGLES, 0, m->n);
+  stDraws++; stTris += m->n / 3;
 }
 
 void r_draw_bones(const GMesh *m, const M4 *model, const M4 *bones, int nb, uint32_t tint) {
@@ -952,7 +1056,7 @@ void r_frame_end(void) {
       glUseProgram(R.blur);
       glUniform1i(uloc(R.blur, "uSrc"), 0);
       glViewport(0, 0, R.bw[l], R.bh[l]);
-      for (int it = 0; it < 2; it++) {
+      for (int it = 0; it < (l == 0 ? 1 : 2); it++) { /* największy poziom: 1 przebieg wystarcza */
         glBindFramebuffer(GL_FRAMEBUFFER, R.bFbo[l * 2 + 1]);
         glUniform2f(uloc(R.blur, "uDir"), 1, 0);
         glBindTexture(GL_TEXTURE_2D, R.bTex[l * 2]);
@@ -986,6 +1090,8 @@ void r_frame_end(void) {
   }
   glActiveTexture(GL_TEXTURE0);
   fullscreen();
+  gpu_query_end();
+  dynres_update();
 }
 
 int r_project(float x, float y, float z, float *sx, float *sy) {

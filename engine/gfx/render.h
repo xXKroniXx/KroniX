@@ -77,6 +77,7 @@ typedef struct {
   int fov;         /* stopnie */
   int ssr;         /* odbicia ekranowe na mokrych powierzchniach 0/1 */
   int ssao;        /* cienie kontaktowe (ambient occlusion) 0/1 */
+  int dynres;      /* dynamiczna rozdzielczość: obniża skalę, gdy GPU nie wyrabia 60 FPS */
 } RCfg;
 extern RCfg g_cfg;
 
@@ -110,6 +111,13 @@ void r_frame_begin(const RCam *cam, const REnv *env);
 void r_light(float x, float y, float z, float r, float g, float b, float radius);
 void r_spot(float x, float y, float z, float dx, float dy, float dz, float cosOuter, float r, float g, float b, float radius); /* światło stożkowe (reflektory, latarki) */
 void r_lights_commit(void);
+/* odrzucanie obiektów spoza kadru (płaszczyzny z bieżącej kamery, po r_frame_begin) */
+int r_visible_box(float x0, float y0, float z0, float x1, float y1, float z1);
+int r_visible_sphere(float x, float y, float z, float r);
+float r_fog_far(void); /* odległość, za którą mgła całkiem zakrywa świat (do skracania zasięgu rysowania) */
+/* statystyki ostatniej klatki: wywołania rysowania, trójkąty, aktywna skala renderu w % */
+void r_stats(int *draws, int *tris, int *scale);
+void r_set_quality_scale(int scale); /* skala z ustawień jakości = górna granica dynamicznej rozdzielczości */
 void r_draw(const GMesh *m, const M4 *model, uint32_t tint);
 void r_draw_bones(const GMesh *m, const M4 *model, const M4 *bones, int nbones, uint32_t tint);
 void r_glow(float x, float y, float z, float size, float r, float g, float b); /* addytywna poświata */
@@ -161,6 +169,7 @@ void d2_noclip(void);
 float d2_text(int font, float size, float x, float y, const char *s, uint32_t col); /* y = góra wiersza */
 float d2_text_sh(int font, float size, float x, float y, const char *s, uint32_t col);
 float d2_text_w(int font, float size, const char *s);
+void d2_prof_overlay(float x, float y); /* FPS, czasy CPU/GPU, liczniki renderera (kx_prof.h) */
 void d2_text_c(int font, float size, float cx, float y, const char *s, uint32_t col);
 void d2_text_r(int font, float size, float xr, float y, const char *s, uint32_t col);
 int d2_wrap(int font, float size, const char *s, float maxw, char out[][256], int maxlines);

@@ -1,6 +1,7 @@
 /* Interfejs: menu (mysz + klawiatura), pauza (status/ekwipunek/dziennik/zapis/opcje), sklep,
  * ekran tytułowy z żywą sceną 3D, śmierć, zakończenia, powiadomienia. Styl: art déco. */
 #include "engine.h"
+#include "kx_prof.h"
 
 /* ---------------------------------------------------------------- elementy */
 void ui_panel(float x, float y, float w, float h) {
@@ -105,11 +106,12 @@ int g_quality = 2;
 static const char *QNAMES[4] = {"Niska", "Średnia", "Wysoka", "Ultra"};
 void quality_apply(int q) {
   g_quality = q < 0 ? 0 : q > 3 ? 3 : q;
-  static const int MS[4] = {0, 0, 4, 4}, BL[4] = {0, 1, 1, 1}, SC[4] = {60, 80, 100, 100}, LI[4] = {6, 10, 16, 16};
+  /* Niska: lekka dla zintegrowanych kart; Wysoka: MSAA 2x; Ultra: wszystko na maksimum */
+  static const int MS[4] = {0, 0, 2, 4}, BL[4] = {0, 1, 1, 1}, SC[4] = {70, 85, 100, 100}, LI[4] = {6, 10, 12, 16};
   static const int SR[4] = {0, 0, 1, 1}, AO[4] = {0, 1, 1, 1};
   g_cfg.msaa = MS[g_quality]; g_cfg.bloom = BL[g_quality]; g_cfg.scale = SC[g_quality]; g_cfg.maxLights = LI[g_quality];
   g_cfg.ssr = SR[g_quality]; g_cfg.ssao = AO[g_quality];
-  if (g_render) r_resize(g_winW, g_winH);
+  if (g_render) { r_set_quality_scale(g_cfg.scale); r_resize(g_winW, g_winH); }
 }
 static void settings_path(char *p, int n) { snprintf(p, n, "%skronix_rodzina_ustawienia.txt", g_data_dir); }
 void settings_save(void) {
@@ -117,7 +119,7 @@ void settings_save(void) {
   settings_path(p, sizeof p);
   FILE *f = fopen(p, "w");
   if (!f) return;
-  fprintf(f, "glosnosc %d\nmysz %d\njakosc %d\nfov %d\nkolysanie %d\n", g_volume, g_mouse_sens, g_quality, g_cfg.fov, g_headbob);
+  fprintf(f, "glosnosc %d\nmysz %d\njakosc %d\nfov %d\nkolysanie %d\ndynres %d\n", g_volume, g_mouse_sens, g_quality, g_cfg.fov, g_headbob, g_cfg.dynres);
   fclose(f);
 }
 void settings_load(void) {
@@ -132,6 +134,7 @@ void settings_load(void) {
     else if (!strcmp(k, "jakosc")) g_quality = CLAMP(v, 0, 3);
     else if (!strcmp(k, "fov")) g_cfg.fov = CLAMP(v, 60, 100);
     else if (!strcmp(k, "kolysanie")) g_headbob = CLAMP(v, 0, 2);
+    else if (!strcmp(k, "dynres")) g_cfg.dynres = v ? 1 : 0;
   }
   fclose(f);
   quality_apply(g_quality);
@@ -141,7 +144,7 @@ void settings_load(void) {
 static Menu pm;
 static int pSub, pItemCur, pOptCur, pQuestScroll;
 static int itemList[MAX_ITEMS], nItemList;
-#define NOPTS 6
+#define NOPTS 8
 
 void ui_open_pause(void) {
   menu_init(&pm);
@@ -192,7 +195,9 @@ static void opt_change(int d) {
     case 2: quality_apply(g_quality + d); break;
     case 3: g_cfg.fov = CLAMP(g_cfg.fov + d * 5, 60, 100); break;
     case 4: g_headbob = CLAMP(g_headbob + d, 0, 2); break;
-    case 5: if (d) g_fullscreen_toggle = 1; break;
+    case 5: g_cfg.dynres = !g_cfg.dynres; if (!g_cfg.dynres) quality_apply(g_quality); break;
+    case 6: g_prof_show = !g_prof_show; break;
+    case 7: if (d) g_fullscreen_toggle = 1; break;
   }
   sfx_play(SFX_BLIP);
   settings_save();
@@ -224,15 +229,15 @@ void ui_pause_update(void) {
     if (in.rep[BTN_DOWN]) { pOptCur = (pOptCur + 1) % NOPTS; sfx_play(SFX_BLIP); }
     /* mysz: wiersze opcji */
     for (int i = 0; i < NOPTS; i++) {
-      float y = 178 + i * 50;
-      if (in.mx >= 450 && in.mx < 1140 && in.my >= y && in.my < y + 48) {
+      float y = 168 + i * 46;
+      if (in.mx >= 450 && in.mx < 1140 && in.my >= y && in.my < y + 44) {
         pOptCur = i;
         if (in.click) opt_change(in.mx > 900 ? 1 : -1);
       }
     }
     if (in.rep[BTN_LEFT]) opt_change(-1);
     if (in.rep[BTN_RIGHT]) opt_change(1);
-    if (in.pressed[BTN_A] && pOptCur == 5) opt_change(1);
+    if (in.pressed[BTN_A] && pOptCur >= 5) opt_change(1);
   } else if (pSub == 4) {
     if (in.pressed[BTN_B]) { pSub = 0; sfx_play(SFX_CANCEL); }
     if (in.pressed[BTN_A] || in.click) { ui_title_enter(); }
@@ -341,12 +346,12 @@ void ui_pause_draw(void) {
     if (!H.nq) d2_text_sh(FONT_SANS, 20, x, y + 60, "Brak wpisów.", UI_GREY);
   } else if (view == 3) {
     d2_text_sh(FONT_SERIF, 30, x, y, "Opcje", UI_GOLD);
-    const char *names[NOPTS] = {"Głośność", "Czułość myszy", "Jakość grafiki", "Pole widzenia", "Kołysanie kamery", "Pełny ekran (F11)"};
+    const char *names[NOPTS] = {"Głośność", "Czułość myszy", "Jakość grafiki", "Pole widzenia", "Kołysanie kamery", "Dynamiczna rozdzielczość", "Licznik FPS (F3)", "Pełny ekran (F11)"};
     for (int i = 0; i < NOPTS; i++) {
-      float ry = 178 + i * 50;
+      float ry = 168 + i * 46;
       int sel = pSub == 3 && pOptCur == i;
-      d2_rrect(450, ry, 690, 48, 10, sel ? 0xC0362A1A : 0x80141016);
-      if (sel) d2_rrect_line(450, ry, 690, 48, 10, 1.5f, UI_GOLD);
+      d2_rrect(450, ry, 690, 44, 10, sel ? 0xC0362A1A : 0x80141016);
+      if (sel) d2_rrect_line(450, ry, 690, 44, 10, 1.5f, UI_GOLD);
       d2_text_sh(FONT_SANS, 20, 476, ry + 12, names[i], sel ? UI_GOLD : UI_CREAM);
       char v[64] = "";
       if (i == 0) snprintf(v, sizeof v, "%d", g_volume);
@@ -354,7 +359,9 @@ void ui_pause_draw(void) {
       if (i == 2) snprintf(v, sizeof v, "%s", QNAMES[g_quality]);
       if (i == 3) snprintf(v, sizeof v, "%d°", g_cfg.fov);
       if (i == 4) snprintf(v, sizeof v, "%s", g_headbob == 0 ? "wyłączone" : g_headbob == 1 ? "słabe" : "normalne");
-      if (i == 5) snprintf(v, sizeof v, "przełącz");
+      if (i == 5) snprintf(v, sizeof v, "%s", g_cfg.dynres ? "włączona" : "wyłączona");
+      if (i == 6) snprintf(v, sizeof v, "%s", g_prof_show ? "widoczny" : "ukryty");
+      if (i == 7) snprintf(v, sizeof v, "przełącz");
       if (i <= 1) bar_h(760, ry + 18, 200, (float)(i == 0 ? g_volume : g_mouse_sens), 10, 0xFFE8C860, 0xFFB08A30);
       d2_text_c(FONT_BOLD, 20, 1060, ry + 12, v, UI_CREAM);
       d2_text(FONT_SANS, 20, 966, ry + 12, "\xe2\x86\x90", UI_DIM);

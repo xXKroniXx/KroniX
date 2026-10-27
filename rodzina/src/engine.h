@@ -169,6 +169,8 @@ void quest_set(const char *id, const char *text);
 void quest_done(const char *id);
 int save_exists(void);
 int save_game(void);
+void autosave_request(void);  /* zapis przy najbliższej bezpiecznej okazji */
+int autosave_indicator(void); /* >0: pokaż ikonę zapisu */
 int load_game(void);
 void hero_new(void);
 

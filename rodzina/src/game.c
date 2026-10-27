@@ -1,5 +1,6 @@
 /* Rdzeń: stan bohatera, zapis/wczytanie, tryby gry, pętla klatki, sterownik testów. */
 #include "engine.h"
+#include "kx_prof.h"
 #include <time.h>
 
 int g_headbob = 0;
@@ -86,6 +87,25 @@ int save_game(void) {
   tycoon_save(f);
   fclose(f);
   return 1;
+}
+
+/* autozapis: po zmianie mapy, nowym celu, końcu dnia i co 4 minuty gry — tylko w bezpiecznej
+ * chwili (bez walki, bez trwającej sceny, nie w trakcie akcji „op_”) */
+static int asPending;
+static long asLastFrame;
+static int asShowT;
+void autosave_request(void) { asPending = 1; }
+int autosave_indicator(void) { return asShowT; }
+static void autosave_tick(void) {
+  if (asShowT > 0) asShowT--;
+  if (((g_testdrv || g_autoplay) && !getenv("KX_AUTOSAVE_TEST")) || g_mode != MODE_WORLD) return;
+  if (H.playFrames - asLastFrame > 60L * 60 * 4) asPending = 1;
+  if (!asPending) return;
+  if (script_running() || W.trans || g_fade > 0 || world_enemies_alive() > 0 || H.hp <= 0) return;
+  if (!strncmp(S.maps[W.map].id, "op_", 3)) return;
+  if (save_game()) asShowT = 150;
+  asPending = 0;
+  asLastFrame = H.playFrames;
 }
 
 int load_game(void) {
@@ -181,6 +201,12 @@ void game_debug(const char *cmdline) {
   else if (!strcmp(t[0], "beat") && n >= 2) { printf("beat %s (tryb %d)\n", t[1], g_mode); tycoon_debug_beat(atoi(t[1])); }
   else if (!strcmp(t[0], "ledger")) tycoon_open();
   else if (!strcmp(t[0], "carshow")) cars_showcase();
+  else if (!strcmp(t[0], "cfg") && n >= 3) {
+    int v = atoi(t[2]);
+    if (!strcmp(t[1], "ssr")) g_cfg.ssr = v; else if (!strcmp(t[1], "ssao")) g_cfg.ssao = v;
+    else if (!strcmp(t[1], "lights")) g_cfg.maxLights = v; else if (!strcmp(t[1], "msaa")) { g_cfg.msaa = v; r_resize(g_winW, g_winH); }
+    else if (!strcmp(t[1], "scale")) r_set_quality_scale(v);
+  }
   else if (!strcmp(t[0], "mark") && n >= 3) world_marker_set(W.map, atoi(t[1]), atoi(t[2]), NULL);
   else if (!strcmp(t[0], "night") && n >= 2) { S.maps[W.map].night = atoi(t[1]); S.maps[W.map].rain = n > 2 ? atoi(t[2]) : 0; }
   else if (!strcmp(t[0], "state")) printf("stan: px=%.4f pz=%.4f yaw=%.4f pitch=%.4f bob=%.4f ppx=%.4f alpha=%.2f shake=%d\n", W.px, W.pz, W.yaw, W.pitch, W.bob, W.ppx, g_alpha, g_shake);
@@ -367,7 +393,7 @@ void kx_game_frame(void) {
   input_update();
   switch (g_mode) {
     case MODE_TITLE: ui_title_update(); break;
-    case MODE_WORLD: H.playFrames++; world_update(); break;
+    case MODE_WORLD: H.playFrames++; world_update(); autosave_tick(); break;
     case MODE_MENU: ui_pause_update(); break;
     case MODE_SHOP: ui_shop_update(); break;
     case MODE_GAMEOVER: ui_gameover_update(); break;
@@ -417,6 +443,7 @@ void kx_game_draw(void) {
   }
   if (g_fade > 0) d2_rect(-400, -400, UI_W + 800, UI_H + 800, WITH_A(0x000000, g_fade));
   ui_toast_draw();
+  if (g_prof_show) d2_prof_overlay(14, UI_H - 200);
   if (g_mode != MODE_WORLD || script_blocking()) ui_cursor();
   d2_end();
 }

@@ -225,7 +225,7 @@ static void exec(void) {
         snprintf(H.objective, sizeof H.objective, "%s", c->s[0]);
         if (c->s[1] && c->i[2]) { int x = c->i[0], y = c->i[1]; int mm = map_resolve(c->s[1], &x, &y); world_marker_set(mm, x, y, NULL); }
         else world_marker_set(-1, 0, 0, c->s[1]);
-        if (c->s[0][0]) ui_toast("Nowy cel");
+        if (c->s[0][0]) { ui_toast("Nowy cel"); autosave_request(); }
         break;
       case OP_TYCOON:
         if (!strcmp(c->s[0], "start")) {

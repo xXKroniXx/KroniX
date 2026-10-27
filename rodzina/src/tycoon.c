@@ -929,6 +929,7 @@ static void rivals_day(void) {
 static void check_end(void);
 
 void tycoon_end_day(void) {
+  autosave_request();
   if (!T.active || T.ended) return;
   T.ntoday = 0;
   char ds[40];

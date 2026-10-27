@@ -101,6 +101,9 @@ typedef void GLvoid;
 #define GL_SRGB8_ALPHA8 0x8C43
 #define GL_MULTISAMPLE 0x809D
 #define GL_POLYGON_OFFSET_FILL 0x8037
+#define GL_TIME_ELAPSED 0x88BF
+#define GL_QUERY_RESULT 0x8866
+#define GL_QUERY_RESULT_AVAILABLE 0x8867
 
 #define GLFN(ret, name, args) typedef ret(GLAPIENTRY *PFN_##name) args; extern PFN_##name name;
 #define GL_FUNCS(X) \
@@ -185,6 +188,14 @@ typedef void GLvoid;
   X(void, glDepthRange, (double, double))
 
 GL_FUNCS(GLFN)
+/* opcjonalne: brak nie blokuje startu (sprawdzać wskaźnik przed użyciem) */
+#define GL_FUNCS_OPT(X) \
+  X(void, glGenQueries, (GLsizei, GLuint *)) \
+  X(void, glBeginQuery, (GLenum, GLuint)) \
+  X(void, glEndQuery, (GLenum)) \
+  X(void, glGetQueryObjectiv, (GLuint, GLenum, GLint *)) \
+  X(void, glGetQueryObjectui64v, (GLuint, GLenum, unsigned long long *))
+GL_FUNCS_OPT(GLFN)
 #undef GLFN
 
 /* zwraca 0 przy powodzeniu, inaczej nazwę brakującej funkcji przez *missing */

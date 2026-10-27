@@ -603,6 +603,7 @@ void cars_draw(void) {
     if (!c->alive) continue;
     float d2 = (c->x - W.px) * (c->x - W.px) + (c->z - W.pz) * (c->z - W.pz);
     if (d2 > 90 * 90) continue;
+    if (!r_visible_sphere(c->x, 0.6f, c->z, 1.8f)) continue;
     const VSpec *vs = &VS[c->type];
     float bob = (i == drive || c->ai) ? sinf(c->wheelT * 0.7f) * 0.003f * fminf(1, fabsf(c->speed)) : 0;
     M4 base = m4_mul(m4_translate(c->x, 0, c->z), m4_roty(c->ang));

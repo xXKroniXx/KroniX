@@ -331,3 +331,29 @@ int d2_wrap(int font, float size, const char *s, float maxw, char out[][256], in
   if (line[0] && n < maxl && strcmp(line, act)) snprintf(out[n++], 256, "%s", line);
   return n;
 }
+
+/* ---------------------------------------------------------------- nakładka profilera (F3) */
+#include "kx_prof.h"
+void d2_prof_overlay(float x, float y) {
+  char b[128];
+  int draws, tris, sc;
+  r_stats(&draws, &tris, &sc);
+  int rows = 4;
+  for (int i = KXP_USER; i < KXP_MAX; i++) if (kx_prof_label(i)) rows++;
+  float h = 30 + rows * 20.0f;
+  d2_rrect(x, y, 300, h, 8, 0xC0101014);
+  float fps = kx_prof_fps();
+  uint32_t fc = fps >= 55 ? 0xFF7CD67C : fps >= 30 ? 0xFFE8C04A : 0xFFE85A4A;
+  snprintf(b, sizeof b, "%.0f FPS   klatka %.1f ms (max %.1f)", fps, kx_prof_ms(KXP_FRAME), kx_prof_peak(KXP_FRAME));
+  d2_text(FONT_BOLD, 15, x + 10, y + 8, b, fc);
+  float yy = y + 30;
+  for (int i = KXP_UPDATE; i < KXP_MAX; i++) {
+    const char *l = kx_prof_label(i);
+    if (!l) continue;
+    snprintf(b, sizeof b, "%-14s %5.2f ms  (max %5.2f)", l, kx_prof_ms(i), kx_prof_peak(i));
+    d2_text(FONT_SANS, 14, x + 10, yy, b, 0xFFE8E4DA);
+    yy += 20;
+  }
+  snprintf(b, sizeof b, "rysowania %d   trójkąty %dk   skala %d%%", draws, tris / 1000, sc);
+  d2_text(FONT_SANS, 14, x + 10, yy, b, 0xFFB8B4AA);
+}

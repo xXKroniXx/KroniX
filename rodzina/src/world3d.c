@@ -163,6 +163,7 @@ void world_load_map(int map, int tx, int ty, int dir) {
   world_refresh_visibility();
   cars_init_map();
   streetlife_map();
+  autosave_request();
 }
 
 void world_spawn(const char *enemyId, int tx, int ty, int ally) {
@@ -481,6 +482,7 @@ static REnv env_for_map(const MapDef *m) {
 static void draw_ent(Ent *e) {
   float dx = e->x - W.px, dz = e->z - W.pz;
   if (dx * dx + dz * dz > 40 * 40) return;
+  if (!r_visible_sphere(e->x, 0.9f, e->z, 1.2f)) return;
   if (e->htype < 0) {
     int md = objmodel_find(e->d->sprite);
     if (md < 0) return;
@@ -601,6 +603,19 @@ void world_draw_ui(void) {
       d2_text_c(FONT_BOLD, 18, x + 21, y + 9, "E", 0xFF141016);
       d2_text_sh(FONT_BOLD, 20, x + 46, y + 8, b, UI_CREAM);
     }
+  }
+  if (autosave_indicator() > 0) {
+    int t = autosave_indicator();
+    float a = t > 130 ? (150 - t) / 20.0f : t < 30 ? t / 30.0f : 1.0f;
+    int ia = (int)(a * 255);
+    float x = UI_W / 2.0f - 70, y = UI_H - 58;
+    d2_rrect(x, y, 140, 30, 8, WITH_A(0x141016, (int)(ia * 0.8f)));
+    for (int k = 0; k < 8; k++) { /* kręcące się kropki */
+      float ang = k * 0.785f + g_time * 5.0f;
+      int ka = (int)(ia * (0.25f + 0.75f * (k / 7.0f)));
+      d2_rrect(x + 17 + cosf(ang) * 7 - 1.5f, y + 15 + sinf(ang) * 7 - 1.5f, 3, 3, 1.5f, WITH_A(UI_GOLD & 0xFFFFFF, ka));
+    }
+    d2_text(FONT_SANS, 15, x + 34, y + 6, "Zapisywanie...", WITH_A(UI_CREAM & 0xFFFFFF, ia));
   }
   if (W.bannerT > 0 && W.banner[0]) {
     float a = W.bannerT > 140 ? (170 - W.bannerT) / 30.0f : W.bannerT < 40 ? W.bannerT / 40.0f : 1.0f;

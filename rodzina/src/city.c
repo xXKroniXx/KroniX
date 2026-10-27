@@ -74,7 +74,7 @@ static GMesh cityMesh;
 static MB mb, mbFar;
 #define CHS 16
 #define MAXCH 96
-typedef struct { GMesh m; float x0, z0, x1, z1; } Chunk;
+typedef struct { GMesh m; float x0, z0, x1, z1, y0, y1; } Chunk;
 static Chunk chunks[MAXCH];
 static int nchunks;
 static void split_chunks(void);
@@ -965,7 +965,11 @@ static void split_chunks(void) {
       if (!p->n) continue;
       Chunk *c = &chunks[nchunks++];
       c->m = gm_upload(p);
-      c->x0 = ix * CHS; c->z0 = iz * CHS; c->x1 = c->x0 + CHS; c->z1 = c->z0 + CHS;
+      /* rzeczywiste granice geometrii kwartału (do odrzucania spoza kadru) */
+      float b0[3] = {1e9f, 1e9f, 1e9f}, b1[3] = {-1e9f, -1e9f, -1e9f};
+      for (int v = 0; v < p->n; v++)
+        for (int a = 0; a < 3; a++) { float q = p->v[v].p[a]; if (q < b0[a]) b0[a] = q; if (q > b1[a]) b1[a] = q; }
+      c->x0 = b0[0]; c->y0 = b0[1]; c->z0 = b0[2]; c->x1 = b1[0]; c->y1 = b1[1]; c->z1 = b1[2];
     }
 }
 
@@ -1011,19 +1015,25 @@ void city_steam(float time) {
 }
 
 void city_draw(void) {
-  r_draw(&cityMesh, NULL, 0);
   V3 c = g_camPos;
-  float fx = sinf(W.yaw), fz = cosf(W.yaw);
+  float maxD = fminf(85.0f, r_fog_far()); /* za gęstą mgłą i tak nic nie widać */
+  /* widoczne kwartały od najbliższego: bliskie ściany zasłaniają dalsze i GPU odrzuca je
+   * testem głębi przed kosztownym cieniowaniem (early-Z) */
+  static int vis[MAXCH];
+  static float vd[MAXCH];
+  int nv = 0;
   for (int i = 0; i < nchunks; i++) {
     Chunk *k = &chunks[i];
     float nx = c.x < k->x0 ? k->x0 : c.x > k->x1 ? k->x1 : c.x;
     float nz = c.z < k->z0 ? k->z0 : c.z > k->z1 ? k->z1 : c.z;
-    float dx = nx - c.x, dz = nz - c.z;
-    if (dx * dx + dz * dz > 85.0f * 85.0f) continue;
-    /* za plecami kamery */
-    float mx = (k->x0 + k->x1) * 0.5f - c.x, mz = (k->z0 + k->z1) * 0.5f - c.z;
-    if (mx * fx + mz * fz < -CHS * 0.75f) continue;
-    r_draw(&k->m, NULL, 0);
+    float dx = nx - c.x, dz = nz - c.z, d2 = dx * dx + dz * dz;
+    if (d2 > maxD * maxD) continue;
+    if (!r_visible_box(k->x0, k->y0, k->z0, k->x1, k->y1, k->z1)) continue; /* poza kadrem */
+    int j = nv++;
+    while (j > 0 && vd[j - 1] > d2) { vis[j] = vis[j - 1]; vd[j] = vd[j - 1]; j--; }
+    vis[j] = i; vd[j] = d2;
   }
+  for (int i = 0; i < nv; i++) r_draw(&chunks[vis[i]].m, NULL, 0);
+  r_draw(&cityMesh, NULL, 0); /* panorama i reszta: na końcu, zasłonięte piksele odpadają tanio */
 }
 int city_verts(void) { return cityMesh.n; }

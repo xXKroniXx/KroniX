@@ -227,6 +227,7 @@ void streetlife_draw(void) {
     float dx = p->x - c.x, dz = p->z - c.z, d2 = dx * dx + dz * dz;
     if (d2 > 42 * 42) continue;
     if (d2 > 4 && dx * fx + dz * fz < -2) continue; /* za plecami */
+    if (!r_visible_sphere(p->x, 0.9f, p->z, 1.0f)) continue;
     HumanPose hp;
     memset(&hp, 0, sizeof hp);
     hp.anim = p->pause > 0 ? AN_IDLE : AN_WALK;
@@ -242,6 +243,7 @@ void streetlife_draw(void) {
       float x = t->x + (k - (TRAIN_CARS - 1) * 0.5f) * (CAR_HL * 2 + 0.1f);
       float ddx = x - c.x, ddz = z - c.z;
       if (ddx * ddx + ddz * ddz > 80 * 80) continue;
+      if (!r_visible_box(x - CAR_HL, 3.5f, z - CAR_HW, x + CAR_HL, 5.2f, z + CAR_HW)) continue;
       M4 m = m4_mul(m4_translate(x, 3.62f, z), m4_rotx(sway));
       r_draw(&trainMesh, &m, 0);
     }

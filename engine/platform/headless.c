@@ -1,6 +1,7 @@
 /* KroniX Engine — Platforma bez okna (Linux): testy automatyczne, walidacja fabuły i — z --render —
  * rysowanie przez OSMesa (OpenGL programowy) do zrzutów ekranu. */
 #include "kx.h"
+#include "kx_prof.h"
 #include "render.h"
 #include "kx_audio.h"
 #include "glapi.h"
@@ -37,6 +38,7 @@ int main(int argc, char **argv) {
     g_winW = w; g_winH = h;
   }
   kx_game_init(argc, argv);
+  g_cfg.dynres = 0; /* testy i zrzuty: zawsze pełna, stała rozdzielczość */
   for (int i = 1; i + 3 < argc; i++)
     if (!strcmp(argv[i], "--wav")) { /* --wav utwór|sfx:nazwa|amb:N sekundy plik.wav */
       const char *what = argv[i + 1];
@@ -57,11 +59,25 @@ int main(int argc, char **argv) {
       exit(0);
     }
   static int16_t audio[AUDIO_RATE / 60 * 2 + 16];
+  /* KX_BENCH=1: rysuj każdą klatkę i wypisz uśrednione czasy sekcji (profil CPU) */
+  int bench = getenv("KX_BENCH") != NULL;
   for (long f = 0; f < maxFrames && !g_quit; f++) {
     g_mouse_dx = g_mouse_dy = 0;
+    kx_prof_begin(KXP_UPDATE);
     kx_game_frame();
+    kx_prof_end(KXP_UPDATE);
+    if (bench && g_render && !g_quit) { kx_prof_begin(KXP_DRAW); kx_game_draw(); kx_prof_end(KXP_DRAW); }
     if (f == shotAt && g_render && shotPath) { kx_game_draw(); r_screenshot(shotPath); g_quit = 1; }
+    kx_prof_begin(KXP_MAX - 1);
     audio_render(audio, AUDIO_RATE / 60);
+    kx_prof_end(KXP_MAX - 1);
+    kx_prof_frame();
+    if (bench && f % 120 == 119) {
+      int d, t, sc;
+      r_stats(&d, &t, &sc);
+      fprintf(stderr, "bench skala %d%% f=%ld logika %.2f ms  rysowanie %.2f ms  dźwięk %.2f ms  draws %d  tris %dk\n", sc, f + 1,
+              kx_prof_ms(KXP_UPDATE), kx_prof_ms(KXP_DRAW), kx_prof_ms(KXP_MAX - 1), d, t / 1000);
+    }
   }
   return 0;
 }
