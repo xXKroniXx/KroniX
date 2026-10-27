@@ -208,6 +208,8 @@ typedef struct {
   int talkT;
   int htype;        /* typ postaci 3D (-1 = przedmiot) */
   float animT;
+  int spawnT;       /* >0: jeszcze za drzwiami (pojawi się za tyle klatek) */
+  float goalX, goalZ; /* wbieganie z drzwi na pozycję (state 3) */
 } Ent;
 
 typedef struct {

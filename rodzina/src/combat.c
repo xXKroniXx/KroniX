@@ -103,7 +103,7 @@ static Ent *ray_ent(float ox, float oy, float oz, float dx, float dy, float dz, 
   float bt = maxT;
   for (int i = 0; i < W.n; i++) {
     Ent *e = &W.ents[i];
-    if (!e->vis || e->dead) continue;
+    if (!e->vis || e->dead || e->spawnT > 0) continue;
     if (wantHostile ? !e->hostile : !(e->ally)) continue;
     float fx = ox - e->x, fz = oz - e->z, r = 0.26f;
     float a = dx * dx + dz * dz, b = 2 * (dx * fx + dz * fz), c = fx * fx + fz * fz - r * r;
@@ -255,7 +255,7 @@ static Ent *nearest_foe(Ent *self, int wantHostile, float *dist) {
   float bd = 1e9f;
   for (int i = 0; i < W.n; i++) {
     Ent *e = &W.ents[i];
-    if (e == self || !e->vis || e->dead) continue;
+    if (e == self || !e->vis || e->dead || e->spawnT > 0) continue;
     if (wantHostile ? !e->hostile : !e->ally) continue;
     float dx = e->x - self->x, dz = e->z - self->z;
     float d = sqrtf(dx * dx + dz * dz);
@@ -291,6 +291,19 @@ static void move_towards(Ent *e, float tx, float tz, float speed) {
 
 void combat_ent_update(Ent *e) {
   if (e->dead) { if (e->deadT > 0) e->deadT--; return; }
+  if (e->spawnT > 0) { /* za drzwiami: za chwilę wejdzie (trzask drzwi) */
+    if (--e->spawnT == 0) { float pd = sqrtf((W.px - e->x) * (W.px - e->x) + (W.pz - e->z) * (W.pz - e->z)); sfx_play_at(SFX_DOOR, pd); }
+    return;
+  }
+  if (e->state == 3) { /* wbiega na pozycję; strzela dopiero, gdy dobiegnie lub zobaczy gracza z bliska */
+    EnemyDef *dd = e->enemyDef >= 0 ? &S.enemies[e->enemyDef] : NULL;
+    float sp = (dd && dd->speed > 0 ? dd->speed : 10) / 600.0f * 1.7f;
+    float gx = e->goalX - e->x, gz = e->goalZ - e->z;
+    float pdx = W.px - e->x, pdz = W.pz - e->z;
+    if (gx * gx + gz * gz < 0.35f * 0.35f || (pdx * pdx + pdz * pdz < 5.0f * 5.0f && world_los(e->x, e->z, W.px, W.pz))) {
+      e->state = 1; e->stateT = 10 + rand() % 15;
+    } else { move_towards(e, e->goalX, e->goalZ, sp); return; }
+  }
   if (e->hitT > 0) e->hitT--;
   if (e->shootT > 0) e->shootT--;
   if (e->cool > 0) e->cool--;
@@ -460,7 +473,7 @@ static void minimap(float x0, float y0, float sz) {
     }
   for (int i = 0; i < W.n; i++) {
     Ent *e = &W.ents[i];
-    if (!e->vis || e->d->type == ENT_EVENT) continue;
+    if (!e->vis || e->d->type == ENT_EVENT || e->spawnT > 0) continue;
     if (e->dead) continue;
     float wx = e->x - W.px, wz = e->z - W.pz;
     float sx = -(wx * ca - wz * sa), sy = -(wx * sa + wz * ca);

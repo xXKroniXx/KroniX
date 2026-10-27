@@ -178,6 +178,39 @@ void world_load_map(int map, int tx, int ty, int dir) {
   autosave_request();
 }
 
+/* skąd wróg ma wbiec: najbliższe drzwi przy miejscu docelowym (nie tuż przy graczu),
+ * a bez drzwi — miejsce poza zasięgiem wzroku gracza. 1 = znaleziono (wsp. środka kafla) */
+static int spawn_entry(int tx, int ty, float *ox, float *oz) {
+  MapDef *m = M();
+  float best = 1e9f;
+  int found = 0;
+  for (int z = ty - 11; z <= ty + 11; z++)
+    for (int x = tx - 11; x <= tx + 11; x++) {
+      if (x < 1 || z < 1 || x >= m->w - 1 || z >= m->h - 1 || tile_at(x, z) != 'D') continue;
+      static const int D[4][2] = {{0, 1}, {0, -1}, {1, 0}, {-1, 0}};
+      for (int k = 0; k < 4; k++) {
+        int nx = x + D[k][0], nz = z + D[k][1];
+        if (tile_solid(tile_at(nx, nz))) continue;
+        float px = nx + 0.5f - D[k][0] * 0.3f, pz = nz + 0.5f - D[k][1] * 0.3f;
+        float dp = (px - W.px) * (px - W.px) + (pz - W.pz) * (pz - W.pz);
+        if (dp < 3.5f * 3.5f) continue; /* nie wyskakuj graczowi zza pleców */
+        float d = (px - tx - 0.5f) * (px - tx - 0.5f) + (pz - ty - 0.5f) * (pz - ty - 0.5f);
+        if (d < best) { best = d; *ox = px; *oz = pz; found = 1; }
+      }
+    }
+  if (found) return 1;
+  /* zza rogu: najbliższy wolny kafel 4..12 od celu, którego gracz nie widzi */
+  for (int r = 4; r <= 12 && !found; r++)
+    for (int k = 0; k < 24 && !found; k++) {
+      float a = k * 0.2618f;
+      int x = tx + (int)lroundf(cosf(a) * r), z = ty + (int)lroundf(sinf(a) * r);
+      if (x < 1 || z < 1 || x >= m->w - 1 || z >= m->h - 1 || tile_solid(tile_at(x, z))) continue;
+      if (world_los(W.px, W.pz, x + 0.5f, z + 0.5f)) continue;
+      *ox = x + 0.5f; *oz = z + 0.5f; found = 1;
+    }
+  return found;
+}
+
 void world_spawn(const char *enemyId, int tx, int ty, int ally) {
   if (nspawn >= 32 || W.n >= MAX_ENTS) return;
   int ed = enemy_find(enemyId);
@@ -204,6 +237,18 @@ void world_spawn(const char *enemyId, int tx, int ty, int ally) {
   e->hp = e->maxhp = ed >= 0 ? S.enemies[ed].hp : 30;
   e->state = 1; /* od razu czujni */
   e->htype = human_find(d->sprite);
+  /* wrogowie nie pojawiają się znikąd: wbiegają przez drzwi albo zza rogu, po kolei */
+  float ox, oz;
+  if (!ally && spawn_entry(tx, ty, &ox, &oz)) {
+    static int burst, lastFrame;
+    if (W.time - lastFrame > 30) burst = 0;
+    lastFrame = W.time;
+    e->x = ox; e->z = oz;
+    e->goalX = tx + 0.5f; e->goalZ = ty + 0.5f;
+    e->spawnT = 1 + burst * 28;
+    burst++;
+    e->state = 3;
+  }
 }
 
 int world_enemies_alive(void) {
@@ -606,6 +651,7 @@ static REnv env_for_map(const MapDef *m) {
 }
 
 static void draw_ent(Ent *e) {
+  if (e->spawnT > 0) return;
   float dx = e->x - W.px, dz = e->z - W.pz;
   if (dx * dx + dz * dz > 40 * 40) return;
   if (!r_visible_sphere(e->x, 0.9f, e->z, 1.2f)) return;
