@@ -39,6 +39,22 @@ Gry na silniku: **KroniX: Rodzina** (`../rodzina`) — FPP + tycoon mafii, Chica
 * Gra ustawia `g_want_mouse_capture` (tryb FPP), `g_quit`, `g_fullscreen_toggle`.
 * `g_render == 0` oznacza tryb testowy bez obrazu — gra ma wtedy pomijać wywołania GL.
 
+## Wydajność i narzędzia
+* F3 — nakładka profilera (FPS, czasy CPU/GPU, wywołania rysowania, skala renderu).
+* `KX_BENCH=1 ./gra --render --script test.txt` — pomiar czasów sekcji bez okna.
+* Dynamiczna rozdzielczość (`g_cfg.dynres`) obniża skalę renderu, gdy GPU nie wyrabia 60 FPS;
+  górną granicę ustawia `r_set_quality_scale()` z presetu jakości.
+* Kwartały/obiekty przed rysowaniem: `r_visible_box/r_visible_sphere`, `r_fog_far()`.
+
+## Kolizje (core/kx_coll.h)
+
+```c
+KxColl *c = kxc_create(szer, wys);
+kxc_circle(c, x, z, 0.12f, KXC_SOLID);            // latarnia
+kxc_box(c, x, z, 0.5f, 0.14f, yaw, KXC_SOLID);    // ławka (połówki wymiarów, obrót jak m4_roty)
+kxc_resolve(c, &px, &pz, 0.25f, KXC_SOLID);       // po ruchu postaci
+```
+
 ## Renderer w skrócie
 
 ```c

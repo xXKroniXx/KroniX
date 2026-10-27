@@ -2,6 +2,24 @@
 
 Silnik rośnie razem z grami. Każda gra dopisuje tu, co wniosła do wspólnego kodu.
 
+## 1.3.0 — wydajność, kolizje, pora dnia
+* **core/kx_prof** — profiler klatki: czasy sekcji CPU, czas GPU (zapytania czasowe, opcjonalne),
+  FPS i najgorsza klatka; nakładka F3 (`d2_prof_overlay`); headless: `KX_BENCH=1`.
+* **core/kx_coll** — kolizje statyczne: koła i obrócone prostokąty w siatce kubełków,
+  `kxc_resolve` wypycha postać (ślizganie po krawędziach), maski (piesi, auta, pociski).
+* Renderer: odrzucanie spoza kadru (`r_visible_box/sphere`), zasięg rysowania z mgły
+  (`r_fog_far`), dynamiczna rozdzielczość (`g_cfg.dynres`, trzyma 60 FPS), FXAA zamiast MSAA
+  w niższych presetach (`g_cfg.fxaa`), pamięć podręczna lokalizacji uniformów, statystyki
+  (`r_stats`). Tańsze SSR (22 kroki) i SSAO (8 próbek, tylko blisko).
+* Światła stożkowe `r_spot` (reflektory). Pora dnia: `r_env_lerp` (płynne przejścia
+  otoczenia), `r_set_night` + flaga `VF_NIGHT` (okna, neony i szyldy świecą tylko nocą).
+* Deszcz jako smugi z trójkątów o grubości w jednostkach świata (widoczny w każdej rozdzielczości).
+* Odporność na NaN: stożki światła, SSAO, SSR, bloom i shader świata (koniec z białymi plamami).
+* Poprawka: `mb_sphere` budowało sfery odwrócone (widoczna tylko tylna połowa od środka).
+* `v3norm` dla wektora zerowego zwraca „w górę” zamiast zera; przycisk `BTN_QUICK`.
+* Wniesione przez „KroniX: Rodzina” (w kodzie gry, kandydaci do silnika): zegar i pogoda,
+  sklepy z wnętrzami, siadanie na meblach, wrogowie wchodzący drzwiami, włosy z bezwładnością.
+
 ## 1.2.0 — pojazdy i miasto z detalami
 * `mb_arch_z()` — łuk wokół osi Z (błotniki, sklepienia, arkady, mosty).
 * `mb_beam()` — belka o przekroju kwadratowym między dwoma dowolnymi punktami
