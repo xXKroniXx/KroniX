@@ -211,6 +211,11 @@ void game_debug(const char *cmdline) {
   else if (!strcmp(t[0], "beat") && n >= 2) { printf("beat %s (tryb %d)\n", t[1], g_mode); tycoon_debug_beat(atoi(t[1])); }
   else if (!strcmp(t[0], "ledger")) tycoon_open();
   else if (!strcmp(t[0], "carshow")) cars_showcase();
+  else if (!strcmp(t[0], "lineup") && n >= 4) { /* lineup ANIM YAW typ1 typ2 ... */
+    int ty[8], k = 0;
+    for (int i = 3; i < n && k < 8; i++) { int h = human_find(t[i]); if (h >= 0) ty[k++] = h; }
+    world_debug_lineup(ty, k, atoi(t[1]), (float)atof(t[2]));
+  }
   else if (!strcmp(t[0], "toshop") && n >= 2) { float x, z, y; if (city_shop_find(atoi(t[1]), &x, &z, &y)) { W.px = x; W.pz = z; W.yaw = y; W.pitch = 0; } else printf("brak sklepu %s\n", t[1]); }
   else if (!strcmp(t[0], "cfg") && n >= 3) {
     int v = atoi(t[2]);

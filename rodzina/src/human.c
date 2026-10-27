@@ -76,7 +76,7 @@ static const CharParam CP[] = {
 typedef struct { GMesh body; GMesh guns[4]; int face; float scale; unsigned portrait; } HType;
 static HType HT[NCP];
 static V3 PIV[NBONES]; /* punkty obrotu kości (pozycja spoczynkowa) */
-static int PARENT[NBONES] = {-1, 0, 1, 2, 2, 4, 2, 6, 1, 8, 1, 10, 7};
+static int PARENT[NBONES] = {-1, 0, 1, 2, 2, 4, 2, 6, 1, 8, 1, 10, 7, 3};
 
 int human_count(void) { return NCP; }
 const char *human_name(int i) { return i >= 0 && i < NCP ? CP[i].name : ""; }
@@ -213,14 +213,18 @@ static void build_type(int t) {
   mb_paint(p->skin, L_FACES); P_.bone = B_HEAD;
   mb_quad(B_, v3(-hw + 0.016f, hy0 + 0.012f, hz1 + 0.001f), v3(hw - 0.016f, hy0 + 0.012f, hz1 + 0.001f), v3(hw - 0.016f, hy1 - 0.016f, hz1 + 0.001f),
           v3(-hw + 0.016f, hy1 - 0.016f, hz1 + 0.001f), fu0 + 0.02f, fv0 + 0.03f, fu0 + 0.23f, fv0 + 0.24f);
-  /* włosy */
+  /* włosy: zaokrąglona czapa na czubku i potylicy + grzywka (twarz odkryta) */
   mb_paint(p->hair, L_CLOTH); P_.bone = B_HEAD;
-  rb(-hw - 0.004f, 0.865f, hz0 - 0.006f, hw + 0.004f, hy1 + 0.008f, hz1 - 0.035f, 0.03f);
-  rb(-hw - 0.005f, 0.79f, hz0 - 0.008f, hw + 0.005f, 0.88f, hz0 + 0.03f, 0.02f);
+  mb_sphere(B_, v3(0, 0.85f, -0.024f), hw + 0.02f, 0.08f, 0.088f, 16);
+  rb(-hw + 0.002f, 0.884f, hz1 - 0.034f, hw - 0.002f, hy1 + 0.008f, hz1 + 0.003f, 0.012f);
   if (female || p->longhair) {
-    rb(-hw - 0.012f, 0.70f, hz0 - 0.012f, hw + 0.012f, 0.88f, hz0 + 0.05f, 0.03f);
-    rb(-hw - 0.012f, 0.79f, hz0, -hw + 0.008f, 0.89f, hz1 - 0.02f, 0.01f);
-    rb(hw - 0.008f, 0.79f, hz0, hw + 0.012f, 0.89f, hz1 - 0.02f, 0.01f);
+    /* boki obramowujące twarz */
+    for (int s2 = -1; s2 <= 1; s2 += 2)
+      rb(s2 < 0 ? -hw - 0.016f : hw - 0.004f, 0.765f, -0.04f, s2 < 0 ? -hw + 0.004f : hw + 0.016f, 0.89f, hz1 - 0.018f, 0.012f);
+    /* „kurtyna” z tyłu na osobnej kości: kołysze się przy ruchu i skrętach */
+    float len = p->longhair ? 0.15f : 0.09f;
+    mb_paint(p->hair, L_CLOTH); P_.bone = B_HAIR;
+    rb(-hw - 0.014f, 0.84f - len, -0.088f, hw + 0.014f, 0.865f, -0.03f, 0.022f);
   }
   if (p->mustache || p->beard) {
     mb_paint(p->hair, L_CLOTH); P_.bone = B_HEAD;
@@ -233,13 +237,19 @@ static void build_type(int t) {
       mb_paint(p->hatc, L_CLOTH); P_.bone = B_HEAD;
       mb_cyl(B_, v3(0, hy1 - 0.012f, 0), 0.118f, 0.112f, 0.012f, 16, 3);
       mb_cyl(B_, v3(0, hy1, 0), 0.072f, 0.06f, 0.075f, 14, 2);
+      mb_paint(darker(p->hatc, 0.8f), L_CLOTH); P_.bone = B_HEAD; /* wgniecenie główki */
+      mb_sphere(B_, v3(0, hy1 + 0.072f, 0.0f), 0.04f, 0.008f, 0.05f, 8);
       mb_paint(p->band ? p->band : darker(p->hatc, 0.5f), L_CLOTH); P_.bone = B_HEAD;
       mb_cyl(B_, v3(0, hy1, 0), 0.0735f, 0.0715f, 0.02f, 14, 0);
       break;
-    case HAT_CAP:
+    case HAT_CAP: /* kaszkiet: płaski, bufiasty, wysunięty do przodu, z guziczkiem i daszkiem */
       mb_paint(p->hatc, L_CLOTH); P_.bone = B_HEAD;
-      mb_sphere(B_, v3(0, hy1 - 0.008f, -0.005f), 0.075f, 0.035f, 0.08f, 12);
-      rb(-0.06f, hy1 - 0.02f, 0.03f, 0.06f, hy1 - 0.008f, 0.115f, 0.006f);
+      mb_sphere(B_, v3(0, hy1 - 0.004f, 0.006f), 0.082f, 0.03f, 0.088f, 14);
+      mb_cyl(B_, v3(0, hy1 - 0.022f, -0.004f), 0.068f, 0.072f, 0.02f, 14, 0);
+      mb_sphere(B_, v3(0, hy1 + 0.026f, 0.006f), 0.01f, 0.006f, 0.01f, 6);
+      mb_paint(darker(p->hatc, 0.75f), L_CLOTH); P_.bone = B_HEAD;
+      mb_quad(B_, v3(-0.058f, hy1 - 0.02f, 0.05f), v3(0.058f, hy1 - 0.02f, 0.05f), v3(0.05f, hy1 - 0.03f, 0.112f), v3(-0.05f, hy1 - 0.03f, 0.112f), 0, 0, 1, 1);
+      mb_quad(B_, v3(-0.05f, hy1 - 0.03f, 0.112f), v3(0.05f, hy1 - 0.03f, 0.112f), v3(0.058f, hy1 - 0.02f, 0.05f), v3(-0.058f, hy1 - 0.02f, 0.05f), 0, 0, 1, 1);
       break;
     case HAT_POLICE:
       mb_paint(p->hatc, L_CLOTH); P_.bone = B_HEAD;
@@ -254,11 +264,14 @@ static void build_type(int t) {
       mb_cyl(B_, v3(0, hy1 - 0.012f, 0), 0.066f, 0.07f, 0.06f, 12, 0);
       mb_sphere(B_, v3(0, hy1 + 0.07f, 0), 0.085f, 0.05f, 0.085f, 12);
       break;
-    case HAT_CLOCHE:
+    case HAT_CLOCHE: /* kapelusz dzwon: wysoka główka, wąskie rondo opadające nad oczy, wstążka z kokardą */
       mb_paint(p->hatc, L_CLOTH); P_.bone = B_HEAD;
-      mb_sphere(B_, v3(0, hy1 - 0.02f, -0.005f), 0.08f, 0.06f, 0.082f, 14);
-      mb_cyl(B_, v3(0, hy1 - 0.045f, -0.005f), 0.088f, 0.082f, 0.012f, 14, 3);
-      if (p->band) { mb_paint(p->band, L_CLOTH); P_.bone = B_HEAD; mb_cyl(B_, v3(0, hy1 - 0.035f, -0.005f), 0.082f, 0.08f, 0.012f, 14, 0); }
+      mb_sphere(B_, v3(0, hy1 - 0.004f, -0.012f), 0.074f, 0.058f, 0.076f, 14);
+      mb_cyl(B_, v3(0, hy1 - 0.03f, -0.012f), 0.084f, 0.077f, 0.016f, 14, 0);
+      mb_cyl(B_, v3(0, hy1 - 0.034f, -0.012f), 0.088f, 0.086f, 0.004f, 14, 3);
+      mb_paint(p->band ? p->band : darker(p->hatc, 0.55f), L_CLOTH); P_.bone = B_HEAD;
+      mb_cyl(B_, v3(0, hy1 - 0.016f, -0.012f), 0.0775f, 0.0765f, 0.014f, 14, 0);
+      mb_sphere(B_, v3(0.06f, hy1 - 0.008f, 0.03f), 0.018f, 0.012f, 0.01f, 6);
       break;
     case HAT_TOP:
       mb_paint(p->hatc, L_CLOTH); P_.bone = B_HEAD;
@@ -315,6 +328,7 @@ void humans_build(void) {
   PIV[B_LEG_R] = v3(-0.055f, 0.47f, 0);
   PIV[B_SHIN_R] = v3(-0.055f, 0.265f, 0);
   PIV[B_GUN] = v3(-0.13f, 0.53f, 0);
+  PIV[B_HAIR] = v3(0, 0.86f, -0.05f);
   for (int t = 0; t < NCP; t++) build_type(t);
   mb_paint(0xFFFFFFFF, L_WHITE);
 }
@@ -330,16 +344,38 @@ static void pose_rot(const HumanPose *p, Rot *r) {
   r->rx[B_SPINE] = 0.03f * sinf(t * 1.7f);
   switch (p->anim) {
     case AN_WALK: case AN_RUN: {
+      /* cykl chodu: kolano zgina się przy przenoszeniu nogi, biodra i barki skręcają się
+       * przeciwnie, ciało faluje dwa razy na cykl (najwyżej przy wyprostowanej nodze) */
       float run = p->anim == AN_RUN;
-      float sp = run ? 9.5f : 6.2f, amp = run ? 0.75f : 0.45f;
-      float s = sinf(t * sp);
+      float sp = run ? 9.2f : 5.8f, amp = run ? 0.78f : 0.48f;
+      float ph = t * sp, s = sinf(ph), c = cosf(ph);
       r->rx[B_LEG_L] = -s * amp; r->rx[B_LEG_R] = s * amp;
-      r->rx[B_SHIN_L] = fmaxf(0, s) * amp * 1.2f; r->rx[B_SHIN_R] = fmaxf(0, -s) * amp * 1.2f;
-      r->rx[B_ARM_L] = s * amp * 0.8f; r->rx[B_ARM_R] = -s * amp * 0.8f;
-      r->rx[B_FORE_L] = -0.25f - run * 0.6f; r->rx[B_FORE_R] = -0.25f - run * 0.6f;
-      r->lift = fabsf(cosf(t * sp)) * (run ? 0.025f : 0.012f);
-      r->rx[B_SPINE] = run ? 0.18f : 0.04f;
-      r->ry[B_SPINE] = s * 0.08f;
+      float knee = run ? 1.45f : 0.95f;
+      r->rx[B_SHIN_L] = fmaxf(0, c) * knee * amp + 0.06f + fmaxf(0, -s) * 0.12f;
+      r->rx[B_SHIN_R] = fmaxf(0, -c) * knee * amp + 0.06f + fmaxf(0, s) * 0.12f;
+      r->rx[B_ARM_L] = s * amp * 0.75f; r->rx[B_ARM_R] = -s * amp * 0.75f;
+      r->rx[B_FORE_L] = -0.18f - fmaxf(0, s) * 0.3f - run * 0.85f;
+      r->rx[B_FORE_R] = -0.18f - fmaxf(0, -s) * 0.3f - run * 0.85f;
+      r->rz[B_ARM_L] = 0.06f + run * 0.1f; r->rz[B_ARM_R] = -0.06f - run * 0.1f;
+      r->lift = (0.5f + 0.5f * cosf(2 * ph)) * (run ? 0.03f : 0.014f) - (run ? 0.012f : 0.004f);
+      r->ry[B_PELVIS] = s * (run ? 0.12f : 0.09f);
+      r->rz[B_PELVIS] = c * (run ? 0.03f : 0.04f);
+      r->ry[B_SPINE] = -s * (run ? 0.26f : 0.18f);
+      r->rx[B_SPINE] = run ? 0.2f : 0.05f;
+      r->ry[B_HEAD] = s * 0.08f;
+      r->rx[B_HEAD] = run ? -0.12f : -0.02f;
+      r->rx[B_HAIR] = -0.04f * fabsf(s) * (1 + run);
+      break;
+    }
+    case AN_IDLE: {
+      /* oddech, przenoszenie ciężaru, rozglądanie się */
+      float w = sinf(t * 0.45f);
+      r->rz[B_PELVIS] = w * 0.025f;
+      r->rz[B_SPINE] = -w * 0.02f;
+      r->rx[B_LEG_L] = w > 0 ? -0.03f : 0.02f; r->rx[B_SHIN_L] = w > 0 ? 0.08f : 0.0f;
+      r->ry[B_HEAD] = sinf(t * 0.31f) * 0.22f * (0.5f + 0.5f * sinf(t * 0.13f));
+      r->rx[B_HEAD] = sinf(t * 0.23f) * 0.05f;
+      r->rx[B_FORE_L] = -0.12f + sinf(t * 0.7f) * 0.03f; r->rx[B_FORE_R] = -0.12f;
       break;
     }
     case AN_AIM: case AN_SHOOT: {
@@ -412,6 +448,20 @@ static void pose_rot(const HumanPose *p, Rot *r) {
     default: break;
   }
   if (p->hitT > 0 && p->anim != AN_DEAD) { r->rx[B_SPINE] -= p->hitT * 0.4f; r->rx[B_HEAD] -= p->hitT * 0.3f; }
+  /* włosy: bezwładność podana przez wywołującego (sprężyna), plus ruch głowy */
+  r->rx[B_HAIR] += p->hairX - r->rx[B_HEAD] * 0.5f;
+  r->rz[B_HAIR] += p->hairZ;
+}
+
+void human_hair_step(HairState *h, float speed, float turn, float dt) {
+  if (dt <= 0 || dt > 0.1f) dt = 1.0f / 60;
+  /* przy szybkim ruchu włosy odchylają się do tyłu, przy skręcie na bok; sprężyna z tłumieniem daje bujanie */
+  float tx = -fminf(speed, 4.0f) * 0.12f, tz = fmaxf(-0.6f, fminf(0.6f, -turn * 0.12f));
+  const float k = 70.0f, damp = 7.0f;
+  h->vx += ((tx - h->ax) * k - h->vx * damp) * dt;
+  h->vz += ((tz - h->az) * k - h->vz * damp) * dt;
+  h->ax += h->vx * dt;
+  h->az += h->vz * dt;
 }
 
 static void compute_bones(const HumanPose *p, M4 *out) {
@@ -428,7 +478,7 @@ static void compute_bones(const HumanPose *p, M4 *out) {
   if (r.fall > 0) root = m4_mul(m4_translate(0, 0.04f * r.fall, -0.05f * r.fall), m4_rotx(-1.5f * r.fall));
   local[B_ROOT] = root;
   for (int b = 0; b < NBONES; b++) {
-    if (b > B_GUN) { out[b] = m4_identity(); continue; }
+    if (b > B_HAIR) { out[b] = m4_identity(); continue; }
     out[b] = PARENT[b] < 0 ? local[b] : m4_mul(out[PARENT[b]], local[b]);
   }
 }

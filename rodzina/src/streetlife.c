@@ -15,6 +15,7 @@ typedef struct {
   int type, alive, tx, tz; /* kafel docelowy */
   float lane;      /* przesunięcie w poprzek chodnika */
   float lastD; int stuck; /* wykrywanie zablokowania o przeszkodę */
+  HairState hair; float prevAng;
 } Ped;
 static Ped peds[MAXPED];
 static int pedTypes[8], npedTypes, active;
@@ -239,6 +240,14 @@ void streetlife_draw(void) {
     memset(&hp, 0, sizeof hp);
     hp.anim = p->pause > 0 ? AN_IDLE : AN_WALK;
     hp.t = p->animT * p->speed * 1.1f;
+    {
+      float da = p->ang - p->prevAng, dt = world_draw_dt();
+      while (da > PI_F) da -= 2 * PI_F;
+      while (da < -PI_F) da += 2 * PI_F;
+      p->prevAng = p->ang;
+      human_hair_step(&p->hair, p->pause > 0 ? 0 : p->speed, da / (dt > 0 ? dt : 1.0f / 60), dt);
+      hp.hairX = p->hair.ax; hp.hairZ = p->hair.az;
+    }
     human_draw(p->type, p->x, world_ground(p->x, p->z), p->z, p->ang, &hp, 0);
   }
   if (!hasRail || !trainBuilt) return;

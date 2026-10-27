@@ -184,9 +184,7 @@ void mb_sphere(MB *b, V3 c, float rx, float ry, float rz, int seg) {
         V3 n = v3norm(v3(d[idx[k]].x / rx, d[idx[k]].y / ry, d[idx[k]].z / rz));
         setv(v + k, p[idx[k]], n, uv[idx[k]][0], uv[idx[k]][1]);
       }
-      /* trójkąty muszą być CCW patrząc z zewnątrz */
-      Vert tmp = v[1]; v[1] = v[2]; v[2] = tmp;
-      tmp = v[4]; v[4] = v[5]; v[5] = tmp;
+      /* kolejność (0,1,2),(0,2,3) jest już CCW patrząc z zewnątrz (normalna na zewnątrz) */
     }
   }
 }

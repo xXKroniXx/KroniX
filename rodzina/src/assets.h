@@ -34,7 +34,7 @@ int objmodel_find(const char *name); /* model przedmiotu dla obiektu na mapie (n
 
 /* postacie */
 #define NBONES 16
-enum { B_ROOT, B_PELVIS, B_SPINE, B_HEAD, B_ARM_L, B_FORE_L, B_ARM_R, B_FORE_R, B_LEG_L, B_SHIN_L, B_LEG_R, B_SHIN_R, B_GUN };
+enum { B_ROOT, B_PELVIS, B_SPINE, B_HEAD, B_ARM_L, B_FORE_L, B_ARM_R, B_FORE_R, B_LEG_L, B_SHIN_L, B_LEG_R, B_SHIN_R, B_GUN, B_HAIR };
 enum { AN_IDLE, AN_WALK, AN_RUN, AN_AIM, AN_SHOOT, AN_HIT, AN_DEAD, AN_TALK, AN_SIT, AN_DANCE, AN_PLAY };
 typedef struct {
   int anim;
@@ -44,7 +44,11 @@ typedef struct {
   float deadT;      /* 0..1 upadek */
   float hitT;
   float talk;
+  float hairX, hairZ; /* wychylenie włosów (bezwładność, human_hair_step) */
 } HumanPose;
+/* bezwładność włosów: sprężyna z tłumieniem; speed = prędkość postaci, turn = prędkość obrotu [rad/s] */
+typedef struct { float ax, vx, az, vz; } HairState;
+void human_hair_step(HairState *h, float speed, float turn, float dt);
 int human_find(const char *name);
 int human_count(void);
 const char *human_name(int i);

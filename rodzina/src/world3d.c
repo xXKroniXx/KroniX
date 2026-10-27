@@ -650,6 +650,26 @@ static REnv env_for_map(const MapDef *m) {
   return e;
 }
 
+static float drawDt = 1.0f / 60;
+/* debug: rząd postaci przed kamerą (sprawdzanie modeli i animacji) */
+static int lineup[8], nlineup, lineupAnim;
+static float lineupYaw;
+void world_debug_lineup(const int *types, int n, int anim, float yaw) {
+  nlineup = n > 8 ? 8 : n; for (int i = 0; i < nlineup; i++) lineup[i] = types[i];
+  lineupAnim = anim; lineupYaw = yaw;
+}
+static void draw_lineup(void) {
+  float fx = sinf(W.yaw), fz = cosf(W.yaw), rx = cosf(W.yaw), rz = -sinf(W.yaw);
+  for (int i = 0; i < nlineup; i++) {
+    float o = (i - (nlineup - 1) * 0.5f) * 0.42f;
+    float dd = nlineup == 1 ? 0.55f : 1.5f;
+    float x = W.px + fx * dd + rx * o, z = W.pz + fz * dd + rz * o;
+    HumanPose hp; memset(&hp, 0, sizeof hp);
+    hp.anim = lineupAnim; hp.t = g_time + i * 0.37f;
+    human_draw(lineup[i], x, world_ground(x, z), z, W.yaw + PI_F + lineupYaw, &hp, 0);
+  }
+}
+float world_draw_dt(void) { return drawDt; }
 static void draw_ent(Ent *e) {
   if (e->spawnT > 0) return;
   float dx = e->x - W.px, dz = e->z - W.pz;
@@ -688,6 +708,18 @@ static void draw_ent(Ent *e) {
     M4 cm = m4_mul(m4_translate(e->x, gy, e->z), m4_roty(e->ang + PI_F));
     r_draw(&MODELS[MD_CHAIR], &cm, 0);
   }
+  {
+    /* bezwładność włosów: prędkość z animacji, obrót z różnicy kąta */
+    HairState hs = {e->hairAx, e->hairVx, e->hairAz, e->hairVz};
+    float da = e->ang - e->prevAng;
+    while (da > PI_F) da -= 2 * PI_F;
+    while (da < -PI_F) da += 2 * PI_F;
+    e->prevAng = e->ang;
+    float spd = p.anim == AN_RUN ? 2.9f : p.anim == AN_WALK ? 1.4f : 0;
+    human_hair_step(&hs, spd, da / (drawDt > 0 ? drawDt : 1.0f / 60), drawDt);
+    e->hairAx = hs.ax; e->hairVx = hs.vx; e->hairAz = hs.az; e->hairVz = hs.vz;
+    p.hairX = hs.ax; p.hairZ = hs.az;
+  }
   human_draw(e->htype, e->x, gy, e->z, e->ang, &p, 0);
 }
 
@@ -708,6 +740,7 @@ void world_draw(void) {
   float dt = (float)(g_time - lastT);
   lastT = g_time;
   if (dt < 0 || dt > 0.1f) dt = 1.0f / 60;
+  drawDt = dt;
   camY += (target - camY) * (1 - powf(0.75f, dt * 60)); /* wygładzanie krawężników niezależne od FPS */
   RCam cam = {v3(cx, camY + cb, cz), W.yaw, W.pitch, (float)g_cfg.fov};
   int driving = cars_camera(&cam, a);
@@ -722,6 +755,7 @@ void world_draw(void) {
   city_draw();
   cars_draw();
   streetlife_draw();
+  if (nlineup) draw_lineup();
   for (int i = 0; i < W.n; i++) {
     Ent *e = &W.ents[i];
     if (!e->vis && !(e->dead && e->d->type == ENT_MOB)) continue;

@@ -209,6 +209,7 @@ typedef struct {
   int htype;        /* typ postaci 3D (-1 = przedmiot) */
   float animT;
   int spawnT;       /* >0: jeszcze za drzwiami (pojawi się za tyle klatek) */
+  float hairAx, hairVx, hairAz, hairVz, prevAng; /* bezwładność włosów */
   float goalX, goalZ; /* wbieganie z drzwi na pozycję (state 3) */
 } Ent;
 
@@ -251,6 +252,8 @@ void streetlife_map(void);
 void streetlife_update(void);
 void streetlife_lights(int night);
 void streetlife_draw(void);
+float world_draw_dt(void); /* czas od poprzedniej klatki rysowania [s] */
+void world_debug_lineup(const int *types, int n, int anim, float yaw);
 void combat_damage_ent(Ent *e, int dmg);
 /* znacznik celu misji: mapa+kafel albo NPC (id); map<0 i id NULL = brak */
 void world_marker_set(int map, int x, int y, const char *npcId);
