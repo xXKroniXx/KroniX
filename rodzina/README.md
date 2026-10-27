@@ -20,6 +20,34 @@ klaksony, gwar w lokalach, zegar w gabinecie, syrena mgłowa w dokach.
 4. Wymagana karta graficzna z OpenGL 3.3 (praktycznie każda od 2010 r.). Jakość grafiki
    (Niska / Średnia / Wysoka / Ultra), pole widzenia i czułość myszy zmienisz w Opcjach.
 
+## Edycja na własnym komputerze (Windows)
+
+**Pobranie wszystkich plików:** wejdź na
+https://github.com/xXKroniXx/KroniX/archive/refs/heads/claude/procedural-game-levels-n7yqgj.zip
+(albo na GitHubie: przełącz gałąź na `claude/procedural-game-levels-n7yqgj` → zielony przycisk
+**Code** → **Download ZIP**) i rozpakuj, np. do `C:\KroniX`. Folder `rodzina` to gra, `engine` to silnik.
+
+**Co gdzie edytować** (zwykły Notatnik wystarczy, wygodniej: Visual Studio Code):
+
+| Co | Gdzie |
+| --- | --- |
+| dialogi, misje, wybory, zmienne fabuły | `rodzina/data/*.txt` (np. `20_prolog.txt`, `40_kronika.txt`) |
+| sklepy, sprzedawcy, ich asortyment | `rodzina/data/46_lokale.txt` |
+| domy na sprzedaż, sen | `rodzina/data/45_domy.txt` |
+| przedmioty (ceny, leczenie), postacie mówiące | `rodzina/data/00_gra.txt` |
+| mapy: miasto, wnętrza, rozstawienie NPC | `rodzina/tools/maps.py` (generuje `data/10_mapy.txt`) |
+| kod gry (C) | `rodzina/src/*.c` |
+| silnik (grafika, dźwięk, kolizje) | `engine/` |
+
+**Zbudowanie .exe po zmianach** (jednorazowa instalacja, potem już tylko dwuklik):
+1. Pobierz **w64devkit** (kompilator C, bez instalacji): https://github.com/skeeto/w64devkit/releases
+   → plik `w64devkit-x64-….exe`, uruchom i rozpakuj do `C:\w64devkit`.
+2. Zainstaluj **Python 3**: https://www.python.org/downloads/ — przy instalacji zaznacz
+   **„Add python.exe to PATH”**.
+3. Kliknij dwa razy `rodzina/build_windows.bat`. Po ok. minucie obok pojawi się nowy
+   `KroniX_Rodzina.exe`. Jeśli w danych jest błąd (np. literówka w nazwie skryptu), gra przy starcie
+   pokaże numer linii.
+
 ## Otwarte miasto i samochody
 
 Całe Chicago to **jedna duża mapa**: Polonia, Mała Italia, Chinatown, doki, Levee, North Side, wieżowce
