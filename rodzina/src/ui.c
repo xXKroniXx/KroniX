@@ -106,8 +106,10 @@ int g_quality = 2;
 static const char *QNAMES[4] = {"Niska", "Średnia", "Wysoka", "Ultra"};
 void quality_apply(int q) {
   g_quality = q < 0 ? 0 : q > 3 ? 3 : q;
-  /* Niska: lekka dla zintegrowanych kart; Wysoka: MSAA 2x; Ultra: wszystko na maksimum */
-  static const int MS[4] = {0, 0, 2, 4}, BL[4] = {0, 1, 1, 1}, SC[4] = {70, 85, 100, 100}, LI[4] = {6, 10, 12, 16};
+  /* Niska: lekka dla zintegrowanych kart; Średnia/Wysoka: FXAA; Ultra: MSAA 4x i wszystko na maksimum */
+  static const int MS[4] = {0, 0, 0, 4}, BL[4] = {0, 1, 1, 1}, SC[4] = {70, 85, 100, 100}, LI[4] = {6, 10, 12, 16};
+  static const int FX[4] = {0, 1, 1, 0}; /* FXAA zamiast drogiego MSAA (Ultra: MSAA 4x) */
+  g_cfg.fxaa = FX[q < 0 ? 0 : q > 3 ? 3 : q];
   static const int SR[4] = {0, 0, 1, 1}, AO[4] = {0, 1, 1, 1};
   g_cfg.msaa = MS[g_quality]; g_cfg.bloom = BL[g_quality]; g_cfg.scale = SC[g_quality]; g_cfg.maxLights = LI[g_quality];
   g_cfg.ssr = SR[g_quality]; g_cfg.ssao = AO[g_quality];

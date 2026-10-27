@@ -78,6 +78,7 @@ typedef struct {
   int ssr;         /* odbicia ekranowe na mokrych powierzchniach 0/1 */
   int ssao;        /* cienie kontaktowe (ambient occlusion) 0/1 */
   int dynres;      /* dynamiczna rozdzielczość: obniża skalę, gdy GPU nie wyrabia 60 FPS */
+  int fxaa;        /* tanie wygładzanie krawędzi w przebiegu końcowym (gdy MSAA wyłączone) */
 } RCfg;
 extern RCfg g_cfg;
 

@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-RCfg g_cfg = {4, 1, 100, 16, 1, 75, 1, 1, 1};
+RCfg g_cfg = {4, 1, 100, 16, 1, 75, 1, 1, 1, 1};
 int g_winW = 1280, g_winH = 720;
 float g_time;
 M4 g_view, g_proj, g_vp;
@@ -181,12 +181,28 @@ static const char *FS_DOWN =
 static const char *FS_FINAL =
   "#version 330 core\n"
   "in vec2 vUV; uniform sampler2D uSrc; uniform sampler2D uB1; uniform sampler2D uB2; uniform sampler2D uB3;\n"
-  "uniform float uExp, uBloom, uTime, uSat, uWarm, uVig, uFlash; uniform vec2 uRes;\n"
+  "uniform float uExp, uBloom, uTime, uSat, uWarm, uVig, uFlash, uFxaa; uniform vec2 uRes;\n"
   "out vec4 frag;\n"
   "vec3 aces(vec3 x){ return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14), 0.0, 1.0); }\n"
   "float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233)))*43758.5453); }\n"
+  "float lum(vec3 x){ return dot(aces(x*uExp), vec3(0.299,0.587,0.114)); }\n"
+  "/* FXAA (wariant „console”): wygładza krawędzie za ułamek kosztu MSAA */\n"
+  "vec3 srcAA(vec2 uv){\n"
+  "  vec3 m = texture(uSrc, uv).rgb; if (uFxaa < 0.5) return m;\n"
+  "  vec2 tx = 1.0/vec2(textureSize(uSrc, 0));\n"
+  "  float lNW = lum(texture(uSrc, uv+vec2(-1.0,-1.0)*tx).rgb), lNE = lum(texture(uSrc, uv+vec2(1.0,-1.0)*tx).rgb);\n"
+  "  float lSW = lum(texture(uSrc, uv+vec2(-1.0,1.0)*tx).rgb), lSE = lum(texture(uSrc, uv+vec2(1.0,1.0)*tx).rgb), lM = lum(m);\n"
+  "  float mn = min(lM, min(min(lNW,lNE), min(lSW,lSE))), mx = max(lM, max(max(lNW,lNE), max(lSW,lSE)));\n"
+  "  if (mx - mn < max(0.04, mx*0.125)) return m;\n"
+  "  vec2 d = vec2(-((lNW+lNE)-(lSW+lSE)), (lNW+lSW)-(lNE+lSE));\n"
+  "  float red = max((lNW+lNE+lSW+lSE)*0.03125, 1.0/128.0);\n"
+  "  d = clamp(d / (min(abs(d.x), abs(d.y)) + red), -8.0, 8.0) * tx;\n"
+  "  vec3 a = 0.5*(texture(uSrc, uv + d*(1.0/3.0-0.5)).rgb + texture(uSrc, uv + d*(2.0/3.0-0.5)).rgb);\n"
+  "  vec3 b = a*0.5 + 0.25*(texture(uSrc, uv - d*0.5).rgb + texture(uSrc, uv + d*0.5).rgb);\n"
+  "  float lb = lum(b); return (lb < mn || lb > mx) ? a : b;\n"
+  "}\n"
   "void main(){\n"
-  "  vec3 c = texture(uSrc, vUV).rgb * uExp;\n"
+  "  vec3 c = srcAA(vUV) * uExp;\n"
   "  vec3 b = texture(uB1, vUV).rgb*0.5 + texture(uB2, vUV).rgb*0.35 + texture(uB3, vUV).rgb*0.3;\n"
   "  c += b * uBloom;\n"
   "  c = aces(c);\n"
@@ -1083,6 +1099,7 @@ void r_frame_end(void) {
   glUniform1f(uloc(R.final, "uVig"), R.grade[2]);
   glUniform1f(uloc(R.final, "uFlash"), R.grade[3]);
   glUniform2f(uloc(R.final, "uRes"), (float)g_winW, (float)g_winH);
+  glUniform1f(uloc(R.final, "uFxaa"), g_cfg.fxaa && !R.msaaActive ? 1.0f : 0.0f);
   glBindTexture(GL_TEXTURE_2D, src);
   for (int i = 1; i <= 3; i++) {
     glActiveTexture(GL_TEXTURE0 + i);
