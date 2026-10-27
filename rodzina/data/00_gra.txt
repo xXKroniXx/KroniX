@@ -14,6 +14,14 @@ speaker nar "" -
 speaker tomek "Tomek" tomek
 speaker mama "Mama" mama
 speaker posrednik "Pośrednik" agent
+speaker aptekarz "Aptekarz" feliks
+speaker piekarka "Piekarz" piekarz
+speaker sprzedawca "Sprzedawca" pan
+speaker kucharz "Kucharz" kelner
+speaker herbaciarka "Pani Mei" helena
+speaker lombardzista "Lombardzista" mickey
+speaker trafikant "Trafikant" robotnik
+speaker maitre "Kierownik sali" kelner
 speaker bronek "Bronek" bronek
 speaker zoska "Zośka" zoska
 speaker menel "Kulawy Józek" menel
@@ -123,6 +131,69 @@ desc "Usługa na miejscu: pełne zdrowie, bez pytań skąd te rany."
 type heal
 power 100
 price 45
+
+@item piwo
+name "Piwo spod lady"
+desc "Prohibicja? Jaka prohibicja. Przywraca 8 zdrowia."
+type heal
+power 8
+price 4
+
+@item gin
+name "Gin z wanny"
+desc "Pali w gardle. Przywraca 15 zdrowia."
+type heal
+power 15
+price 10
+
+@item stek
+name "Stek z ziemniakami"
+desc "Danie dnia hotelu Lexington. Przywraca 50 zdrowia."
+type heal
+power 50
+price 14
+
+@item spaghetti
+name "Spaghetti z klopsikami"
+desc "Jak u mamy Luigiego. Przywraca 35 zdrowia."
+type heal
+power 35
+price 9
+
+@item zupa
+name "Zupa dnia"
+desc "Gorąca, gęsta. Przywraca 20 zdrowia."
+type heal
+power 20
+price 4
+
+@item pierozki
+name "Pierożki wonton"
+desc "Z wieprzowiną i imbirem. Przywraca 20 zdrowia."
+type heal
+power 20
+price 5
+
+@item ciastka
+name "Ciasteczka migdałowe"
+desc "Do herbaty. Przywraca 8 zdrowia."
+type heal
+power 8
+price 2
+
+@item cygaro
+name "Cygaro hawańskie"
+desc "Chwila spokoju. Przywraca 5 zdrowia."
+type heal
+power 5
+price 4
+
+@item paczek
+name "Pączek z różą"
+desc "Prosto z pieca. Przywraca 12 zdrowia."
+type heal
+power 12
+price 3
 
 @item naboje_p
 name "Naboje .45 (pistolet)"

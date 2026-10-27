@@ -1,0 +1,74 @@
+# Lokale: sprzedawcy w sklepach, barach i restauracjach (wnętrza z tools/maps.py, mapy s_*).
+
+@script s_sklep_apteka
+as aptekarz
+"Dzień dobry. Coś na ból głowy? Na rany po... upadku ze schodów?"
+"Mogę też opatrzyć na zapleczu. Nikt nie pyta, nikt nie pamięta."
+shop usl_lekarz bandaz apteczka kawa
+as aptekarz
+"Proszę uważać na siebie. Schody w tym mieście bywają strome."
+end
+
+@script s_sklep_piekarnia
+as piekarka
+"Prosto z pieca! Chleb, pączki z różą, kawa dla zmarzniętych."
+shop chleb paczek kawa kanapka
+as piekarka
+"Do jutra! Piec rozpalam o piątej."
+end
+
+@script s_sklep_delikatesy
+as sprzedawca
+"Salami, ser, pastrami, chleb. A dla zaufanych klientów... coś spod lady."
+shop kanapka chleb kawa zupa whisky
+as sprzedawca
+"Grazie. Proszę pozdrowić rodzinę."
+end
+
+@script s_sklep_pub
+as barman
+"Co podać? Oficjalnie mamy tylko lemoniadę. Nieoficjalnie — wszystko."
+shop piwo whisky gin kanapka
+as barman
+"Na zdrowie. I nie mów nikomu, gdzie to piłeś."
+end
+
+@script s_sklep_restauracja
+as maitre
+"Dobry wieczór. Stolik dla jednej osoby? Polecam stek, kuchnia jest dziś w formie."
+shop stek spaghetti zupa kawa whisky
+as maitre
+"Smacznego. Rachunek dopiszę do... no tak, gotówką. Rozumiem."
+end
+
+@script s_sklep_chopsuey
+as kucharz
+"Chop suey, wonton, ryż! Szybko, gorąco, tanio!"
+shop ryz pierozki herbata
+as kucharz
+"Dziękuję! Przyjdź jutro, będzie kaczka."
+end
+
+@script s_sklep_herbaciarnia
+as herbaciarka
+"Witaj w Złotym Smoku. Herbata uspokaja ducha. Ciasteczka — żołądek."
+shop herbata ciastka pierozki
+as herbaciarka
+"Niech dzień będzie spokojny."
+end
+
+@script s_sklep_lombard
+as lombardzista
+"Kupuję, sprzedaję, nie pytam. Broń? Amunicja? Kamizelka, która zatrzyma kulę?"
+shop naboje_p naboje_s naboje_t kamizelka pistolet strzelba
+as lombardzista
+"Jeśli ktoś pyta — nigdy mnie nie widziałeś."
+end
+
+@script s_sklep_trafika
+as trafikant
+"Gazety, papierosy, cygara z Hawany. Kawa z termosu, jak kto chce."
+shop cygaro kawa
+as trafikant
+"Miłego dnia. Uważaj na chłopców Russo, kręcą się tu wieczorami."
+end

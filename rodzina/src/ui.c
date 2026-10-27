@@ -384,18 +384,23 @@ void ui_pause_draw(void) {
 static int shopIds[MAX_ARGS], shopN, shopCur;
 static char shopTitle[48];
 /* sklepy uliczne: szyld witryny (SIGN_TEXT) → nazwa i asortyment */
-static const struct { int sign; const char *name; const char *items[7]; } SHOPS[] = {
-  {0, "Piekarnia", {"chleb", "kawa"}},
-  {1, "Delikatesy", {"kanapka", "chleb", "kawa", "whisky"}},
-  {3, "Lombard", {"naboje_p", "naboje_s", "naboje_t", "kamizelka", "pistolet", "strzelba"}},
-  {6, "Trafika", {"kawa", "whisky"}},
-  {7, "Apteka", {"usl_lekarz", "bandaz", "apteczka"}},
-  {9, "Pub O'Hary", {"whisky", "kanapka"}},
-  {12, "Sklep spożywczy", {"chleb", "kanapka", "kawa"}},
-  {13, "Bar chop suey", {"ryz", "herbata"}},
-  {14, "Herbaciarnia", {"herbata", "ryz"}},
-  {15, "Narzędzia Gina", {"naboje_p", "naboje_s", "kamizelka"}},
+static const struct { int sign; const char *name, *map; const char *items[7]; } SHOPS[] = {
+  {0, "Piekarnia", "s_piekarnia", {"chleb", "kawa"}},
+  {1, "Delikatesy", "s_delikatesy", {"kanapka", "chleb", "kawa", "whisky"}},
+  {3, "Lombard", "s_lombard", {"naboje_p", "naboje_s", "naboje_t", "kamizelka", "pistolet", "strzelba"}},
+  {6, "Trafika", "s_trafika", {"kawa", "whisky"}},
+  {7, "Apteka", "s_apteka", {"usl_lekarz", "bandaz", "apteczka"}},
+  {9, "Pub", "s_pub", {"whisky", "kanapka"}},
+  {10, "Restauracja hotelu Lexington", "s_restauracja", {"kawa"}},
+  {12, "Sklep spożywczy", "s_delikatesy", {"chleb", "kanapka", "kawa"}},
+  {13, "Bar chop suey", "s_chopsuey", {"ryz", "herbata"}},
+  {14, "Herbaciarnia", "s_herbaciarnia", {"herbata", "ryz"}},
+  {15, "Narzędzia i broń Gina", "s_lombard", {"naboje_p", "naboje_s", "kamizelka"}},
 };
+const char *shop_interior(int sign) {
+  for (int i = 0; i < (int)(sizeof SHOPS / sizeof SHOPS[0]); i++) if (SHOPS[i].sign == sign) return SHOPS[i].map;
+  return NULL;
+}
 const char *shop_name(int sign) {
   for (int i = 0; i < (int)(sizeof SHOPS / sizeof SHOPS[0]); i++) if (SHOPS[i].sign == sign) return SHOPS[i].name;
   return NULL;
@@ -439,6 +444,7 @@ int heal_items_count(void) {
 }
 void ui_open_shop(const char **ids, int n) {
   shopTitle[0] = 0;
+  if (S.maps[W.map].interior) snprintf(shopTitle, sizeof shopTitle, "%s", S.maps[W.map].name);
   shopN = 0;
   for (int i = 0; i < n && shopN < MAX_ARGS; i++) {
     int it = item_find(ids[i]);

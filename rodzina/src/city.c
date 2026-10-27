@@ -25,6 +25,7 @@ static const TDef TD[] = {
   {'F', K_PROP, L_SIDEWALK, 0, 0.6f}, {'I', K_PROP, L_CONCRETE, 0, 1.6f}, {'m', K_PROP, L_CONCRETE, 0, 0.9f},
   {'~', K_WATER, L_WATER}, {'T', K_BB, L_GRASS}, {'p', K_BB, L_WOODFLOOR}, {'L', K_BB, L_SIDEWALK},
   {'c', K_FLOOR, L_ASPHALT}, {'C', K_CAR, L_ASPHALT}, {'J', K_BB, L_SIDEWALK},
+  {'K', K_PROP, L_WOODFLOOR, 0, 0.56f}, /* lada sklepowa z gablotą */
 };
 #define NTD ((int)(sizeof(TD) / sizeof(TD[0])))
 static const TDef *tdef[128];
@@ -92,7 +93,9 @@ static float vents[MAXVENT][2];
 static int nvents;
 #define MAXSHOP 600
 typedef struct { float x, z, nx, nz; int sign; } ShopSpot;
-typedef struct { MapDef *m; GMesh far; Chunk ch[MAXCH]; int nch; CLight l[MAXCL]; int nl; float v[MAXVENT][2]; int nv; int rail; float rail3[3]; KxColl *coll; ShopSpot sh[MAXSHOP]; int nsh; } CitySlot;
+#define MAXSEAT 900
+typedef struct { float x, z, yaw, h; } Seat;
+typedef struct { MapDef *m; GMesh far; Chunk ch[MAXCH]; int nch; CLight l[MAXCL]; int nl; float v[MAXVENT][2]; int nv; int rail; float rail3[3]; KxColl *coll; ShopSpot sh[MAXSHOP]; int nsh; Seat se[MAXSEAT]; int nse; } CitySlot;
 static CitySlot bigSlot;
 static int curIsBig;
 static int interior;
@@ -215,9 +218,33 @@ static void fire_escape(const Face *f, float h) {
 }
 
 static int neonIdx;
+/* miejsca do siedzenia: krzesła, stołki barowe, ławki, ławy kościelne */
+static Seat seats[MAXSEAT];
+static int nseats;
+static void add_seat(float x, float z, float yaw, float h) { if (nseats < MAXSEAT) seats[nseats++] = (Seat){x, z, yaw, h}; }
+int city_seat_at(float px, float pz, float fx, float fz) {
+  int best = -1;
+  float bd = 1.15f;
+  for (int i = 0; i < nseats; i++) {
+    float dx = seats[i].x - px, dz = seats[i].z - pz, d = sqrtf(dx * dx + dz * dz);
+    if (d > bd || d < 0.05f || (dx * fx + dz * fz) / d < 0.55f) continue;
+    best = i; bd = d;
+  }
+  return best;
+}
+int city_seat(int i, float *x, float *z, float *yaw, float *h) {
+  if (i < 0 || i >= nseats) return 0;
+  *x = seats[i].x; *z = seats[i].z; *yaw = seats[i].yaw; *h = seats[i].h;
+  return 1;
+}
 /* witryny z szyldem = sklepy, do których można podejść i coś kupić */
 static ShopSpot shops[MAXSHOP];
 static int nshops;
+int city_shop_spot(int i, float *x, float *z, float *nx, float *nz) {
+  if (i < 0 || i >= nshops) return 0;
+  *x = shops[i].x; *z = shops[i].z; *nx = shops[i].nx; *nz = shops[i].nz;
+  return 1;
+}
 int city_shop_at(float px, float pz, float fx, float fz, int *sign) {
   int best = -1;
   float bd = 1.4f;
@@ -235,15 +262,56 @@ int city_shop_find(int sign, float *x, float *z, float *yaw) {
     if (shops[i].sign == sign) { *x = shops[i].x; *z = shops[i].z; *yaw = atan2f(-shops[i].nx, -shops[i].nz); return 1; }
   return 0;
 }
+/* ościeża otworu w fasadzie (lewe, prawe, górne) */
+static void jambs(const Face *f, float s0, float s1, float y0, float y1, float dep) {
+  mb_quad_world(&mb, fp(f, s0, y0, 0), fp(f, s0, y0, -dep), fp(f, s0, y1, -dep), fp(f, s0, y1, 0));
+  mb_quad_world(&mb, fp(f, s1, y0, -dep), fp(f, s1, y0, 0), fp(f, s1, y1, 0), fp(f, s1, y1, -dep));
+  mb_quad_world(&mb, fp(f, s0, y1, 0), fp(f, s0, y1, -dep), fp(f, s1, y1, -dep), fp(f, s1, y1, 0));
+}
+/* parter sklepu z wejściem: witryna po lewej, przeszklone drzwi po prawej */
+#define SD0 0.64f
+#define SD1 0.93f
+static void storefront_door(const Face *f, int wallL, uint32_t wcol) {
+  const float w0 = 0.05f, w1 = 0.58f, wy0 = 0.18f, wy1 = 1.03f, dy1 = 1.05f, dep = 0.07f, ddep = 0.1f;
+  mb_paint(wcol, wallL);
+  fquad(f, 0, w0, 0, 1.5f, 0);
+  fquad(f, w1, SD0, 0, 1.5f, 0);
+  fquad(f, SD1, 1, 0, 1.5f, 0);
+  fquad(f, w0, w1, 0, wy0, 0);
+  fquad(f, w0, w1, wy1, 1.5f, 0);
+  fquad(f, SD0, SD1, dy1, 1.5f, 0);
+  mb_paint(0xFFB8B0A0, L_PLASTER);
+  jambs(f, w0, w1, wy0, wy1, dep);
+  mb_paint(0xFFCFC6B4, L_STONE);
+  fbox(f, w0 - 0.03f, w1 + 0.03f, wy0 - 0.045f, wy0, -dep, 0.045f);
+  mb_paint(0xFFFFE6B8, L_SHOPWIN); P_.emis = 0.55f;
+  fquad_uv(f, w0, w1, wy0, wy1, -dep, 0, 0, 1, 1);
+  /* drzwi */
+  mb_paint(0xFF6A5A48, L_WOOD);
+  jambs(f, SD0, SD1, 0, dy1, ddep);
+  mb_paint(0xFFE8E0D0, L_DOOR);
+  fquad_uv(f, SD0, SD1, 0, dy1, -ddep, 0, 0, 1, 1);
+  mb_paint(0xFF3A2414, L_WOOD);
+  fbox(f, SD0 - 0.03f, SD0, 0, dy1 + 0.03f, 0, 0.025f);
+  fbox(f, SD1, SD1 + 0.03f, 0, dy1 + 0.03f, 0, 0.025f);
+  mb_paint(0xFFC8A040, L_BRASS); /* klamka */
+  fbox(f, SD1 - 0.06f, SD1 - 0.035f, 0.5f, 0.53f, -ddep, -ddep + 0.03f);
+  mb_paint(0xFF8A847A, L_STONE); /* próg */
+  fbox(f, SD0 - 0.04f, SD1 + 0.04f, 0, 0.05f, -ddep, 0.1f);
+}
 static void shop_front(const Face *f, int c, uint32_t wcol, int wallL, int tx, int tz) {
   int lit = Mp->night || 1;
-  window_unit(f, 0, wallL, wcol, 0.78f, 0.85f, 0.18f, lit, 1);
-  /* szyld nad witryną */
   uint32_t h = H32(tx, tz, 21);
   int sign = Mp->district == 1 && h % 4 == 0 ? 8 : (int)(h % 16);
   if (sign == 8 || sign == 9 || sign == 15 || sign == 10) sign = (int)(h % 8);
+  /* co piąta witryna w Loopie to restauracja hotelowa albo pub */
+  if (tile(tx, tz) == 'H' && h % 5 == 1) sign = (h >> 9) % 2 ? 10 : 9;
+  int enter = !interior && shop_interior(sign) != NULL;
+  if (enter) storefront_door(f, wallL, wcol);
+  else window_unit(f, 0, wallL, wcol, 0.78f, 0.85f, 0.18f, lit, 1);
+  /* szyld nad witryną */
   float row = (sign / 2) / 8.0f, col = (sign % 2) * 0.5f;
-  if (nshops < MAXSHOP) { V3 sp = fp(f, 0.5f, 0, 0.7f); shops[nshops++] = (ShopSpot){sp.x, sp.z, f->nx, f->nz, sign}; }
+  if (enter && nshops < MAXSHOP) { V3 sp = fp(f, (SD0 + SD1) * 0.5f, 0, 0.55f); shops[nshops++] = (ShopSpot){sp.x, sp.z, f->nx, f->nz, sign}; }
   mb_paint(0xFFFFFFFF, L_SIGNS);
   P_.emis = 0.25f; P_.flags = VF_NIGHT;
   fquad_uv(f, 0.06f, 0.94f, 1.1f, 1.32f, 0.03f, col, row, col + 0.5f, row + 0.125f);
@@ -455,14 +523,17 @@ static void floor_tile(int x, int z, int c) {
   }
   /* sufit */
   if (interior) {
-    int tin = Mp->bg[0] == 'w' ? 0 : 1;
-    mb_paint(tin ? 0xFFA89880 : 0xFFFFFFFF, tin ? L_TIN_CEILING : L_PLASTER);
+    int cs = Mp->ceilStyle ? Mp->ceilStyle : Mp->bg[0] == 'w' ? 3 : 1;
     float ch = Mp->ceil;
+    if (cs == 1) mb_paint(0xFFA89880, L_TIN_CEILING);
+    else if (cs == 4) mb_paint(0xFF6A4A30, L_WOOD);
+    else mb_paint(cs == 2 ? 0xFFF4EEE4 : 0xFFFFFFFF, L_PLASTER);
     mb_quad_world(&mb, v3(X, ch, Z), v3(X + 1, ch, Z), v3(X + 1, ch, Z + 1), v3(X, ch, Z + 1));
-    if (!tin) {
+    if (cs == 3) {
       mb_paint(0xFF3A2414, L_WOOD);
       if (x % 2 == 0) mb_box(&mb, v3(X - 0.05f, ch - 0.1f, Z), v3(X + 0.05f, ch, Z + 1));
     }
+    if (cs == 4 && z % 2 == 0) { mb_paint(0xFF2A1A10, L_WOOD); mb_box(&mb, v3(X, ch - 0.06f, Z - 0.04f), v3(X + 1, ch, Z + 0.04f)); }
   }
 }
 
@@ -480,16 +551,20 @@ static void prop_tile(int x, int z, int c) {
         if (!isfloor(x + D[k][0], z + D[k][1])) continue;
         float cyaw = atan2f((float)-D[k][0], (float)-D[k][1]);
         model_add(&mb, MD_CHAIR, X + D[k][0] * 0.38f, 0, Z + D[k][1] * 0.38f, cyaw, 1.0f, 0);
+        add_seat(X + D[k][0] * 0.4f, Z + D[k][1] * 0.4f, cyaw, 0.26f);
       }
       break;
     }
-    case 'h': face_dir_open(x, z, &yaw); model_add(&mb, MD_PEW, X, 0, Z, interior ? 3.14159f : yaw, 1.0f, 0); break;
-    case 'e': face_dir_open(x, z, &yaw); model_add(&mb, MD_BENCH, X, 0.0f, Z, yaw + 3.14159f, 1.0f, 0); kxc_box(coll, X, Z, 0.5f, 0.14f, yaw + 3.14159f, KXC_SOLID); break;
+    case 'h': face_dir_open(x, z, &yaw); model_add(&mb, MD_PEW, X, 0, Z, interior ? 3.14159f : yaw, 1.0f, 0); add_seat(X, Z, interior ? 0.0f : yaw + 3.14159f, 0.25f); break;
+    case 'e': face_dir_open(x, z, &yaw); model_add(&mb, MD_BENCH, X, 0.0f, Z, yaw + 3.14159f, 1.0f, 0); kxc_box(coll, X, Z, 0.5f, 0.14f, yaw + 3.14159f, KXC_SOLID); add_seat(X + sinf(yaw) * 0.02f, Z + cosf(yaw) * 0.02f, yaw, 0.25f); break;
     case 'b': {
       face_dir_open(x, z, &yaw);
       model_add(&mb, MD_BAR, X, 0, Z, yaw, 1.0f, 0);
       float fx = sinf(yaw), fz = cosf(yaw);
-      if (isfloor((int)floorf(X + fx), (int)floorf(Z + fz)) && h % 2) model_add(&mb, MD_STOOL, X + fx * 0.55f, 0, Z + fz * 0.55f, 0, 1.0f, 0);
+      if (isfloor((int)floorf(X + fx), (int)floorf(Z + fz)) && h % 2) {
+        model_add(&mb, MD_STOOL, X + fx * 0.55f, 0, Z + fz * 0.55f, 0, 1.0f, 0);
+        add_seat(X + fx * 0.55f, Z + fz * 0.55f, yaw + 3.14159f, 0.36f);
+      }
       break;
     }
     case 'S': face_dir_open(x, z, &yaw); model_add(&mb, MD_SHELF, X - sinf(yaw) * 0.3f, 0, Z - cosf(yaw) * 0.3f, yaw, 1.0f, 0); break;
@@ -507,6 +582,31 @@ static void prop_tile(int x, int z, int c) {
       addlight(X, 0.8f, Z + 0.3f, 1.4f, 1.0f, 0.55f, 2.5f, 2);
       break;
     case 'V': model_add(&mb, MD_VAT, X, 0, Z, (h % 4) * 1.57f, 1.0f, 0); break;
+    case 'K': { /* lada: drewniana podstawa, szklana gablota z towarem */
+      face_dir_open(x, z, &yaw);
+      int ax = isfloor(x + 1, z) || isfloor(x - 1, z) ? 0 : 1; /* lada ciągnie się wzdłuż sąsiadów 'K' */
+      int along = tile(x + 1, z) == 'K' || tile(x - 1, z) == 'K';
+      (void)ax;
+      float cyaw = along ? 0 : 1.5708f;
+      mb_paint(0xFF5A3A22, L_WOOD_LIGHT);
+      mb_rbox(&mb, v3(X - (along ? 0.5f : 0.3f), 0, Z - (along ? 0.3f : 0.5f)), v3(X + (along ? 0.5f : 0.3f), 0.5f, Z + (along ? 0.3f : 0.5f)), 0.01f);
+      mb_paint(0xFF2A1A10, L_WOOD);
+      mb_box(&mb, v3(X - (along ? 0.5f : 0.32f), 0.5f, Z - (along ? 0.32f : 0.5f)), v3(X + (along ? 0.5f : 0.32f), 0.53f, Z + (along ? 0.32f : 0.5f)));
+      /* towar w gablocie: kolorowe pudełka i słoiki */
+      static const uint32_t G[6] = {0xFFC83A2A, 0xFF3A7AC8, 0xFFE8C860, 0xFF5AA85A, 0xFFE8E0D0, 0xFFB86AC8};
+      for (int k = 0; k < 4; k++) {
+        float o = -0.36f + k * 0.24f, q = ((h >> (k * 3)) % 3) * 0.04f;
+        mb_paint(G[(h + k) % 6], L_WHITE);
+        if (along) mb_box(&mb, v3(X + o - 0.07f, 0.53f, Z - 0.12f), v3(X + o + 0.07f, 0.6f + q, Z + 0.05f));
+        else mb_box(&mb, v3(X - 0.12f, 0.53f, Z + o - 0.07f), v3(X + 0.05f, 0.6f + q, Z + o + 0.07f));
+      }
+      mb_paint(0xFFBFD8E0, L_WINDOW); P_.flags = VF_WATER; /* szkło gabloty: lustrzane */
+      if (along) mb_quad_world(&mb, v3(X - 0.5f, 0.68f, Z - 0.3f), v3(X - 0.5f, 0.68f, Z + 0.3f), v3(X + 0.5f, 0.68f, Z + 0.3f), v3(X + 0.5f, 0.68f, Z - 0.3f));
+      else mb_quad_world(&mb, v3(X - 0.3f, 0.68f, Z - 0.5f), v3(X - 0.3f, 0.68f, Z + 0.5f), v3(X + 0.3f, 0.68f, Z + 0.5f), v3(X + 0.3f, 0.68f, Z - 0.5f));
+      (void)cyaw;
+      if (h % 4 == 0) model_add(&mb, MD_PHONE, X + 0.2f, 0.53f, Z, yaw, 0.5f, 0); /* kasa/telefon */
+      break;
+    }
     case 'm': model_add(&mb, MD_MACHINE, X, 0, Z, (h % 4) * 1.57f, 1.0f, 0); break;
     case 'Y': model_add(&mb, MD_RING, X, 0, Z, 0, 1.0f, 0); break;
     case 'F': case 'I': {
@@ -589,7 +689,7 @@ static void street_furniture(void) {
         model_add(&mb, pick == 0 ? MD_NEWSSTAND : pick == 1 ? MD_TRASH : MD_BENCH, X, 0.06f, Z, yaw, 1.0f, 0);
         if (pick == 0) kxc_box(coll, X, Z, 0.33f, 0.24f, yaw, KXC_SOLID | KXC_CAR);
         else if (pick == 1) kxc_circle(coll, X, Z, 0.15f, KXC_SOLID | KXC_CAR);
-        else kxc_box(coll, X, Z, 0.5f, 0.14f, yaw, KXC_SOLID | KXC_CAR);
+        else { kxc_box(coll, X, Z, 0.5f, 0.14f, yaw, KXC_SOLID | KXC_CAR); add_seat(X, Z + 0.0f, yaw + 3.14159f, 0.31f); }
       }
     }
 }
@@ -863,12 +963,14 @@ void city_build(MapDef *m) {
     hasRail = bigSlot.rail; railX0 = bigSlot.rail3[0]; railX1 = bigSlot.rail3[1]; railZc = bigSlot.rail3[2];
     coll = bigSlot.coll;
     memcpy(shops, bigSlot.sh, sizeof(ShopSpot) * bigSlot.nsh); nshops = bigSlot.nsh;
+    memcpy(seats, bigSlot.se, sizeof(Seat) * bigSlot.nse); nseats = bigSlot.nse;
     curIsBig = 1;
     return;
   }
   nclights = 0;
   neonIdx = 0;
   nshops = 0;
+  nseats = 0;
   coll = kxc_create(Mw, Mh);
   if (!mb.v) mb_init(&mb);
   mb_reset(&mb);
@@ -949,8 +1051,24 @@ void city_build(MapDef *m) {
         if (!isfloor(x, z) || x % 4 != 2 || z % 4 != 2) continue;
         float ch = Mp->ceil;
         int warehouse = Mp->bg[0] == 'm' || td_c(tile(0, 0))->wallL == L_CORRUGATED;
-        model_add(&mb, warehouse ? MD_CEILLAMP : MD_CHANDELIER, x + 0.5f, ch, z + 0.5f, 0, 1.0f, 0);
-        addlight(x + 0.5f, ch - 0.6f, z + 0.5f, 2.0f, 1.55f, 0.95f, 6.5f, 0);
+        int ls = Mp->lampStyle ? Mp->lampStyle : warehouse ? 1 : 0;
+        float tr = Mp->tint[0] > 0 ? Mp->tint[0] : 1, tg = Mp->tint[1] > 0 ? Mp->tint[1] : 1, tb = Mp->tint[2] > 0 ? Mp->tint[2] : 1;
+        float X = x + 0.5f, Z = z + 0.5f;
+        if (ls == 0 || ls == 1) model_add(&mb, ls ? MD_CEILLAMP : MD_CHANDELIER, X, ch, Z, 0, 1.0f, 0);
+        if (ls == 2) { /* chińskie lampiony: czerwone kule z frędzlami */
+          for (int k = -1; k <= 1; k += 2) {
+            float lx = X + k * 0.5f;
+            mb_paint(0xFF2A1A10, L_METAL); mb_box(&mb, v3(lx - 0.005f, ch - 0.35f, Z - 0.005f), v3(lx + 0.005f, ch, Z + 0.005f));
+            mb_paint(0xFFE83A28, L_WHITE); P_.emis = 0.7f; mb_sphere(&mb, v3(lx, ch - 0.45f, Z), 0.11f, 0.13f, 0.11f, 10);
+            mb_paint(0xFFE8C048, L_BRASS); mb_box(&mb, v3(lx - 0.03f, ch - 0.6f, Z - 0.03f), v3(lx + 0.03f, ch - 0.57f, Z + 0.03f));
+          }
+        }
+        if (ls == 3) { /* mleczne kule na łańcuszku */
+          mb_paint(0xFF2A2C30, L_METAL); mb_box(&mb, v3(X - 0.006f, ch - 0.4f, Z - 0.006f), v3(X + 0.006f, ch, Z + 0.006f));
+          mb_paint(0xFFFFF4E0, L_WHITE); P_.emis = 0.9f; mb_sphere(&mb, v3(X, ch - 0.48f, Z), 0.1f, 0.1f, 0.1f, 10);
+        }
+        float lr = ls == 2 ? 2.4f : 2.0f, lg = ls == 2 ? 0.9f : 1.55f, lb = ls == 2 ? 0.6f : 0.95f;
+        addlight(X, ch - 0.6f, Z, lr * tr, lg * tg, lb * tb, 6.5f, 0);
       }
   /* reflektory nad sceną (podłoga 'y' przy ścianie) */
   if (interior)
@@ -982,6 +1100,7 @@ void city_build(MapDef *m) {
       if (bigSlot.coll && bigSlot.coll != coll) kxc_free(bigSlot.coll);
       bigSlot.coll = coll;
       memcpy(bigSlot.sh, shops, sizeof(ShopSpot) * nshops); bigSlot.nsh = nshops;
+      memcpy(bigSlot.se, seats, sizeof(Seat) * nseats); bigSlot.nse = nseats;
       curIsBig = 1;
     }
     if (getenv("KX_STAT")) fprintf(stderr, "miasto: %d wierzchołków, %d kwartałów, %d świateł, %d kolizji\n", mb.n, nchunks, nclights, kxc_count(coll));

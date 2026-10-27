@@ -410,6 +410,9 @@ static void parse_map_line(char *line) {
   else if (!strcmp(c, "rain")) m->rain = ival(1, 1);
   else if (!strcmp(c, "interior")) { m->interior = 1; m->ceil = sval(1) ? (float)atof(sval(1)) : 1.6f; }
   else if (!strcmp(c, "floors")) m->floors = ival(1, 3);
+  else if (!strcmp(c, "ceiling")) { const char *v = sval(1) ? sval(1) : ""; m->ceilStyle = !strcmp(v, "tin") ? 1 : !strcmp(v, "plaster") ? 2 : !strcmp(v, "beams") ? 3 : !strcmp(v, "dark") ? 4 : 0; }
+  else if (!strcmp(c, "lamps")) { const char *v = sval(1) ? sval(1) : ""; m->lampStyle = !strcmp(v, "ceillamp") ? 1 : !strcmp(v, "lantern") ? 2 : !strcmp(v, "globe") ? 3 : 0; }
+  else if (!strcmp(c, "tint") && sval(3)) { m->tint[0] = (float)atof(sval(1)); m->tint[1] = (float)atof(sval(2)); m->tint[2] = (float)atof(sval(3)); }
   else if (!strcmp(c, "ambient")) {
     static const char *AN[] = {"-", "street", "harbor", "room", "crowd", "office", "church", "warehouse"};
     m->ambient = -1;
@@ -681,7 +684,8 @@ int story_load(const char *text) {
         }
         e->enemies[0] = 0;
       }
-      if (e->type == ENT_WARP) {
+      if (e->type == ENT_WARP && !strcmp(e->sprite, "@powrot")) e->toMap = WARP_BACK;
+      else if (e->type == ENT_WARP) {
         e->toMap = map_resolve(e->sprite, &e->toX, &e->toY);
         if (e->toMap < 0) { char b[120]; snprintf(b, sizeof b, "%s z %s", e->sprite, where); err("nieznana mapa docelowa '%s'", b); }
         else {

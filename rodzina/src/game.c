@@ -29,6 +29,7 @@ void hero_new(void) {
   H.gold = 20;
   H.clock = 17 * 60 + 40; /* początek gry: późne popołudnie, zaraz zmierzch */
   H.day = 1;
+  W.retMap = -1;
   H.hasWpn[WPN_FISTS] = 1;
   H.weapon = WPN_FISTS;
 }
@@ -81,6 +82,7 @@ int save_game(void) {
   fprintf(f, "map %s %d %d %d\n", S.maps[W.map].id, (int)floorf(W.px), (int)floorf(W.pz), 0);
   fprintf(f, "yaw %f\n", W.yaw);
   fprintf(f, "clock %d %d\n", H.clock, H.day);
+  if (W.retMap >= 0 && W.retMap < S.nmaps) fprintf(f, "ret %s %f %f %f\n", S.maps[W.retMap].id, W.retX, W.retZ, W.retYaw);
   fprintf(f, "hero %d %d %d %d %ld %d\n", H.hp, H.mhp, H.armor, H.gold, H.playFrames, H.weapon);
   for (int w = 0; w < WPN_COUNT; w++) fprintf(f, "wpn %d %d %d %d\n", w, H.hasWpn[w], H.ammo[w], H.clip[w]);
   fprintf(f, "obj %s\n", H.objective);
@@ -123,6 +125,8 @@ int load_game(void) {
   tycoon_init();
   char mapId[64] = "";
   int mx = 0, my = 0, md = 0;
+  int retMapId = -1;
+  float retXf = 0, retZf = 0, retYf = 0;
   float yaw = 0;
   while (fgets(line, sizeof line, f)) {
     line[strcspn(line, "\r\n")] = 0;
@@ -131,6 +135,7 @@ int load_game(void) {
     if (!strncmp(line, "map ", 4)) sscanf(line + 4, "%63s %d %d %d", mapId, &mx, &my, &md);
     else if (!strncmp(line, "yaw ", 4)) yaw = (float)atof(line + 4);
     else if (!strncmp(line, "clock ", 6)) sscanf(line + 6, "%d %d", &H.clock, &H.day);
+    else if (!strncmp(line, "ret ", 4)) { char rm[64]; float a, b, c; if (sscanf(line + 4, "%63s %f %f %f", rm, &a, &b, &c) == 4) { retMapId = map_find(rm); retXf = a; retZf = b; retYf = c; } }
     else if (!strncmp(line, "hero ", 5)) sscanf(line + 5, "%d %d %d %d %ld %d", &H.hp, &H.mhp, &H.armor, &H.gold, &H.playFrames, &H.weapon);
     else if (!strncmp(line, "wpn ", 4) && sscanf(line + 4, "%d %d %d %d", &w, &v, &x1, &x2) == 4 && w >= 0 && w < WPN_COUNT) { H.hasWpn[w] = v; H.ammo[w] = x1; H.clip[w] = x2; }
     else if (!strncmp(line, "obj ", 4)) snprintf(H.objective, sizeof H.objective, "%s", line + 4);
@@ -154,6 +159,7 @@ int load_game(void) {
   script_stop();
   world_load_map(m, mx, my, md);
   W.yaw = yaw;
+  W.retMap = retMapId; W.retX = retXf; W.retZ = retZf; W.retYaw = retYf;
   game_set_mode(MODE_WORLD);
   g_autofade = 1;
   return 1;

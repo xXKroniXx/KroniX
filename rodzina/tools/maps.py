@@ -585,6 +585,139 @@ add('willa', ['ambient room', 'name "Dom nad jeziorem"', 'music noc', 'night 120
     'warp 7 9 miasto 135 72 left',
 ])
 
+
+# ------------------------------------------------------------------ lokale (wnętrza sklepów, barów, restauracji)
+# każdy rodzaj lokalu ma własne wnętrze; wyjście 'warp X Y @powrot' wraca przed witrynę, którą gracz wszedł
+def shop(mid, name, music, rows, ents, ceil='1.5', amb='room', look=()):
+    g = [list(r) for r in rows]
+    add(mid, ['ambient ' + amb, 'name "%s"' % name, 'music ' + music, 'night 120', 'interior ' + ceil, 'bg wood'] + list(look), g, ents)
+
+shop('s_apteka', 'Apteka Rexall', 'noc', [
+    'QQQQQQQQQQQ',
+    'QSSSSuSSSSQ',
+    'Q_________Q',
+    'Q__KKKKK__Q',
+    'QqqqqqqqqqQ',
+    'Qe_qqqqq_eQ',
+    'Qp_______pQ',
+    'QQQQQDQQQQQ'], [
+    'npc aptekarz_s 5 2 feliks down s_sklep_apteka',
+    'obj tel_apteka 8 2 phone down -',
+    'warp 5 7 @powrot 0 0',
+], look=('ceiling plaster', 'lamps globe', 'tint 0.95 1.0 1.15'))
+shop('s_piekarnia', 'Piekarnia', 'polonia', [
+    'RRRRRRRRRRR',
+    'RSSSf_fSSSR',
+    'R_________R',
+    'R__KKKKK__R',
+    'R_________R',
+    'R_t_____t_R',
+    'Rp_______pR',
+    'RRRRRDRRRRR'], [
+    'npc piekarka_s 5 2 piekarz down s_sklep_piekarnia',
+    'npc klientka_p 3 4 helena up -',
+    'warp 5 7 @powrot 0 0',
+], look=('ceiling beams', 'lamps globe', 'tint 1.2 0.95 0.7'))
+shop('s_delikatesy', 'Delikatesy i sklep spożywczy', 'italia', [
+    'iiiiiiiiiiii',
+    'iSSSSSSSSSSi',
+    'i__________i',
+    'iX__KKKK__ki',
+    'i__________i',
+    'iS_S____S_Si',
+    'iS_S____S_Si',
+    'ik________Xi',
+    'iiiiiDiiiiii'], [
+    'npc sprzedawca_s 6 2 pan down s_sklep_delikatesy',
+    'warp 5 8 @powrot 0 0',
+], look=('ceiling tin', 'lamps ceillamp', 'tint 1.05 1.0 0.9'))
+shop('s_pub', 'Pub pod Koniczyną', 'bar', [
+    'WWWWWWWWWWWWWW',
+    'WSSSSSSSSSSSSW',
+    'W____________W',
+    'W_bbbbbbbb___W',
+    'W____________W',
+    'W_t___t___t__W',
+    'W____________W',
+    'WP__t___t___pW',
+    'Wkk__________W',
+    'WWWWWWDWWWWWWW'], [
+    'npc barman_s 5 2 barman down s_sklep_pub',
+    'npc pijak_pub 11 4 menel left -',
+    'npc bywalec_pub 2 6 robotnik right -',
+    'obj gramofon_pub 12 2 gramophone down s_dom_gramofon',
+    'warp 6 9 @powrot 0 0',
+], amb='crowd', look=('ceiling dark', 'lamps chandelier', 'tint 0.9 0.65 0.4'))
+shop('s_restauracja', 'Restauracja hotelu Lexington', 'bar', [
+    'jjjjjjjjjjjjjjjj',
+    'jP___u____u___pj',
+    'j______________j',
+    'j_t___t___t___tj',
+    'j______________j',
+    'j_t___t___t___tj',
+    'j______________j',
+    'jp____bb______pj',
+    'j______________j',
+    'jjjjjjjDjjjjjjjj'], [
+    'npc maitre_s 8 7 kelner down s_sklep_restauracja',
+    'npc gosc_r1 4 4 flapper right -',
+    'npc gosc_r2 12 2 pan left -',
+    'obj gramofon_r 14 8 gramophone left s_dom_gramofon',
+    'warp 7 9 @powrot 0 0',
+], ceil='1.8', amb='crowd', look=('ceiling tin', 'lamps chandelier', 'tint 1.15 1.0 0.8'))
+shop('s_chopsuey', 'Bar Chop Suey', 'chiny', [
+    'jjjjjjjjjjjj',
+    'jSSS_ff_SSSj',
+    'j__________j',
+    'j__KKKKKK__j',
+    'j__________j',
+    'j_t__t__t__j',
+    'j__________j',
+    'jp_t__t__t_j',
+    'j__________j',
+    'jjjjjDjjjjjj'], [
+    'npc kucharz_s 5 2 kelner down s_sklep_chopsuey',
+    'npc gosc_c1 1 6 robotnik right -',
+    'warp 5 9 @powrot 0 0',
+], look=('ceiling plaster', 'lamps lantern', 'tint 1.0 0.8 0.75'))
+shop('s_herbaciarnia', 'Herbaciarnia Złoty Smok', 'chiny', [
+    'zzzzzzzzzzz',
+    'zSSpu_upSSz',
+    'z_________z',
+    'z__KKKKK__z',
+    'z_________z',
+    'zt___t___tz',
+    'zp_______pz',
+    'zzzzzDzzzzz'], [
+    'npc herbaciarka_s 5 2 helena down s_sklep_herbaciarnia',
+    'warp 5 7 @powrot 0 0',
+], look=('ceiling dark', 'lamps lantern', 'tint 1.1 1.0 0.6'))
+shop('s_lombard', 'Lombard i rusznikarnia', 'noc', [
+    'RRRRRRRRRRR',
+    'RSSuS_SuSSR',
+    'R_________R',
+    'RIIKKKKKIIR',
+    'Ro_ooooo_oR',
+    'RX_kooooXkR',
+    'Ro_ooooo_oR',
+    'RRRRRDRRRRR'], [
+    'npc lombardzista_s 5 2 mickey down s_sklep_lombard',
+    'obj sejf_lomb 1 2 safe right -',
+    'warp 5 7 @powrot 0 0',
+], look=('ceiling plaster', 'lamps ceillamp', 'tint 0.85 1.0 0.8'))
+shop('s_trafika', 'Trafika', 'noc', [
+    'iiiiiiiii',
+    'iSSSuSSSi',
+    'i_______i',
+    'i_KKKKK_i',
+    'i_______i',
+    'ip_____pi',
+    'iiiiDiiii'], [
+    'npc trafikant_s 4 2 robotnik down s_sklep_trafika',
+    'obj radio_traf 7 2 radio down -',
+    'warp 4 6 @powrot 0 0',
+], look=('ceiling tin', 'lamps globe', 'tint 1.15 0.95 0.75'))
+
 MW, MH = 150, 110
 city = grid(MW, MH, '#')
 PARTS = {}   # nazwa -> (ox, oy)

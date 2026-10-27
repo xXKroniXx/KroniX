@@ -163,6 +163,7 @@ void world_load_map(int map, int tx, int ty, int dir) {
     e->htype = human_find(e->d->sprite);
     e->animT = (rand() % 1000) / 100.0f;
   }
+  W.seated = 0;
   W.px = tx + 0.5f; W.pz = ty + 0.5f;
   W.ppx = W.px; W.ppz = W.pz; W.pbob = W.bob = 0;
   W.region = region_at(W.map, W.px, W.pz);
@@ -305,8 +306,42 @@ static Ent *look_door(void) {
   return NULL;
 }
 
+/* wejście do lokalu: wnętrze wg rodzaju, start przy drzwiach wyjściowych (warp @powrot) */
+int shop_enter(int sign, float x, float z, float yaw) {
+  const char *id = shop_interior(sign);
+  int m = id ? map_find(id) : -1;
+  if (m < 0) return 0;
+  MapDef *md = &S.maps[m];
+  int ex = -1, ey = -1, dir = DIR_UP;
+  for (int i = 0; i < md->nents && ex < 0; i++) {
+    EntDef *d = &md->ents[i];
+    if (d->type != ENT_WARP || d->toMap != WARP_BACK) continue;
+    static const int D[4][3] = {{0, -1, DIR_UP}, {0, 1, DIR_DOWN}, {-1, 0, DIR_LEFT}, {1, 0, DIR_RIGHT}};
+    for (int k = 0; k < 4; k++) {
+      int nx = d->x + D[k][0], ny = d->y + D[k][1];
+      if (nx < 0 || ny < 0 || nx >= md->w || ny >= md->h || tile_solid(md->tiles[ny][nx])) continue;
+      ex = nx; ey = ny; dir = D[k][2];
+      break;
+    }
+  }
+  if (ex < 0) return 0;
+  W.retMap = W.map; W.retX = x; W.retZ = z; W.retYaw = yaw;
+  W.trans = 1; W.tExact = 0;
+  W.tMap = m; W.tX = ex; W.tY = ey; W.tDir = dir;
+  sfx_play(SFX_DOOR);
+  return 1;
+}
+
 static void start_warp(EntDef *d) {
   W.trans = 1;
+  W.tExact = 0;
+  if (d->toMap == WARP_BACK) { /* wyjście z lokalu: dokładnie przed drzwi, którymi weszliśmy */
+    if (W.retMap < 0 || W.retMap >= S.nmaps) { W.trans = 0; return; }
+    W.tMap = W.retMap; W.tX = (int)floorf(W.retX); W.tY = (int)floorf(W.retZ); W.tDir = DIR_DOWN;
+    W.tExact = 1; W.tPx = W.retX; W.tPz = W.retZ; W.tYaw = W.retYaw;
+    sfx_play(SFX_DOOR);
+    return;
+  }
   W.tMap = d->toMap; W.tX = d->toX; W.tY = d->toY; W.tDir = d->toDir;
   sfx_play(SFX_DOOR);
 }
@@ -319,7 +354,7 @@ static void check_tile_events(void) {
   for (int i = 0; i < W.n; i++) {
     Ent *e = &W.ents[i];
     if (!e->vis || e->d->x != tx || e->d->y != tz) continue;
-    if (e->d->type == ENT_WARP && e->d->toMap >= 0 && !tile_solid(tile_at(tx, tz))) { start_warp(e->d); return; }
+    if (e->d->type == ENT_WARP && (e->d->toMap >= 0 || e->d->toMap == WARP_BACK) && !tile_solid(tile_at(tx, tz))) { start_warp(e->d); return; }
     if (e->d->type == ENT_EVENT && e->d->script >= 0) {
       if (e->d->once) { int v = event_var(e->d); if (v >= 0) H.vars[v] = 1; }
       script_start(e->d->script, NULL);
@@ -342,6 +377,19 @@ static void update_player(void) {
     if (W.trans || script_running()) return;
     if (in.pressed[BTN_B]) { ui_open_pause(); return; }
     if (in.pressed[BTN_TAB] && tycoon_active() && !tycoon_mission_active()) { tycoon_open(); return; }
+    return;
+  }
+  if (W.seated) {
+    /* siedzi: można się rozglądać; E albo ruch = wstań */
+    world_look(in.mdx, in.mdy);
+    W.bob = 0;
+    if (W.trans || script_running()) return;
+    if (in.pressed[BTN_A] || in.held[BTN_UP] || in.held[BTN_DOWN] || in.held[BTN_SL] || in.held[BTN_SR]) {
+      W.seated = 0; W.px = W.ppx = W.standX; W.pz = W.ppz = W.standZ;
+      return;
+    }
+    if (in.pressed[BTN_QUICK]) ui_quick_heal();
+    if (in.pressed[BTN_B]) ui_open_pause();
     return;
   }
   float spd = (in.held[BTN_RUN] ? 2.9f : 1.7f) / 60.0f;
@@ -375,10 +423,29 @@ static void update_player(void) {
       return;
     }
     Ent *door = look_door();
-    if (door && door->d->toMap >= 0) { start_warp(door->d); return; }
-    int sg;
-    if (world_enemies_alive() == 0 && city_shop_at(W.px, W.pz, fx, fz, &sg) >= 0 && shop_name(sg) && shop_open_sign(sg)) { sfx_play(SFX_DOOR); return; }
+    if (door && (door->d->toMap >= 0 || door->d->toMap == WARP_BACK)) { start_warp(door->d); return; }
+    int sg, si;
+    if (world_enemies_alive() == 0 && (si = city_shop_at(W.px, W.pz, fx, fz, &sg)) >= 0 && shop_interior(sg)) {
+      if (!shop_is_open(sg)) {
+        int o, c; shop_hours(sg, &o, &c);
+        char b[96]; snprintf(b, sizeof b, "Zamknięte. Otwarte %d:00–%d:00", o, c % 24);
+        ui_toast(b); sfx_play(SFX_CANCEL); return;
+      }
+      float sx, sz, nx, nz;
+      city_shop_spot(si, &sx, &sz, &nx, &nz);
+      if (shop_enter(sg, sx, sz, atan2f(nx, nz))) return;
+    }
     if (world_enemies_alive() == 0 && cars_enter()) return;
+    int seat = world_enemies_alive() == 0 ? city_seat_at(W.px, W.pz, fx, fz) : -1;
+    if (seat >= 0) {
+      float sx, sz, sy, sh;
+      city_seat(seat, &sx, &sz, &sy, &sh);
+      W.standX = W.px; W.standZ = W.pz;
+      W.px = W.ppx = sx; W.pz = W.ppz = sz; W.yaw = sy; W.pitch = 0;
+      W.seatEye = sh + 0.34f;
+      W.seated = 1;
+      return;
+    }
   }
   if (in.pressed[BTN_QUICK]) ui_quick_heal();
   /* poza walką rany powoli się zasklepiają (do 35% zdrowia) */
@@ -444,7 +511,12 @@ void world_update(void) {
   }
   if (W.trans == 1) {
     g_fade += 24;
-    if (g_fade >= 255) { g_fade = 255; world_load_map(W.tMap, W.tX, W.tY, W.tDir); W.trans = 2; lastTileX = W.tX; lastTileZ = W.tY; }
+    if (g_fade >= 255) {
+      g_fade = 255;
+      world_load_map(W.tMap, W.tX, W.tY, W.tDir);
+      if (W.tExact) { W.px = W.ppx = W.tPx; W.pz = W.ppz = W.tPz; W.yaw = W.tYaw; W.tExact = 0; }
+      W.trans = 2; lastTileX = (int)floorf(W.px); lastTileZ = (int)floorf(W.pz);
+    }
     return;
   }
   if (W.trans == 2) { g_fade -= 24; if (g_fade <= 0) { g_fade = 0; W.trans = 0; } }
@@ -453,7 +525,7 @@ void world_update(void) {
   if (!script_blocking()) {
     update_player();
     if (g_mode != MODE_WORLD) return;
-    combat_update();
+    if (!W.seated) combat_update();
   }
   cars_update();
   streetlife_update();
@@ -585,7 +657,7 @@ void world_draw(void) {
   float gy = world_ground(cx, cz);
   static float camY;
   static double lastT;
-  float target = gy + 0.78f;
+  float target = W.seated ? W.seatEye : gy + 0.78f;
   if (fabsf(camY - target) > 0.5f) camY = target;
   float dt = (float)(g_time - lastT);
   lastT = g_time;
@@ -626,7 +698,7 @@ void world_draw(void) {
   city_steam(g_time);
   r_glow_flush();
   if (env.rain > 0) r_rain(env.rain * 0.55f);
-  if (!script_blocking() && g_mode == MODE_WORLD && !driving) combat_draw_view();
+  if (!script_blocking() && g_mode == MODE_WORLD && !driving && !W.seated) combat_draw_view();
   float hurt = W.hurtT / 18.0f;
   r_grade(0.9f, 1.0f, 1.0f + hurt * 0.8f, 0);
   r_frame_end();
@@ -651,11 +723,16 @@ void world_draw_ui(void) {
     } else {
       Ent *door = look_door();
       if (door && door->d->toMap >= 0) snprintf(b, sizeof b, "Wejdź  \xe2\x80\x94  %s", S.maps[door->d->toMap].name);
+      else if (door && door->d->toMap == WARP_BACK) snprintf(b, sizeof b, "Wyjdź na ulicę");
       else {
         int sg;
-        if (car_player() < 0 && world_enemies_alive() == 0 && city_shop_at(W.px, W.pz, sinf(W.yaw), cosf(W.yaw), &sg) >= 0 && shop_name(sg))
-          snprintf(b, sizeof b, "Kup  \xe2\x80\x94  %s", shop_name(sg));
+        if (car_player() < 0 && world_enemies_alive() == 0 && city_shop_at(W.px, W.pz, sinf(W.yaw), cosf(W.yaw), &sg) >= 0 && shop_interior(sg)) {
+          int o, c; shop_hours(sg, &o, &c);
+          if (shop_is_open(sg)) snprintf(b, sizeof b, "Wejdź  \xe2\x80\x94  %s  (do %d:00)", shop_name(sg), c % 24);
+          else snprintf(b, sizeof b, "%s  \xe2\x80\x94  zamknięte (%d:00–%d:00)", shop_name(sg), o, c % 24);
+        }
         else if (car_player() < 0 && cars_near() >= 0 && world_enemies_alive() == 0) snprintf(b, sizeof b, "Wsiądź do auta");
+        else if (!W.seated && world_enemies_alive() == 0 && city_seat_at(W.px, W.pz, sinf(W.yaw), cosf(W.yaw)) >= 0) snprintf(b, sizeof b, "Usiądź");
       }
     }
     if (car_player() >= 0) b[0] = 0;

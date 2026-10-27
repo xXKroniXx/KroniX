@@ -41,14 +41,14 @@ extern int g_headbob;   /* kołysanie kamery przy chodzeniu: 0 wył., 1 słabe, 
 void world_look(float dx, float dy);
 
 /* ------------------------------------------------------------------ dane fabuły */
-#define MAX_MAPS 32
+#define MAX_MAPS 48
 #define MAX_MAP_W 160
 #define MAX_MAP_H 120
 #define MAX_ENTS 192
 #define MAX_REGIONS 24
 #define MAX_ITEMS 64
 #define MAX_ENEMIES 32
-#define MAX_SPEAKERS 64
+#define MAX_SPEAKERS 96
 #define MAX_SCRIPTS 400
 #define MAX_CMDS 9000
 #define MAX_VARS 256
@@ -80,6 +80,8 @@ typedef struct {
   char id[24], name[48], music[24], bg[24];
   int w, h, night, rain, interior, floors, district, ambient; /* ambient: AMB_* (0 = automatycznie) */
   float ceil;
+  int ceilStyle, lampStyle;  /* wnętrza: sufit (0 auto, 1 blacha, 2 tynk, 3 belki, 4 ciemne drewno), lampy (0 żyrandol, 1 przemysłowa, 2 lampiony, 3 kule) */
+  float tint[3];             /* barwa światła wnętrza (0,0,0 = domyślna) */
   int ex, ey, edir; /* punkt wejścia przy podróży (-1 = brak) */
   u8 tiles[MAX_MAP_H][MAX_MAP_W];
   EntDef ents[MAX_ENTS];
@@ -216,6 +218,9 @@ typedef struct {
   int region;          /* region dużej mapy, w którym jest gracz (-1 brak) */
   char banner[64];     /* nazwa miejsca na banerze */
   int time, trans, tMap, tX, tY, tDir, grace;
+  int tExact; float tPx, tPz, tYaw;      /* przejście w dokładne miejsce (wyjście ze sklepu) */
+  int retMap; float retX, retZ, retYaw;  /* skąd weszliśmy do lokalu (warp @powrot) */
+  int seated; float seatEye, standX, standZ; /* siedzenie na krześle/ławce */
   int bannerT;
   int hurtT, flashT;
   int enemiesAlive;
@@ -308,6 +313,12 @@ int ui_quick_heal(void);
 int heal_items_count(void);
 int city_shop_at(float px, float pz, float fx, float fz, int *sign);
 int city_shop_find(int sign, float *x, float *z, float *yaw);
+int city_shop_spot(int i, float *x, float *z, float *nx, float *nz);
+int city_seat_at(float px, float pz, float fx, float fz);
+int city_seat(int i, float *x, float *z, float *yaw, float *h);
+#define WARP_BACK (-2) /* cel przejścia „@powrot”: tam, skąd gracz wszedł */
+int shop_enter(int sign, float x, float z, float yaw); /* wejście do wnętrza lokalu danego rodzaju */
+const char *shop_interior(int sign);
 void ui_shop_update(void);
 void ui_shop_draw(void);
 void ui_title_enter(void);
