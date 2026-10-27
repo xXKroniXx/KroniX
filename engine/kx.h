@@ -60,6 +60,7 @@ void input_clear(void);
 int utf8_next(const char **p); /* dekoduje znak UTF-8 i przesuwa wskaźnik */
 
 /* ------------------------------------------------------------------ implementuje gra */
+void kx_message(const char *title, const char *text); /* okienko z komunikatem (UTF-8); headless: stderr */
 void kx_game_init(int argc, char **argv); /* po utworzeniu kontekstu GL (jeśli g_render) */
 void kx_game_frame(void);                 /* logika, stały krok 60 Hz */
 void kx_game_draw(void);                  /* obraz: scena 3D + UI */

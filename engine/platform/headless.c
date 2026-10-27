@@ -14,6 +14,8 @@ extern unsigned char OSMesaMakeCurrent(OSMesaContext ctx, void *buffer, unsigned
 extern void *OSMesaGetProcAddress(const char *funcName);
 static void *gp(const char *n) { return OSMesaGetProcAddress(n); }
 
+void kx_message(const char *title, const char *text) { fprintf(stderr, "[%s] %s\n", title, text); }
+
 int main(int argc, char **argv) {
   snprintf(g_data_dir, sizeof g_data_dir, "./");
   long maxFrames = 60L * 60 * 30, shotAt = -1;

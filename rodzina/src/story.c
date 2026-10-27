@@ -8,15 +8,34 @@ Story S;
 static int curLine;
 static char errbuf[256];
 
+/* pliki danych sklejone przez tools/embed.py: znaczniki '#@file nazwa' → nazwa pliku i linia w nim */
+static struct { int start; char name[64]; } dfiles[48];
+static int ndfiles;
+static char errText[1024];
+static const char *where_line(int line, int *outLine) {
+  for (int i = ndfiles - 1; i >= 0; i--)
+    if (line > dfiles[i].start) { *outLine = line - dfiles[i].start; return dfiles[i].name; }
+  *outLine = line;
+  return "story.txt";
+}
+const char *story_errors_text(void) { return errText; }
 static void err(const char *fmt, const char *a) {
   snprintf(errbuf, sizeof errbuf, fmt, a ? a : "");
-  fprintf(stderr, "story.txt:%d: %s\n", curLine, errbuf);
+  int ln;
+  const char *f = where_line(curLine, &ln);
+  fprintf(stderr, "%s:%d: %s\n", f, ln, errbuf);
+  if (S.errors < 8) {
+    size_t n = strlen(errText);
+    snprintf(errText + n, sizeof errText - n, "%s, linia %d: %s\n", f, ln, errbuf);
+  }
   S.errors++;
 }
 static void warn(const char *fmt, const char *a) {
   char b[256];
   snprintf(b, sizeof b, fmt, a ? a : "");
-  fprintf(stderr, "story.txt:%d: uwaga: %s\n", curLine, b);
+  int ln;
+  const char *f = where_line(curLine, &ln);
+  fprintf(stderr, "%s:%d: uwaga: %s\n", f, ln, b);
 }
 
 /* ---------------------------------------------------------------- wyszukiwanie */
@@ -631,6 +650,8 @@ int story_load(const char *text) {
   memcpy(buf, text, n + 1);
   char *p = buf;
   curLine = 0;
+  ndfiles = 0;
+  errText[0] = 0;
   while (p && *p) {
     char *nl = strchr(p, '\n');
     if (nl) *nl = 0;
@@ -639,6 +660,11 @@ int story_load(const char *text) {
     p = nl ? nl + 1 : NULL;
     int L = (int)strlen(line);
     while (L > 0 && line[L - 1] == '\r') line[--L] = 0;
+    if (!strncmp(line, "#@file ", 7)) { /* początek kolejnego pliku danych */
+      if (sec == SEC_TILES) err("brak 'endtiles'", NULL);
+      if (ndfiles < 48) { dfiles[ndfiles].start = curLine; snprintf(dfiles[ndfiles].name, sizeof dfiles[0].name, "%s", line + 7); ndfiles++; }
+      continue;
+    }
     if (sec == SEC_TILES) { parse_tiles_line(line); continue; }
     char *t = line;
     while (*t == ' ' || *t == '\t') t++;

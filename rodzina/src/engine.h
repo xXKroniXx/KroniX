@@ -172,6 +172,7 @@ void quest_set(const char *id, const char *text);
 void quest_done(const char *id);
 int save_exists(void);
 int save_game(void);
+const char *story_errors_text(void); /* pierwsze błędy danych: plik, linia, opis */
 /* clock.c: pora dnia i pogoda */
 extern float g_nightK, g_rainK, g_duskK; /* 0..1: noc, deszcz, złota godzina */
 extern float g_rainForce;

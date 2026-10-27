@@ -385,7 +385,14 @@ void kx_game_init(int argc, char **argv) {
   }
   char *ext = storyPath ? read_file(storyPath) : NULL;
   int errs = story_load(ext ? ext : STORY_TXT);
-  if (errs) fprintf(stderr, "Fabuła: %d błędów\n", errs);
+  if (errs) {
+    fprintf(stderr, "Fabuła: %d błędów\n", errs);
+    if (!validate && g_render) {
+      char m[1400];
+      snprintf(m, sizeof m, "W plikach danych gry jest %d błędów:\n\n%s\nGra spróbuje mimo to wystartować.", errs, story_errors_text());
+      kx_message("KroniX: Rodzina — błąd w danych", m);
+    }
+  }
   hero_new();
   tycoon_init();
   world_load_map(map_find(S.startMap), S.startX, S.startY, S.startDir);

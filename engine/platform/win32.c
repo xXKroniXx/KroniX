@@ -37,6 +37,13 @@ static void *win_getproc(const char *name) {
   return p;
 }
 
+void kx_message(const char *title, const char *text) {
+  static wchar_t wt[256], wm[4096];
+  MultiByteToWideChar(CP_UTF8, 0, title, -1, wt, 256);
+  MultiByteToWideChar(CP_UTF8, 0, text, -1, wm, 4096);
+  MessageBoxW(NULL, wm, wt, MB_ICONWARNING | MB_OK);
+}
+
 static void fatal(const char *msg) {
   MessageBoxA(NULL, msg, "KroniX: Rodzina", MB_ICONERROR | MB_OK);
   ExitProcess(1);

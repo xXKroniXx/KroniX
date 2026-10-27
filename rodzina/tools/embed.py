@@ -6,7 +6,8 @@ out = sys.argv[1]
 files = []
 for a in sys.argv[2:]:
     files += sorted(glob.glob(a)) if any(ch in a for ch in '*?[') else [a]
-data = b''.join(open(p, 'rb').read() + b'\n' for p in files)
+# znacznik pliku pozwala grze podać przy błędzie nazwę pliku i numer linii
+data = b''.join(b'#@file ' + p.replace('\\', '/').encode() + b'\n' + open(p, 'rb').read() + b'\n' for p in files)
 open(out.replace('.c', '.txt'), 'wb').write(data)
 with open(out, 'w') as f:
     f.write('/* Wygenerowane automatycznie z data/story.txt — nie edytować. */\n')
