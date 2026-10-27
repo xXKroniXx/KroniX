@@ -2,6 +2,7 @@
  * kursująca po estakadzie nad Loopem. Wszystko dynamiczne, tylko w zasięgu gracza. */
 #include "engine.h"
 #include "assets.h"
+#include "kx_coll.h"
 
 int city_tile(int x, int z);
 int city_rail(float *x0, float *x1, float *zc);
@@ -13,6 +14,7 @@ typedef struct {
   int dx, dz;      /* kierunek marszu (oś) */
   int type, alive, tx, tz; /* kafel docelowy */
   float lane;      /* przesunięcie w poprzek chodnika */
+  float lastD; int stuck; /* wykrywanie zablokowania o przeszkodę */
 } Ped;
 static Ped peds[MAXPED];
 static int pedTypes[8], npedTypes, active;
@@ -71,6 +73,10 @@ static void ped_update(Ped *p, float dt) {
   float tx = p->tx + 0.5f + (p->dz ? p->lane : 0), tz = p->tz + 0.5f + (p->dx ? p->lane : 0);
   float vx = tx - p->x, vz = tz - p->z, d = sqrtf(vx * vx + vz * vz);
   float step = p->speed * dt;
+  /* nie zbliża się do celu (przeszkoda na torze) → po chwili przesuń tor marszu i ewentualnie zawróć */
+  if (d > p->lastD - step * 0.3f) { if (++p->stuck > 45) { p->stuck = 0; p->lane = -p->lane + (p->lane >= 0 ? -0.25f : 0.25f); if (fabsf(p->lane) > 0.35f) { p->dx = -p->dx; p->dz = -p->dz; p->tx += p->dx * 2; p->tz += p->dz * 2; p->lane = 0; } } }
+  else p->stuck = 0;
+  p->lastD = d;
   if (d <= step) {
     p->x = tx; p->z = tz;
     /* wybór dalszej drogi: prosto, czasem skręt, zawracanie tylko w ślepym zaułku */
@@ -92,6 +98,7 @@ static void ped_update(Ped *p, float dt) {
     return;
   }
   p->x += vx / d * step; p->z += vz / d * step;
+  kxc_resolve(city_coll(), &p->x, &p->z, 0.17f, KXC_SOLID); /* omija ławki, kosze, kioski */
   float want = atan2f(vx, vz), da = want - p->ang;
   while (da > PI_F) da -= 2 * PI_F;
   while (da < -PI_F) da += 2 * PI_F;

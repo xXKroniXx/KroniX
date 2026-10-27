@@ -1,6 +1,7 @@
 /* Świat 3D: logika mapy (kolizje, encje, ruch gracza FPP, interakcja, drzwi, zdarzenia)
  * oraz rysowanie sceny przez renderer GPU (geometria z city.c, postacie z human.c). */
 #include "engine.h"
+#include "kx_coll.h"
 
 World W;
 
@@ -225,16 +226,25 @@ void world_hurt_player(int dmg) {
 
 /* ---------------------------------------------------------------- ruch */
 #define PR 0.22f
-static int blocked_circle(float x, float z, float r) {
-  return world_solid_at(x - r, z - r) || world_solid_at(x + r, z - r) || world_solid_at(x - r, z + r) || world_solid_at(x + r, z + r);
+static int move_solid(float x, float z) { return tile_move_solid(tile_at((int)floorf(x), (int)floorf(z))); }
+static int tile_blocked(float x, float z, float r) {
+  return move_solid(x - r, z - r) || move_solid(x + r, z - r) || move_solid(x - r, z + r) || move_solid(x + r, z + r);
 }
+static int blocked_circle(float x, float z, float r) { return tile_blocked(x, z, r) || kxc_overlap(city_coll(), x, z, r, KXC_SOLID); }
 
 void move_circle(float *x, float *z, float dx, float dz, float r, Ent *self) {
   (void)0;
+  float ox = *x, oz = *z;
   float nx = *x + dx;
-  if (!blocked_circle(nx, *z, r) && !(self == NULL && cars_block(nx, *z, r))) *x = nx;
+  if (!tile_blocked(nx, *z, r) && !(self == NULL && cars_block(nx, *z, r))) *x = nx;
   float nz = *z + dz;
-  if (!blocked_circle(*x, nz, r) && !(self == NULL && cars_block(*x, nz, r))) *z = nz;
+  if (!tile_blocked(*x, nz, r) && !(self == NULL && cars_block(*x, nz, r))) *z = nz;
+  /* rekwizyty (ławki, hydranty, latarnie...): wypchnięcie po kształcie, postać ślizga się po krawędzi */
+  float rx = *x, rz = *z;
+  if (kxc_resolve(city_coll(), &rx, &rz, r, KXC_SOLID)) {
+    if (!tile_blocked(rx, rz, r)) { *x = rx; *z = rz; }
+    else { *x = ox; *z = oz; }
+  }
   /* odpychanie od postaci */
   for (int i = 0; i < W.n; i++) {
     Ent *e = &W.ents[i];

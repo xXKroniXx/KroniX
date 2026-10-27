@@ -3,6 +3,7 @@
  * sufity z blachy tłoczonej, meble i oświetlenie. Cała mapa = jedna siatka statyczna. */
 #include "engine.h"
 #include "assets.h"
+#include "kx_coll.h"
 
 /* ---------------------------------------------------------------- kafelki */
 enum { K_FLOOR, K_BLOCK, K_PROP, K_WATER, K_BB, K_CAR };
@@ -35,6 +36,13 @@ static void tdef_init(void) {
 }
 int tile_valid(int c) { tdef_init(); return c > 0 && c < 128 && tdef[c] != NULL; }
 int tile_solid(int c) { tdef_init(); if (c <= 0 || c >= 128 || !tdef[c]) return 1; return tdef[c]->kind != K_FLOOR; }
+/* dla ruchu postaci: latarnie, drzewa, filary, rośliny i ławki mają dokładne kształty w siatce kolizji */
+int tile_move_solid(int c) {
+  tdef_init();
+  if (c <= 0 || c >= 128 || !tdef[c]) return 1;
+  int k = tdef[c]->kind;
+  return k != K_FLOOR && k != K_BB && c != 'e';
+}
 static const TDef *td_c(int c) { tdef_init(); return (c > 0 && c < 128 && tdef[c]) ? tdef[c] : tdef['x']; }
 int tile_blocks_sight(int c) {
   const TDef *t = td_c(c);
@@ -82,12 +90,14 @@ static void split_chunks(void);
 #define MAXVENT 64
 static float vents[MAXVENT][2];
 static int nvents;
-typedef struct { MapDef *m; GMesh far; Chunk ch[MAXCH]; int nch; CLight l[MAXCL]; int nl; float v[MAXVENT][2]; int nv; int rail; float rail3[3]; } CitySlot;
+typedef struct { MapDef *m; GMesh far; Chunk ch[MAXCH]; int nch; CLight l[MAXCL]; int nl; float v[MAXVENT][2]; int nv; int rail; float rail3[3]; KxColl *coll; } CitySlot;
 static CitySlot bigSlot;
 static int curIsBig;
 static int interior;
 static unsigned char hdist[MAX_MAP_H][MAX_MAP_W]; /* odległość kafla wieżowca od ulicy (uskoki) */
 static int hasRail;
+static KxColl *coll, *smallColl;       /* kolizje rekwizytów bieżącej mapy */
+KxColl *city_coll(void) { return coll; }
 static float railX0, railX1, railZc;
 int city_tile(int x, int z) { return Mp ? tile(x, z) : 'x'; }
 int city_rail(float *x0, float *x1, float *zc) { if (!hasRail || interior) return 0; *x0 = railX0; *x1 = railX1; *zc = railZc; return 1; }
@@ -451,7 +461,7 @@ static void prop_tile(int x, int z, int c) {
       break;
     }
     case 'h': face_dir_open(x, z, &yaw); model_add(&mb, MD_PEW, X, 0, Z, interior ? 3.14159f : yaw, 1.0f, 0); break;
-    case 'e': face_dir_open(x, z, &yaw); model_add(&mb, MD_BENCH, X, 0.0f, Z, yaw + 3.14159f, 1.0f, 0); break;
+    case 'e': face_dir_open(x, z, &yaw); model_add(&mb, MD_BENCH, X, 0.0f, Z, yaw + 3.14159f, 1.0f, 0); kxc_box(coll, X, Z, 0.5f, 0.14f, yaw + 3.14159f, KXC_SOLID); break;
     case 'b': {
       face_dir_open(x, z, &yaw);
       model_add(&mb, MD_BAR, X, 0, Z, yaw, 1.0f, 0);
@@ -486,11 +496,12 @@ static void prop_tile(int x, int z, int c) {
 
 static void bb_tile(int x, int z, int c) {
   float X = x + 0.5f, Z = z + 0.5f;
-  if (c == 'T') model_add(&mb, MD_TREE, X, 0.06f, Z, (x * 7 + z) * 0.4f, 1.0f, 0);
-  else if (c == 'p') model_add(&mb, MD_PLANT, X, 0, Z, 0, 1.0f, 0);
+  if (c == 'T') { model_add(&mb, MD_TREE, X, 0.06f, Z, (x * 7 + z) * 0.4f, 1.0f, 0); kxc_circle(coll, X, Z, 0.16f, KXC_SOLID | KXC_CAR); }
+  else if (c == 'p') { model_add(&mb, MD_PLANT, X, 0, Z, 0, 1.0f, 0); kxc_circle(coll, X, Z, 0.22f, KXC_SOLID); }
   else if (c == 'L') {
     float y = interior ? 0 : 0.06f;
     y = ground_h(x, z);
+    kxc_circle(coll, X, Z, interior ? 0.22f : 0.1f, KXC_SOLID | KXC_CAR);
     if (interior) { /* lampa stojąca */
       model_add(&mb, MD_PLANT, X, 0, Z, 0, 1.0f, 0);
       addlight(X, 1.2f, Z, 1.8f, 1.4f, 0.9f, 4, 0);
@@ -544,12 +555,18 @@ static void street_furniture(void) {
         float ox = D[roadDir][0] * 0.32f, oz = D[roadDir][1] * 0.32f;
         int pick = h % 4;
         int md = pick == 0 ? MD_HYDRANT : pick == 1 ? MD_TRASH : pick == 2 ? MD_MAILBOX : MD_HYDRANT;
-        model_add(&mb, md, X + ox, 0.06f, Z + oz, atan2f((float)D[roadDir][0], (float)D[roadDir][1]), 1.0f, 0);
+        float fy = atan2f((float)D[roadDir][0], (float)D[roadDir][1]);
+        model_add(&mb, md, X + ox, 0.06f, Z + oz, fy, 1.0f, 0);
+        if (md == MD_MAILBOX) kxc_box(coll, X + ox, Z + oz, 0.15f, 0.14f, fy, KXC_SOLID | KXC_CAR);
+        else kxc_circle(coll, X + ox, Z + oz, md == MD_TRASH ? 0.15f : 0.1f, KXC_SOLID | KXC_CAR);
       } else if (!nearDoor) {
         int pick = h % 3;
         float yaw;
         face_dir_open(x, z, &yaw);
         model_add(&mb, pick == 0 ? MD_NEWSSTAND : pick == 1 ? MD_TRASH : MD_BENCH, X, 0.06f, Z, yaw, 1.0f, 0);
+        if (pick == 0) kxc_box(coll, X, Z, 0.33f, 0.24f, yaw, KXC_SOLID | KXC_CAR);
+        else if (pick == 1) kxc_circle(coll, X, Z, 0.15f, KXC_SOLID | KXC_CAR);
+        else kxc_box(coll, X, Z, 0.5f, 0.14f, yaw, KXC_SOLID | KXC_CAR);
       }
     }
 }
@@ -728,6 +745,7 @@ static void elevated_rail(void) {
     for (int x = 0; x < Mw; x++) {
       if (tile(x, z) != 'J') continue;
       float cx = x + 0.5f, cz = z + 0.5f;
+      kxc_box(coll, cx, cz, 0.2f, 0.2f, 0, KXC_SOLID | KXC_CAR | KXC_BULLET);
       mb_paint(0xFF8A847A, L_STONE);
       mb_box(&mb, v3(cx - 0.2f, 0.06f, cz - 0.2f), v3(cx + 0.2f, 0.32f, cz + 0.2f));
       mb_paint(steel, L_METAL);
@@ -820,11 +838,13 @@ void city_build(MapDef *m) {
     memcpy(clights, bigSlot.l, sizeof(CLight) * bigSlot.nl); nclights = bigSlot.nl;
     memcpy(vents, bigSlot.v, sizeof vents); nvents = bigSlot.nv;
     hasRail = bigSlot.rail; railX0 = bigSlot.rail3[0]; railX1 = bigSlot.rail3[1]; railZc = bigSlot.rail3[2];
+    coll = bigSlot.coll;
     curIsBig = 1;
     return;
   }
   nclights = 0;
   neonIdx = 0;
+  coll = kxc_create(Mw, Mh);
   if (!mb.v) mb_init(&mb);
   mb_reset(&mb);
   compute_hdist();
@@ -934,9 +954,15 @@ void city_build(MapDef *m) {
       memcpy(bigSlot.l, clights, sizeof(CLight) * nclights); bigSlot.nl = nclights;
       memcpy(bigSlot.v, vents, sizeof vents); bigSlot.nv = nvents;
       bigSlot.rail = hasRail; bigSlot.rail3[0] = railX0; bigSlot.rail3[1] = railX1; bigSlot.rail3[2] = railZc;
+      if (bigSlot.coll && bigSlot.coll != coll) kxc_free(bigSlot.coll);
+      bigSlot.coll = coll;
       curIsBig = 1;
     }
-    if (getenv("KX_STAT")) fprintf(stderr, "miasto: %d wierzchołków, %d kwartałów, %d świateł\n", mb.n, nchunks, nclights);
+    if (getenv("KX_STAT")) fprintf(stderr, "miasto: %d wierzchołków, %d kwartałów, %d świateł, %d kolizji\n", mb.n, nchunks, nclights, kxc_count(coll));
+  }
+  if (coll != bigSlot.coll) { /* mapy małe: poprzedni zestaw kolizji niepotrzebny */
+    if (smallColl && smallColl != coll) kxc_free(smallColl);
+    smallColl = coll;
   }
   mb_paint(0xFFFFFFFF, L_WHITE);
 }

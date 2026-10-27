@@ -225,6 +225,8 @@ int cars_block(float x, float z, float r);
 int car_player(void);
 void cars_showcase(void);
 /* streetlife.c: przechodnie i kolejka nadziemna */
+int tile_move_solid(int c);  /* kafel blokuje ruch postaci (rekwizyty mają osobne kształty) */
+struct KxColl *city_coll(void); /* siatka kolizji rekwizytów bieżącej mapy (kx_coll.h) */
 void streetlife_build(void);
 void streetlife_map(void);
 void streetlife_update(void);

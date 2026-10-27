@@ -2,6 +2,7 @@
  * do „pożyczenia” i ruch uliczny na arteriach dużego miasta.
  * Jednostki: 1 kafel ≈ 1,9 m, prędkość w kaflach/s. Model auta ma przód w +x. */
 #include "engine.h"
+#include "kx_coll.h"
 #include <math.h>
 
 #define MAXCARS 48
@@ -221,6 +222,7 @@ static int car_blocked_t(int type, float x, float z, float a) {
     float cx = x + fx * off * k, cz = z + fz * off * k;
     float r = VS[type].W - 0.02f;
     if (world_solid_at(cx - r, cz - r) || world_solid_at(cx + r, cz - r) || world_solid_at(cx - r, cz + r) || world_solid_at(cx + r, cz + r)) return 1;
+    if (kxc_overlap(city_coll(), cx, cz, r, KXC_CAR)) return 1;
   }
   return 0;
 }
